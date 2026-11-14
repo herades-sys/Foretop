@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Broadside.App/Broadside.App.csproj" />
+    <Project Path="src/Broadside.Core/Broadside.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Broadside.Tests/Broadside.Tests.csproj" />
+  </Folder>
+</Solution>

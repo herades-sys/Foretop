@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Light palette. Every key must exist in both colour files. -->
+    <SolidColorBrush x:Key="Bg" Color="#F3F5F8" />
+    <SolidColorBrush x:Key="Panel" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Panel2" Color="#EDF0F4" />
+    <SolidColorBrush x:Key="Border" Color="#D3DAE3" />
+    <SolidColorBrush x:Key="Text" Color="#18202B" />
+    <SolidColorBrush x:Key="TextDim" Color="#5C6878" />
+    <SolidColorBrush x:Key="Accent" Color="#1F6FD1" />
+    <SolidColorBrush x:Key="RowHover" Color="#EAF1FB" />
+    <SolidColorBrush x:Key="RowSelected" Color="#D6E5F9" />
+    <SolidColorBrush x:Key="SelfRow" Color="#E2F3E7" />
+    <SolidColorBrush x:Key="AltRow" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="Friendly" Color="#0F8276" />
+    <SolidColorBrush x:Key="Enemy" Color="#CC3B37" />
+    <SolidColorBrush x:Key="RateRed" Color="#C62E2B" />
+    <SolidColorBrush x:Key="RateYellow" Color="#A06F00" />
+    <SolidColorBrush x:Key="RateGreen" Color="#24813E" />
+    <SolidColorBrush x:Key="RatePurple" Color="#7238C9" />
+    <SolidColorBrush x:Key="ClassDD" Color="#1A74B8" />
+    <SolidColorBrush x:Key="ClassCA" Color="#3A852B" />
+    <SolidColorBrush x:Key="ClassBB" Color="#B8600E" />
+    <SolidColorBrush x:Key="ClassCV" Color="#8E44C6" />
+    <SolidColorBrush x:Key="ClassSS" Color="#11807A" />
+    <SolidColorBrush x:Key="NoticeBg" Color="#FFF3D1" />
+    <SolidColorBrush x:Key="AccentButtonBg" Color="#1F6FD1" />
+    <SolidColorBrush x:Key="AccentButtonFg" Color="#FFFFFF" />
+</ResourceDictionary>
