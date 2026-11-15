@@ -36,6 +36,8 @@ public sealed partial class ShellViewModel : ObservableObject
         Profiles = new ProfileViewModel(host);
         History = new HistoryViewModel(host);
         Statistics = new StatisticsViewModel(host);
+        Personal = new PersonalAnalyticsViewModel(host);
+        Analytics = new AnalyticsViewModel(Personal, Statistics);
         Dashboard = new DashboardViewModel(host);
         PlayerSearch = new PlayerSearchViewModel(host);
         Ships = new ShipIntelligenceViewModel(host);
@@ -62,6 +64,8 @@ public sealed partial class ShellViewModel : ObservableObject
         };
         History.OpenRequested += OpenRecorded;
         Dashboard.BattleRequested += OpenRecorded;
+        Personal.BattleRequested += OpenRecorded;
+        Personal.PageRequested += p => SelectedPage = p;
         Dashboard.PageRequested += p => SelectedPage = p;
         Ships.SettingsRequested += () => SelectedPage = Page.Settings;
         Profiles.BattleRequested += id =>
@@ -97,6 +101,8 @@ public sealed partial class ShellViewModel : ObservableObject
     public ProfileViewModel Profiles { get; }
     public HistoryViewModel History { get; }
     public StatisticsViewModel Statistics { get; }
+    public PersonalAnalyticsViewModel Personal { get; }
+    public AnalyticsViewModel Analytics { get; }
     public DashboardViewModel Dashboard { get; }
     public PlayerSearchViewModel PlayerSearch { get; }
     public ShipIntelligenceViewModel Ships { get; }
@@ -171,7 +177,7 @@ public sealed partial class ShellViewModel : ObservableObject
         CurrentContent = PageContent(newValue);
         if (newValue == Page.History) _ = History.EnsureLoadedAsync();
         if (newValue == Page.Replays) _ = Replays.EnsureLoadedAsync();
-        if (newValue == Page.Analytics) _ = Statistics.EnsureLoadedAsync();
+        if (newValue == Page.Analytics) _ = Analytics.EnsureLoadedAsync();
         if (newValue == Page.Dashboard) _ = Dashboard.EnsureLoadedAsync();
         if (newValue == Page.PlayerSearch) PlayerSearch.OnShown();
         if (newValue == Page.Ships) Ships.OnShown();
@@ -223,7 +229,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Page.Ships => Ships,
         Page.History => History,
         Page.Replays => Replays,
-        Page.Analytics => Statistics,
+        Page.Analytics => Analytics,
         Page.Settings => Settings,
         _ => Dashboard,
     };

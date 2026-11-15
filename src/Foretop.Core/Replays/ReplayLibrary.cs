@@ -75,6 +75,17 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
         return (result.data, result.Item2);
     }
 
+    /// <summary>Decodes a replay without loading map images (personal battle facts). Null without the game installation.</summary>
+    public async Task<ReplayData?> ParseAsync(string path, CancellationToken ct = default)
+    {
+        var file = await Task.Run(() => ReplayFile.Read(path), ct).ConfigureAwait(false);
+        return await shipData.WithFileSystemAsync(fs =>
+        {
+            if (_defs is not { } d || d.Build != fs.Build) _defs = d = (fs.Build, EntityDefs.Load(fs));
+            return ReplayParser.Parse(file, d.Defs);
+        }, ct).ConfigureAwait(false);
+    }
+
     private MapAssets Map(GameFileSystem fs, string space)
     {
         space = space.Replace('\\', '/').Trim('/');

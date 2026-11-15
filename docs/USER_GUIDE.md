@@ -113,7 +113,7 @@ statistics at that moment.
 ### Your results (Dashboard)
 
 The Dashboard shows **your own result in each battle**: victory or defeat, damage,
-base XP, frags and whether you survived, plus totals for **this session** (battles
+XP, frags and whether you survived, plus totals for **this session** (battles
 less than an hour apart) and **today**. The game does not write results anywhere
 Foretop can read: the replay's results block stays empty. So Foretop reads your
 account totals from the Wargaming API when a battle starts, and again after it ends
@@ -125,9 +125,46 @@ battle's result.
 - A battle you leave early is counted when it ends for everyone, up to 20 minutes
   later. If two battles are counted at once, they appear together in one row
   ("2 battles"), and the totals stay exact.
-- XP is base XP (before premium time, flags and bonuses), as the API reports it.
+- XP is as the API counts it: including Premium Account, flags and other bonuses. Base XP (before them) comes
+  from the replay and is shown under Analytics → My performance.
 - It needs your account name (Settings → Your account, filled in automatically) and a
   public profile.
+
+### My performance (Analytics)
+
+**Analytics → My performance** analyses your own battles; **Recorded battles** is the earlier page about who you met.
+It covers the battles Foretop recorded while it ran (Wargaming offers no battle history), one row per battle that
+the API counted on its own; battles counted together after you left early are left out.
+
+- **Period**: last battle, last 5 / 10 / 20 / 50 / 100, all, or a date range; **Filter** by battle type, class and
+  minimum tier. Everything below follows, except Compare periods.
+- **Last battle**: date, map, type, ship, result; damage, kills, deaths, survival and time survived, XP and base XP,
+  spotting and potential damage, aircraft, main battery and torpedo hits, team position by damage and a battle rating.
+  A single battle has no win rate, so the win rate shown there is over the selected period.
+- **Performance**: battles, victories/defeats/draws, win rate, kills, deaths, kills/deaths, averages, survival, PR,
+  spotting, potential, accuracy, time survived. All rates and averages are totals ÷ battles; accuracy is hits ÷ shots
+  over all battles (not an average of percentages). Values that are not known for every battle say for how many
+  battles they are ("12 of 20 battles"); unknown is shown as "—", never as 0.
+- **Trends**: win rate, damage, battle rating, kills, deaths, kills/deaths, survival or base XP, per battle, as a rolling
+  average over 10 battles or as the overall average up to each battle. Hover a point for the battle. Below: victories
+  vs. defeats and how your damage is spread.
+- **Battle history**: sortable table with search and ship/result filters; **Export CSV** saves it; double-click opens
+  the battle.
+- **Compare periods**: e.g. last 10 vs last 50, this month vs last month, Tier VI+ vs all, with the differences in
+  green (better) or red.
+- **Tier analysis**: your recorded battles by tier, and your whole account by tier from the official per-ship totals,
+  with All tiers → VI+ → VIII+ → X+.
+- **Ship performance**: per ship in the selected period; **All your ships** opens Ship Statistics.
+
+Every value carries its source:
+
+| Tag | Meaning |
+|---|---|
+| API | Difference of your official totals before and after the battle (account totals for result, damage, kills, survival, XP, aircraft; the played ship's totals for spotting, potential damage and hits). |
+| replay | The replay of the battle: base XP and team position from the game's result data, kills, time survived and battle length from the battle's messages. Needs replays switched on. Foretop checks the result data against the API damage before using it; after a game update that changes its layout those values stay empty until Foretop is updated. |
+| calculated | Foretop's arithmetic. **PR** here is the wows-numbers formula on the period's totals, and the **battle rating** of one battle is the same formula on that battle; both use the expected values stored with each battle, so they do not change later. Neither is an official rating. |
+
+Spotting, potential damage and hits are recorded from Foretop 1.6.0 on; older battles show "—" for them.
 
 ### Replays
 

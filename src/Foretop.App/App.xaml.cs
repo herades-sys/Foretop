@@ -21,6 +21,8 @@ public partial class App : Application
             return;
         }
         DispatcherUnhandledException += OnUnhandled;
+        var dataAt = Array.IndexOf(e.Args, "--data-dir");
+        if (dataAt >= 0 && dataAt + 1 < e.Args.Length) Services.AppPaths.UseDataDir(e.Args[dataAt + 1]);
 
         // Development runs (--snapshot) may run beside a normal instance; everything else is single-instance.
         if (!e.Args.Contains("--snapshot"))
@@ -80,6 +82,11 @@ public partial class App : Application
         {
             _host.Results.Attach(_host.Watcher);
             _ = _host.Results.ResumeAsync();
+            // Replay facts for counted battles: after start (also fills in older battles) and whenever results change.
+            var enrich = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+            enrich.Tick += (_, _) => { enrich.Stop(); _ = Task.Run(() => _host.Personal.RunAsync()); };
+            enrich.Start();
+            _host.Results.Changed += () => Dispatcher.BeginInvoke(() => { enrich.Stop(); enrich.Start(); });
         }
         // Update check: not in development snapshot runs, unless they bring their own release file (--update-feed).
         var feedAt = Array.IndexOf(e.Args, "--update-feed");
@@ -187,6 +194,8 @@ public partial class App : Application
             shell.Live.PersistStatsFilter = false;
             shell.Live.StatsViewMode = sv;
         }
+        // --enrich-now: read replay facts for own results at once (normally 15 s after start)
+        if (args.Contains("--enrich-now")) _ = Task.Run(() => ((App)Current)._host!.Personal.RunAsync());
         if (args.Contains("--sidebar-collapsed")) shell.IsSidebarCollapsed = true; // view only, not saved
         // --replay <path|latest> [--replay-time <s>]: open a replay in the minimap player at a time.
         if (Arg("--replay") is { } replay)

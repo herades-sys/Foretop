@@ -48,7 +48,7 @@ public enum ResultStatus
 public sealed record BattleResult(
     string BattleKey, Region Region, long AccountId, string Mode, long ShipId,
     DateTimeOffset StartedAt, DateTimeOffset? EndedAt, ResultStatus Status,
-    StatTotals? Baseline, StatTotals? Result, DateTimeOffset? ResolvedAt)
+    StatTotals? Baseline, StatTotals? Result, DateTimeOffset? ResolvedAt, Personal.PersonalExtras? Extras = null)
 {
     public bool IsOpen => Status == ResultStatus.Pending;
 }
@@ -141,13 +141,13 @@ public sealed class BattleResultStore(Database db)
         using var cmd = c.CreateCommand();
         cmd.CommandText = """
             INSERT INTO battle_results(battle_key, region, account_id, mode, ship_id, started_at, ended_at, status, baseline_json,
-                                       battles, wins, losses, draws, damage, xp, frags, survived, planes, resolved_at)
-            VALUES ($k, $r, $a, $m, $s, $st, $en, $status, $base, $b, $w, $l, $d, $dmg, $xp, $f, $sv, $p, $res)
+                                       battles, wins, losses, draws, damage, xp, frags, survived, planes, resolved_at, extra_json)
+            VALUES ($k, $r, $a, $m, $s, $st, $en, $status, $base, $b, $w, $l, $d, $dmg, $xp, $f, $sv, $p, $res, $x)
             ON CONFLICT(battle_key) DO UPDATE SET
                 ended_at = excluded.ended_at, status = excluded.status, baseline_json = excluded.baseline_json,
                 battles = excluded.battles, wins = excluded.wins, losses = excluded.losses, draws = excluded.draws,
                 damage = excluded.damage, xp = excluded.xp, frags = excluded.frags, survived = excluded.survived,
-                planes = excluded.planes, resolved_at = excluded.resolved_at
+                planes = excluded.planes, resolved_at = excluded.resolved_at, extra_json = excluded.extra_json
             """;
         var t = r.Result;
         cmd.Parameters.AddWithValue("$k", r.BattleKey);
@@ -169,6 +169,7 @@ public sealed class BattleResultStore(Database db)
         cmd.Parameters.AddWithValue("$sv", t is null ? DBNull.Value : t.Survived);
         cmd.Parameters.AddWithValue("$p", t is null ? DBNull.Value : t.PlanesKilled);
         cmd.Parameters.AddWithValue("$res", r.ResolvedAt is { } x ? x.ToUnixTimeSeconds() : DBNull.Value);
+        cmd.Parameters.AddWithValue("$x", (object?)Personal.PersonalJson.Write(r.Extras) ?? DBNull.Value);
         cmd.ExecuteNonQuery();
     }
 
@@ -203,6 +204,17 @@ public sealed class BattleResultStore(Database db)
         return Read(cmd);
     }
 
+    /// <summary>Every result of one account, newest first (personal analytics).</summary>
+    public List<BattleResult> All(Region region, long accountId)
+    {
+        using var c = db.Open();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = Select + " WHERE region = $r AND account_id = $a ORDER BY started_at DESC";
+        cmd.Parameters.AddWithValue("$r", region.ToString());
+        cmd.Parameters.AddWithValue("$a", accountId);
+        return Read(cmd);
+    }
+
     /// <summary>All open results, any account, oldest first.</summary>
     public List<BattleResult> AllOpen()
     {
@@ -214,7 +226,7 @@ public sealed class BattleResultStore(Database db)
 
     private const string Select = """
         SELECT battle_key, region, account_id, mode, ship_id, started_at, ended_at, status, baseline_json,
-               battles, wins, losses, draws, damage, xp, frags, survived, planes, resolved_at
+               battles, wins, losses, draws, damage, xp, frags, survived, planes, resolved_at, extra_json
         FROM battle_results
         """;
 
@@ -234,7 +246,8 @@ public sealed class BattleResultStore(Database db)
                 Enum.TryParse<ResultStatus>(rd.GetString(7), out var s) ? s : ResultStatus.Pending,
                 rd.IsDBNull(8) ? null : JsonSerializer.Deserialize<StatTotals>(rd.GetString(8), Json),
                 result,
-                rd.IsDBNull(18) ? null : DateTimeOffset.FromUnixTimeSeconds(rd.GetInt64(18))));
+                rd.IsDBNull(18) ? null : DateTimeOffset.FromUnixTimeSeconds(rd.GetInt64(18)),
+                rd.IsDBNull(19) ? null : Personal.PersonalJson.Read(rd.GetString(19))));
         }
         return list;
     }

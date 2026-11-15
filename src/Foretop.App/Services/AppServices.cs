@@ -12,8 +12,11 @@ namespace Foretop.App.Services;
 
 public static class AppPaths
 {
-    public static string DataDir { get; } =
+    public static string DataDir { get; private set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Foretop");
+
+    /// <summary>Development runs (--data-dir) use their own folder, so they never touch the real settings and database.</summary>
+    public static void UseDataDir(string dir) => DataDir = Path.GetFullPath(dir);
 
     public static string Database => Path.Combine(DataDir, "foretop.db");
     public static string Settings => Path.Combine(DataDir, "settings.json");

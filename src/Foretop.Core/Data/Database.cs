@@ -5,7 +5,7 @@ namespace Foretop.Core.Data;
 /// <summary>Owns the SQLite file and its schema. Connections are pooled by Microsoft.Data.Sqlite.</summary>
 public sealed class Database
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
     private readonly string _connectionString;
 
     public Database(string path)
@@ -136,6 +136,11 @@ public sealed class Database
                 );
                 CREATE INDEX IF NOT EXISTS ix_results_started ON battle_results(started_at DESC);
                 """);
+        }
+        if (version < 5)
+        {
+            // Personal analytics: per-battle extras (ship combat difference, replay facts, battle rating, map, tier).
+            Exec(c, "ALTER TABLE battle_results ADD COLUMN extra_json TEXT;");
         }
         Exec(c, $"PRAGMA user_version = {SchemaVersion};");
         tx.Commit();

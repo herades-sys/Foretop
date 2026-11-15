@@ -66,6 +66,12 @@ public sealed class ReplayData
     public required IReadOnlyList<ReplaySmoke> Smokes { get; init; }
     public IReadOnlyList<ReplayChat> Chat { get; init; } = [];
 
+    /// <summary>The game's battle-result data (packet 0x22), written at the end of the recording; null if the replay has none.</summary>
+    public string? ResultsJson { get; init; }
+
+    /// <summary>The recording player's account id (header block 2), when present.</summary>
+    public long? SelfAccountId { get; init; }
+
     /// <summary>In-game clock (seconds left) by replay time; empty when the replay did not carry it.</summary>
     public required IReadOnlyList<ValuePoint> TimeLeft { get; init; }
 

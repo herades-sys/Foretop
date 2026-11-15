@@ -177,6 +177,20 @@ switch (cmd)
         Console.WriteLine($"  clock {data.TimeLeft.Count} samples: {string.Join(" ", data.TimeLeft.Take(6).Select(v => $"{v.Value}@{v.T:0}"))} … {string.Join(" ", data.TimeLeft.TakeLast(3).Select(v => $"{v.Value}@{v.T:0}"))}");
         break;
     }
+    case "api":
+    {
+        // api <method> <query>: one Wargaming API GET (EU) with the application ID from Foretop's settings; the ID is
+        // decrypted in memory only and never printed. Example: api ships/stats "account_id=1&fields=pvp.battles"
+        var settings = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Foretop", "settings.json")));
+        var prot = settings.RootElement.GetProperty("ProtectedApplicationId").GetString()!;
+        var appId = System.Text.Encoding.UTF8.GetString(System.Security.Cryptography.ProtectedData.Unprotect(Convert.FromBase64String(prot),
+            System.Text.Encoding.UTF8.GetBytes("Broadside.ApplicationId.v1"), System.Security.Cryptography.DataProtectionScope.CurrentUser));
+        using var http = new HttpClient();
+        var body = await http.GetStringAsync($"https://api.worldofwarships.eu/wows/{args[2].Trim('/')}/?application_id={appId}&{args[3]}");
+        Console.WriteLine(body.Replace(appId, "***"));
+        break;
+    }
     case "unpack":
     {
         // unpack <hex file> <out.json>: Foretop's compressed cache value (hex of api_cache.zjson) as JSON
@@ -185,6 +199,20 @@ switch (cmd)
         using var brotli = new System.IO.Compression.BrotliStream(input, System.IO.Compression.CompressionMode.Decompress);
         using var reader = new StreamReader(brotli, System.Text.Encoding.UTF8);
         File.WriteAllText(args[3], reader.ReadToEnd());
+        break;
+    }
+    case "facts":
+    {
+        // facts <file.wowsreplay> [apiDamage apiXp]: the personal battle facts Foretop reads from a replay
+        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        var data = Foretop.Core.Replays.ReplayParser.Parse(Foretop.Core.Replays.ReplayFile.Read(args[2]), defs);
+        var self = data.Self!;
+        Foretop.Core.Stats.StatTotals? api = args.Length > 4
+            ? new Foretop.Core.Stats.StatTotals(1, 0, 0, 0, long.Parse(args[3]), long.Parse(args[4]), 0, 0, 0) : null;
+        var o = Foretop.Core.Personal.ReplayFacts.Compute(data.ResultsJson, data.SelfAccountId ?? 0, self.ShipId, self.VehicleId, 0,
+            data.Players, data.Deaths, data.TimeLeft, data.Duration, api);
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(o.Facts));
+        Console.WriteLine("note: " + (o.Note ?? "-"));
         break;
     }
     case "results":

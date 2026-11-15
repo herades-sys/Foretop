@@ -8,7 +8,8 @@ namespace Foretop.App.Charts;
 
 public sealed record ChartBar(string Label, double Value, string ValueText, Brush? Fill = null, string? Tooltip = null);
 
-public sealed record ChartPoint(double X, double Y, string? XLabel = null);
+/// <summary>A point; Tip is shown when the mouse is near it.</summary>
+public sealed record ChartPoint(double X, double Y, string? XLabel = null, string? Tip = null);
 
 public sealed record ChartSeries(string Name, Brush Stroke, IReadOnlyList<ChartPoint> Points);
 
@@ -110,8 +111,58 @@ public sealed class LineChart : ChartBase
     public string Format { get => (string)GetValue(FormatProperty); set => SetValue(FormatProperty, value); }
     public string EmptyText { get => (string)GetValue(EmptyTextProperty); set => SetValue(EmptyTextProperty, value); }
 
+    // Hover: points as drawn (screen position + tip), the one under the mouse, and its tooltip.
+    private readonly List<(Point At, ChartPoint Point, Brush Stroke)> _drawn = [];
+    private int _hover = -1;
+    private readonly System.Windows.Controls.ToolTip _tip = new() { Placement = System.Windows.Controls.Primitives.PlacementMode.Mouse };
+
+    public LineChart()
+    {
+        Background = Brushes.Transparent;
+        ToolTip = _tip;
+        System.Windows.Controls.ToolTipService.SetInitialShowDelay(this, 0);
+        System.Windows.Controls.ToolTipService.SetBetweenShowDelay(this, 0);
+        System.Windows.Controls.ToolTipService.SetShowDuration(this, 60_000);
+        _tip.Opened += (_, _) => { if (_hover < 0) _tip.IsOpen = false; };
+    }
+
+    /// <summary>Makes the whole area hit-testable for the mouse.</summary>
+    public Brush Background { get; set; }
+
+    protected override void OnMouseMove(System.Windows.Input.MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        var pos = e.GetPosition(this);
+        var best = -1;
+        var bestDist = 14.0;
+        for (var i = 0; i < _drawn.Count; i++)
+        {
+            var d = Math.Abs(_drawn[i].At.X - pos.X) + Math.Abs(_drawn[i].At.Y - pos.Y) * 0.25;
+            if (d < bestDist && _drawn[i].Point.Tip is not null) { bestDist = d; best = i; }
+        }
+        if (best == _hover) return;
+        _hover = best;
+        if (best >= 0)
+        {
+            _tip.Content = _drawn[best].Point.Tip;
+            _tip.IsOpen = true;
+        }
+        else _tip.IsOpen = false;
+        InvalidateVisual();
+    }
+
+    protected override void OnMouseLeave(System.Windows.Input.MouseEventArgs e)
+    {
+        base.OnMouseLeave(e);
+        _hover = -1;
+        _tip.IsOpen = false;
+        InvalidateVisual();
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
+        dc.DrawRectangle(Background, null, new Rect(0, 0, ActualWidth, ActualHeight));
+        _drawn.Clear();
         var series = Series?.OfType<ChartSeries>().Where(s => s.Points.Count > 0).ToList() ?? [];
         var w = ActualWidth;
         var h = ActualHeight;
@@ -165,6 +216,13 @@ public sealed class LineChart : ChartBase
             dc.DrawGeometry(null, pen, geo);
             if (s.Points.Count <= 40)
                 foreach (var p in s.Points) dc.DrawEllipse(s.Stroke, null, new Point(X(p.X), Y(p.Y)), 2.5, 2.5);
+            foreach (var p in s.Points) _drawn.Add((new Point(X(p.X), Y(p.Y)), p, s.Stroke));
+        }
+        if (_hover >= 0 && _hover < _drawn.Count)
+        {
+            var hv = _drawn[_hover];
+            dc.DrawLine(new Pen(Res("TextDim"), 1) { DashStyle = DashStyles.Dot }, new Point(hv.At.X, top), new Point(hv.At.X, h - bottom));
+            dc.DrawEllipse(Res("Panel"), new Pen(hv.Stroke, 2), hv.At, 4.5, 4.5);
         }
 
         var first = pts.OrderBy(p => p.X).First();

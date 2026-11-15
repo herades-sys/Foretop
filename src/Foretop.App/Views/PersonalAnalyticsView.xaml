@@ -1,0 +1,337 @@
+<UserControl x:Class="Foretop.App.Views.PersonalAnalyticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foretop.App.Views"
+             xmlns:charts="clr-namespace:Foretop.App.Charts">
+    <UserControl.Resources>
+        <Style x:Key="Num" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+        </Style>
+        <!-- Small origin tag: API / replay / calculated -->
+        <Style x:Key="Origin" TargetType="TextBlock" BasedOn="{StaticResource Dim}">
+            <Setter Property="FontSize" Value="9.5" />
+        </Style>
+        <Style x:Key="Level" TargetType="TextBlock" BasedOn="{StaticResource Num}">
+            <Style.Triggers>
+                <Trigger Property="Tag" Value="good"><Setter Property="Foreground" Value="{DynamicResource StatusGreen}" /></Trigger>
+                <Trigger Property="Tag" Value="bad"><Setter Property="Foreground" Value="{DynamicResource StatusRed}" /></Trigger>
+            </Style.Triggers>
+        </Style>
+        <DataTemplate x:Key="TierTable">
+            <DataGrid ItemsSource="{Binding}" MaxHeight="300" HeadersVisibility="Column">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="TIER" Binding="{Binding Band}" Width="60" />
+                    <DataGridTemplateColumn Header="BATTLES" Width="80">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Battles}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="WIN RATE" Width="80">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding WinRate}" Style="{StaticResource Num}" Foreground="{Binding WrBrush, TargetNullValue={StaticResource Text}}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="AVG DAMAGE" Width="94">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Damage}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="AVG XP" Width="76">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Xp}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="KILLS" Width="62">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Kills}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="SURVIVAL" Width="76">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Survival}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="PR" Width="70">
+                        <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Pr}" Style="{StaticResource Num}" FontWeight="SemiBold" Foreground="{Binding PrBrush, TargetNullValue={StaticResource Text}}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DataTemplate>
+        <DataTemplate x:Key="CompareTable">
+            <ItemsControl ItemsSource="{Binding}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="230" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="100" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Metric}" Style="{StaticResource Dim}" />
+                            <TextBlock Grid.Column="1" Text="{Binding A}" Style="{StaticResource Num}" />
+                            <TextBlock Grid.Column="2" Text="{Binding B}" Style="{StaticResource Num}" />
+                            <TextBlock Grid.Column="3" Text="{Binding Delta}" Tag="{Binding Level}" Style="{StaticResource Level}" FontWeight="SemiBold" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="22,4,22,12">
+            <DockPanel Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" Content="Reload" Command="{Binding ReloadCommand}" VerticalAlignment="Center" />
+                <StackPanel>
+                    <TextBlock Text="My performance" Style="{StaticResource H1}" />
+                    <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Dim}" Margin="0,3,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Style="{StaticResource Card}" MaxWidth="680" HorizontalAlignment="Left" Margin="0,0,0,12"
+                    Visibility="{Binding EmptyText, Converter={StaticResource NullVis}}">
+                <TextBlock Text="{Binding EmptyText}" Style="{StaticResource Dim}" TextWrapping="Wrap" />
+            </Border>
+
+            <!-- Period and filters -->
+            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6" Padding="12,8"
+                    Margin="0,0,0,12">
+                <StackPanel>
+                    <WrapPanel>
+                        <TextBlock Text="PERIOD" Style="{StaticResource Dim}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ItemsControl ItemsSource="{Binding Periods}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="period" Content="{Binding Label}" Margin="0,0,4,0"
+                                                 Command="{Binding DataContext.SetPeriodCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                 CommandParameter="{Binding}">
+                                        <RadioButton.IsChecked>
+                                            <MultiBinding Converter="{x:Static views:EqualsConverter.Instance}" Mode="OneWay">
+                                                <Binding />
+                                                <Binding Path="DataContext.Period" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                            </MultiBinding>
+                                        </RadioButton.IsChecked>
+                                    </RadioButton>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <StackPanel Orientation="Horizontal" Margin="8,0,0,0" Visibility="{Binding IsCustomPeriod, Converter={StaticResource BoolVis}}">
+                            <TextBlock Text="from" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBox Text="{Binding CustomFromText, UpdateSourceTrigger=LostFocus}" Width="96" />
+                            <TextBlock Text="to" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="8,0,6,0" />
+                            <TextBox Text="{Binding CustomToText, UpdateSourceTrigger=LostFocus}" Width="96" />
+                        </StackPanel>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,8,0,0">
+                        <TextBlock Text="FILTER" Style="{StaticResource Dim}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" Width="150" Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{Binding Classes}" SelectedItem="{Binding Class}" Width="150" Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{Binding Tiers}" SelectedItem="{Binding Tier}" Width="130" />
+                        <TextBlock Text="Applies to every panel below except Compare periods." Style="{StaticResource Dim}" FontSize="11"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Visibility="{Binding HasBattles, Converter={StaticResource BoolVis}}">
+                <!-- Last battle -->
+                <Expander Style="{StaticResource Section}" Header="Last battle" Visibility="{Binding HasLast, Converter={StaticResource BoolVis}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding LastTitle}" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding LastSubtitle}" Style="{StaticResource Dim}" Margin="0,2,0,10" TextWrapping="Wrap" />
+                        <ItemsControl ItemsSource="{Binding LastRows}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="200" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,10,8" Padding="10,6" CornerRadius="4" Background="{DynamicResource Panel2}" ToolTip="{Binding Tip}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Origin}" Style="{StaticResource Origin}" />
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Dim}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Value}" FontSize="15" FontWeight="SemiBold" Margin="0,2,0,0"
+                                                       Foreground="{Binding Accent, TargetNullValue={StaticResource Text}}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding LastNotes}" Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Visibility="{Binding LastNotes, Converter={StaticResource NullVis}}" />
+                        <TextBlock Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Text="API = difference of your official totals before and after the battle · replay = the game's replay of the battle · calculated = Foretop's arithmetic. Hover a value for details." />
+                    </StackPanel>
+                </Expander>
+
+                <!-- Summary cards -->
+                <Expander Style="{StaticResource Section}" Header="Performance in the selected period">
+                    <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource StatCardTemplate}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="230" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </Expander>
+
+                <!-- Trends -->
+                <Expander Style="{StaticResource Section}" Header="Performance trends">
+                    <StackPanel>
+                        <WrapPanel Margin="0,0,0,8">
+                            <ItemsControl ItemsSource="{Binding Metrics}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton Style="{StaticResource Chip}" GroupName="metric" Content="{Binding}" Margin="0,0,4,0"
+                                                     Command="{Binding DataContext.SetMetricCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                     CommandParameter="{Binding}">
+                                            <RadioButton.IsChecked>
+                                                <MultiBinding Converter="{x:Static views:EqualsConverter.Instance}" Mode="OneWay">
+                                                    <Binding />
+                                                    <Binding Path="DataContext.Metric" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                </MultiBinding>
+                                            </RadioButton.IsChecked>
+                                        </RadioButton>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Border Style="{StaticResource SegmentedHost}" Margin="12,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton GroupName="series" Style="{StaticResource Segment}" Content="Per battle"
+                                                 IsChecked="{Binding SeriesMode, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=PerBattle}" />
+                                    <RadioButton GroupName="series" Style="{StaticResource Segment}" Content="Rolling (10)"
+                                                 IsChecked="{Binding SeriesMode, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Rolling}" />
+                                    <RadioButton GroupName="series" Style="{StaticResource Segment}" Content="Overall average"
+                                                 IsChecked="{Binding SeriesMode, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Cumulative}" />
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+                        <charts:LineChart Series="{Binding Trend}" Format="{Binding TrendFormat}" Height="220"
+                                          EmptyText="Needs at least two battles with this value in the selected period." />
+                        <TextBlock Text="{Binding TrendNote}" Style="{StaticResource Dim}" FontSize="11" Margin="0,4,0,10" TextWrapping="Wrap" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Victories and defeats" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                <charts:BarChart Items="{Binding ResultBars}" LabelWidth="90" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Damage per battle" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                <charts:BarChart Items="{Binding DamageBars}" LabelWidth="90" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Battle history -->
+                <Expander Style="{StaticResource Section}" Header="Battle history">
+                    <StackPanel>
+                        <WrapPanel Margin="0,0,0,8">
+                            <TextBlock Text="Search" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="0,0,8,0" ToolTip="Part of a ship or map name" />
+                            <ComboBox ItemsSource="{Binding ShipNames}" SelectedItem="{Binding TableShip}" Width="170" Margin="0,0,8,0" />
+                            <ComboBox ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding TableResult}" Width="120" Margin="0,0,8,0" />
+                            <Button Content="Export CSV" Command="{Binding ExportCsvCommand}" ToolTip="Save the battles in the table as a CSV file" />
+                            <TextBlock Text="{Binding TableText}" Style="{StaticResource Dim}" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0" />
+                        </WrapPanel>
+                        <DataGrid x:Name="History" ItemsSource="{Binding Rows}" MaxHeight="420" MouseDoubleClick="OnHistoryDoubleClick"
+                                  ToolTip="Double-click a battle to open it">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="DATE" Binding="{Binding WhenText}" SortMemberPath="When" Width="120" />
+                                <DataGridTextColumn Header="TYPE" Binding="{Binding TypeText}" Width="104" />
+                                <DataGridTextColumn Header="MAP" Binding="{Binding Map}" Width="*" MinWidth="110" />
+                                <DataGridTextColumn Header="SHIP" Binding="{Binding Ship}" Width="140" />
+                                <DataGridTextColumn Header="TIER" Binding="{Binding TierText}" SortMemberPath="Tier" Width="46" />
+                                <DataGridTextColumn Header="CLASS" Binding="{Binding Class}" Width="96" />
+                                <DataGridTemplateColumn Header="RESULT" SortMemberPath="Result" Width="72">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Result}" Tag="{Binding ResultLevel}" Style="{StaticResource Level}" HorizontalAlignment="Left" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="DAMAGE" SortMemberPath="Damage" Width="80">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Damage, StringFormat=N0}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="KILLS" SortMemberPath="Kills" Width="50">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Kills}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="DEATHS" SortMemberPath="Deaths" Width="56">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Deaths}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="BASE XP" SortMemberPath="BaseXp" Width="66">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding BaseXpText}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="SURVIVED" SortMemberPath="Battle.LifeTime" Width="70">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding LifeText}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="PR" SortMemberPath="Rating" Width="54">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding RatingText}" Style="{StaticResource Num}" FontWeight="SemiBold" ToolTip="Battle rating, calculated by Foretop with the PR formula" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Compare periods -->
+                <Expander Style="{StaticResource Section}" Header="Compare periods">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ComboBox ItemsSource="{Binding CompareOptions}" SelectedItem="{Binding CompareA}" Width="150" />
+                            <TextBlock Text="vs" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="10,0" />
+                            <ComboBox ItemsSource="{Binding CompareOptions}" SelectedItem="{Binding CompareB}" Width="150" />
+                        </StackPanel>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="230" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="100" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="{Binding CompareA.Label}" Style="{StaticResource Dim}" FontSize="11" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="2" Text="{Binding CompareB.Label}" Style="{StaticResource Dim}" FontSize="11" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="3" Text="DIFFERENCE" Style="{StaticResource Dim}" FontSize="11" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ContentControl Content="{Binding CompareRows}" ContentTemplate="{StaticResource CompareTable}" />
+                        <TextBlock Text="{Binding CompareNote}" Style="{StaticResource Dim}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Expander>
+
+                <!-- Tier analysis -->
+                <Expander Style="{StaticResource Section}" Header="Tier analysis">
+                    <StackPanel>
+                        <TextBlock Text="Recorded battles (selected period)" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <TextBlock Text="Average XP here is base XP from the replays." Style="{StaticResource Dim}" FontSize="11" Margin="0,0,0,6" />
+                        <ContentControl Content="{Binding RecordedTiers}" ContentTemplate="{StaticResource TierTable}" />
+                        <TextBlock Text="Your whole account (official per-ship totals)" FontWeight="SemiBold" Margin="0,14,0,4" />
+                        <TextBlock Text="{Binding AccountTierNote}" Style="{StaticResource Dim}" FontSize="11" Margin="0,0,0,6" TextWrapping="Wrap" />
+                        <ContentControl Content="{Binding AccountTiers}" ContentTemplate="{StaticResource TierTable}" />
+                        <TextBlock Text="How your account changes at higher tiers" FontWeight="SemiBold" Margin="0,14,0,6" />
+                        <ContentControl Content="{Binding AccountTierCompare}" ContentTemplate="{StaticResource CompareTable}" />
+                    </StackPanel>
+                </Expander>
+
+                <!-- Ship performance -->
+                <Expander Style="{StaticResource Section}" Header="Ship performance">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <Button DockPanel.Dock="Right" Content="All your ships (Ship Statistics)" Command="{Binding OpenShipStatisticsCommand}" />
+                            <TextBlock Text="Recorded battles in the selected period, per ship." Style="{StaticResource Dim}" FontSize="11" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <DataGrid ItemsSource="{Binding ShipRows}" MaxHeight="320">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="SHIP" Binding="{Binding Ship}" Width="*" />
+                                <DataGridTextColumn Header="TIER" Binding="{Binding TierText}" SortMemberPath="Tier" Width="50" />
+                                <DataGridTemplateColumn Header="BATTLES" SortMemberPath="Battles" Width="70">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Battles}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="WIN RATE" Width="80">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding WinRate}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="AVG DAMAGE" Width="90">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Damage}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="KILLS" Width="60">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Kills}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="SURVIVAL" Width="76">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Survival}" Style="{StaticResource Num}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="PR" Width="60">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Pr}" Style="{StaticResource Num}" FontWeight="SemiBold" Foreground="{Binding PrBrush, TargetNullValue={StaticResource Text}}" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

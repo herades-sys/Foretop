@@ -54,7 +54,19 @@ public sealed class AppHost : IDisposable
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot, ShipData);
         ShipIconCache.Instance = new ShipIconCache(Http, AppPaths.IconDir, Loggers.CreateLogger<ShipIconCache>());
         Updates = new UpdateService(this);
+
+        // Personal analytics: ship name/tier/class and the battle rating are kept with each own result.
+        Results.ShipLookup = id =>
+        {
+            if (Ships.Get(id) is { } s) return (s.Name, s.Tier, s.Class.ToString());
+            return ShipData.FindById(id) is { } g ? (g.DisplayName, g.Tier, g.Species) : null;
+        };
+        Results.Expected = ct => Expected.GetAsync(ct);
+        Personal = new Core.Personal.PersonalEnricher(Results.Store, Replays, Loggers.CreateLogger<Core.Personal.PersonalEnricher>());
     }
+
+    /// <summary>Adds replay facts (base XP, kills, time survived, team position) to own results.</summary>
+    public Core.Personal.PersonalEnricher Personal { get; }
 
     /// <summary>New Foretop versions from GitHub releases.</summary>
     public UpdateService Updates { get; }
@@ -98,24 +110,31 @@ public sealed class AppHost : IDisposable
     private Database OpenDatabase(out string? archivedTo)
     {
         archivedTo = null;
-        try
+        Microsoft.Data.Sqlite.SqliteException? last = null;
+        // An error while another Foretop opens or closes the same file can look like damage for a moment: try again,
+        // then let SQLite check the file itself. Only a file that fails that check is set aside.
+        for (var attempt = 0; attempt < 4; attempt++)
         {
-            return new Database(AppPaths.Database);
-        }
-        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode is 11 or 26) // SQLITE_CORRUPT, SQLITE_NOTADB
-        {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            var dir = System.IO.Path.Combine(AppPaths.ArchiveDir, DateTime.Now.ToString("yyyy-MM-dd_HHmmss"));
-            System.IO.Directory.CreateDirectory(dir);
-            foreach (var suffix in new[] { "", "-wal", "-shm" })
+            try
             {
-                var src = AppPaths.Database + suffix;
-                if (System.IO.File.Exists(src)) System.IO.File.Move(src, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(src)));
+                return new Database(AppPaths.Database);
             }
-            archivedTo = dir;
-            Log.LogError(ex, "Database unreadable; moved to {Dir} and started a new one", dir);
-            return new Database(AppPaths.Database);
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode is 5 or 6 or 11 or 26) // BUSY, LOCKED, CORRUPT, NOTADB
+            {
+                last = ex;
+                Log.LogWarning("Database open failed (attempt {Attempt}): {Error}", attempt + 1, ex.Message);
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                Thread.Sleep(750 * (attempt + 1));
+            }
         }
+        if (last!.SqliteErrorCode is 5 or 6 || Core.Data.DatabaseRecovery.CheckFile(AppPaths.Database) is null)
+            throw new System.IO.IOException("Foretop's database is in use or could not be opened right now. Close other Foretop windows and start it again.", last);
+
+        var dir = System.IO.Path.Combine(AppPaths.ArchiveDir, DateTime.Now.ToString("yyyy-MM-dd_HHmmss"));
+        Core.Data.DatabaseRecovery.MoveTogether(AppPaths.Database, dir); // all three files or none
+        archivedTo = dir;
+        Log.LogError(last, "Database damaged ({Check}); moved to {Dir} and started a new one", "integrity check failed", dir);
+        return new Database(AppPaths.Database);
     }
 
     public void Dispose()

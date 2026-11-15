@@ -1,7 +1,9 @@
 # Plan: personal performance analytics and tier-filtered player statistics
 
-Status: 2026-11-15. Section 4 (Live Battle tier filter, phases 6–7) is built (`Core/Stats/TierFilter.cs`,
-Live Battle toolbar); the personal analytics (phases 2–5, 8) are not started. Based on Foretop 1.4.0 (`0bc405f`).
+Status: 2026-11-15. Built: section 4 (Live Battle tier filter, 1.5.0) and the personal analytics (phases 2–5, 8:
+`Core/Personal/*`, Analytics → My performance). Differences from the plan: per-battle extras are stored as
+`battle_results.extra_json` (schema 5) instead of a separate table; replay values use positions 416/438 only after the
+anchor and damage checks; the open XP question is answered (API XP = base XP × Premium factor).
 
 ## 1. What exists today
 

@@ -242,6 +242,15 @@ public sealed class BattleHistoryStore(Database db)
         return Read(cmd).FirstOrDefault();
     }
 
+    public BattleRecord? GetByKey(string battleKey)
+    {
+        using var c = db.Open();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = $"SELECT {Columns} FROM battles b WHERE b.battle_key = $k";
+        cmd.Parameters.AddWithValue("$k", battleKey);
+        return Read(cmd).FirstOrDefault();
+    }
+
     /// <summary>Recorded battles in which a nickname appears (either team), newest first.</summary>
     public List<BattleRecord> FindWithPlayer(string nickname, int limit = 100)
     {

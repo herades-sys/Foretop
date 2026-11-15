@@ -118,6 +118,14 @@ Verified on a build 13533378 Random battle (Tears of the Desert, 822 s, 24 playe
 - Yaw: 0 = north, clockwise positive. World X east, Z north; the minimap square is ±(playable half), north up.
 - `InteractiveZone.componentsState.controlPoint.index` 0/1/2 = A/B/C; `captureLogic` holds progress and capture time.
 - There are no game texts for death reasons, so the player shows who sank whom, not the weapon.
+- Battle results (packet 0x22, written at the end): JSON with `privateDataList` (own credits, XP, missions…),
+  `commonList` (arena id, duration, map, mode) and `playersPublicInfo` = account id → 550 positional values per player.
+  The game's scripts that name the positions are protected, so positions are identified from known values. Checked on
+  build 13533378 against the API and the replay's own messages: 0 = account id, 7 = ship id, 416 = base XP (equals the
+  "XP" of daily missions; the API's XP is it × 1.65 = Premium Account), 438 = damage (equals the API difference),
+  420/421 = killer's account and vehicle id. Foretop uses 416 and 438 only when 0, 7 and the damage check hold.
+  Kills, survival and time survived come from `receiveVehicleDeath` and the battle timer instead (battle start = the
+  timer jumping from the countdown to the battle length; duration 791 s = 1,200 − 409 left at the end).
 - Chat: `Avatar.onChatMessage` (index 152) with `PLAYER_ID` sender, then three unnamed strings: channel
   (`battle_team`, `battle_common`), the text, and one more (empty so far). The sender is neither the account id nor the
   vehicle id: it is a third id in the `onArenaStateReceived` player records, found by matching the senders' values

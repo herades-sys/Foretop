@@ -128,6 +128,22 @@ public sealed class WgApiClient
         return TryGetKeyed(r.Data, accountId);
     }
 
+    /// <summary>
+    /// One ship of one account with the combat fields of one battle-type block (see
+    /// <see cref="Personal.ShipCombatTotals.Fields"/>). Null when hidden or never played.
+    /// </summary>
+    public async Task<JsonElement?> GetShipCombatRawAsync(Region region, long accountId, long shipId, string block,
+        RequestPriority priority, CancellationToken ct)
+    {
+        var r = await GetAsync(region, "ships/stats", new()
+        {
+            ["account_id"] = accountId.ToString(CultureInfo.InvariantCulture),
+            ["ship_id"] = shipId.ToString(CultureInfo.InvariantCulture),
+            ["fields"] = "ship_id," + Personal.ShipCombatTotals.Fields(block),
+        }, priority, ct).ConfigureAwait(false);
+        return TryGetKeyed(r.Data, accountId) is { ValueKind: JsonValueKind.Array } arr && arr.GetArrayLength() > 0 ? arr[0] : null;
+    }
+
     public async Task<Dictionary<long, JsonElement?>> GetClanInfoRawAsync(
         Region region, IReadOnlyCollection<long> accountIds, RequestPriority priority, CancellationToken ct)
     {

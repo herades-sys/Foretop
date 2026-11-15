@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.6.0 — 2026-11-15
+
+- **Analytics → My performance**: your own battles over any period (last battle, last 5 … 100, all, date range) with
+  battle type, class and tier filters: last-battle report, period statistics, trend charts with hover details
+  (per battle, rolling, overall average), battle history with search, filters, CSV export and click-to-open, period
+  comparison, tier analysis (recorded battles and your whole account) and ship performance. Each value is tagged API,
+  replay or calculated; unknown values show "—".
+- New per-battle data: spotting damage, potential damage, main battery and torpedo hits/shots (your ship's totals
+  before and after the battle), base XP, team position by damage, kills and time survived (from the replay, checked
+  against the API), battle rating (PR formula on one battle, calculated). Stored with each result and not
+  recalculated later.
+- Dashboard: "base XP" was the XP the API counts, including Premium Account and bonuses; it is now labelled XP.
+- Database: an error while opening is no longer taken as a damaged file straight away. Foretop retries, lets SQLite
+  check the file, and only then sets it aside, moving the database and its log files together (a file in use stops
+  the move). Before, a database could be set aside without its newest data.
+- Line charts show the battle or value under the mouse.
 ## 1.5.0 — 2026-11-15
 
 - **Live Battle: statistics filter by tier.** All tiers, Tier V+ … X+ or Tier XI only: battles, win rate, damage, XP

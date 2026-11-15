@@ -12,6 +12,7 @@
         <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><views:ProfileView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><views:HistoryView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:StatisticsViewModel}"><views:StatisticsView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AnalyticsViewModel}"><views:AnalyticsView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:PlayerSearchViewModel}"><views:PlayerSearchView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ShipIntelligenceViewModel}"><views:ShipIntelligenceView /></DataTemplate>

@@ -48,6 +48,12 @@ public sealed class BattleResultTracker
     /// <summary>A result row was added or changed.</summary>
     public event Action? Changed;
 
+    /// <summary>Name, tier and class of a ship (kept with each battle so later rebalances do not change history).</summary>
+    public Func<long, (string Name, int Tier, string Class)?>? ShipLookup { get; set; }
+
+    /// <summary>Expected values for the battle rating (wows-numbers); optional.</summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<long, ExpectedValues>>>? Expected { get; set; }
+
     public BattleResultStore Store => _store;
 
     /// <summary>Hook to the watcher. Call once.</summary>
@@ -127,10 +133,20 @@ public sealed class BattleResultTracker
         }
 
         var stats = await FetchAsync(region, accountId.Value, retries: 3).ConfigureAwait(false);
-        if (stats is not null) ApplyTotals(region, accountId.Value, stats);
+        if (stats is not null) await ApplyTotalsAsync(region, accountId.Value, stats).ConfigureAwait(false);
         var baseline = ResultModes.Pick(stats, mode);
+        var ship = ShipLookup?.Invoke(self.ShipId);
+        var extras = new Personal.PersonalExtras
+        {
+            Map = info.MapName,
+            MatchGroup = info.MatchGroup,
+            ShipName = ship?.Name,
+            ShipTier = ship?.Tier,
+            ShipClass = ship?.Class,
+            ShipBaseline = baseline is null ? null : await FetchShipAsync(region, accountId.Value, self.ShipId, mode).ConfigureAwait(false),
+        };
         _store.Upsert(new BattleResult(info.BattleKey, region, accountId.Value, mode, self.ShipId, started, null,
-            baseline is null ? ResultStatus.Unavailable : ResultStatus.Pending, baseline, null, null));
+            baseline is null ? ResultStatus.Unavailable : ResultStatus.Pending, baseline, null, null, extras));
         _log.LogInformation("Battle result: {Key} ({Mode}) baseline {Battles} battles", info.BattleKey, mode, baseline?.Battles);
     }
 
@@ -193,7 +209,7 @@ public sealed class BattleResultTracker
             foreach (var g in waiting)
             {
                 var stats = await FetchAsync(g.Key.Region, g.Key.AccountId, retries: 0).ConfigureAwait(false);
-                if (stats is not null) ApplyTotals(g.Key.Region, g.Key.AccountId, stats);
+                if (stats is not null) await ApplyTotalsAsync(g.Key.Region, g.Key.AccountId, stats).ConfigureAwait(false);
             }
             return _store.AllOpen().Any(r => r.EndedAt is not null);
         }
@@ -205,20 +221,79 @@ public sealed class BattleResultTracker
     }
 
     /// <summary>Runs <see cref="ResultMath.Apply"/> for each mode with open battles of this account.</summary>
-    private void ApplyTotals(Region region, long accountId, AccountStatisticsDto stats)
+    private async Task ApplyTotalsAsync(Region region, long accountId, AccountStatisticsDto stats)
     {
         if (StatTotals.From(stats.Pvp) is { } pvp) _snapshots.AddIfChanged(region, accountId, pvp);
         var now = DateTimeOffset.UtcNow;
         foreach (var mode in _store.Open(region, accountId).GroupBy(r => r.Mode))
         {
             if (ResultModes.Pick(stats, mode.Key) is not { } totals) continue;
-            foreach (var r in ResultMath.Apply(mode.ToList(), totals, now))
+            foreach (var applied in ResultMath.Apply(mode.ToList(), totals, now))
             {
+                var r = applied.Status is ResultStatus.Ok or ResultStatus.Combined && applied.ResolvedAt == now
+                    ? await CompleteAsync(applied).ConfigureAwait(false)
+                    : applied;
                 _store.Upsert(r);
                 if (r.Status is ResultStatus.Ok or ResultStatus.Combined)
                     _log.LogInformation("Battle result: {Key} {Status}: {Battles} battle(s), {Damage} damage, {Wins} win(s)",
                         r.BattleKey, r.Status, r.Result!.Battles, r.Result.Damage, r.Result.Wins);
             }
+        }
+    }
+
+    /// <summary>
+    /// When a battle is counted: the played ship's combat difference (exactly one battle more on that ship, else not
+    /// used) and the battle rating from the expected values of that moment. Both are kept with the row.
+    /// </summary>
+    private async Task<BattleResult> CompleteAsync(BattleResult r)
+    {
+        var x = r.Extras ?? new Personal.PersonalExtras();
+        if (r.Status == ResultStatus.Combined)
+            return r with { Extras = x with { ShipDeltaNote = "several battles were counted at once", ShipBaseline = null } };
+        if (x.ShipBaseline is { } before && x.ShipDelta is null)
+        {
+            var after = await FetchShipAsync(r.Region, r.AccountId, r.ShipId, r.Mode).ConfigureAwait(false);
+            var delta = after?.Minus(before);
+            x = delta switch
+            {
+                { Battles: 1 } => x with { ShipDelta = delta },
+                null => x with { ShipDeltaNote = "ship statistics could not be fetched" },
+                _ => x with { ShipDeltaNote = $"the ship's totals changed by {delta.Battles} battles" },
+            };
+        }
+        if (r.Result is { Battles: 1 } one && Expected is not null)
+        {
+            try
+            {
+                var expected = await Expected(CancellationToken.None).ConfigureAwait(false);
+                if (expected.TryGetValue(r.ShipId, out var e))
+                    x = x with
+                    {
+                        Rating = PersonalRating.Compute([(r.ShipId, one)], expected),
+                        RatingExpected = [e.AvgDamage, e.AvgFrags, e.WinRate],
+                    };
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                _log.LogInformation("Battle rating not calculated: {Error}", ex.Message);
+            }
+        }
+        return r with { Extras = x };
+    }
+
+    /// <summary>The played ship's combat totals in the battle's mode; null when hidden, unreachable or never played.</summary>
+    private async Task<Personal.ShipCombatTotals?> FetchShipAsync(Region region, long accountId, long shipId, string mode)
+    {
+        try
+        {
+            var raw = await _api.GetShipCombatRawAsync(region, accountId, shipId, mode, RequestPriority.High, CancellationToken.None)
+                .ConfigureAwait(false);
+            return raw is { } j ? Personal.ShipCombatTotals.From(j, mode) : null;
+        }
+        catch (Exception ex) when (ex is WgApiException or HttpRequestException or TaskCanceledException or JsonException)
+        {
+            _log.LogInformation("Ship combat totals not fetched: {Error}", ex.Message);
+            return null;
         }
     }
 

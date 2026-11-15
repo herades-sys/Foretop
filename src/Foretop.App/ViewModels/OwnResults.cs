@@ -91,7 +91,7 @@ public sealed class OwnBattleRow
             ResultStatus.Combined => "The API counted several battles at once (you left one early), so they are shown together.",
             ResultStatus.Merged => "Counted together with the battle above.",
             ResultStatus.Expired => "The API did not count this battle within a day.",
-            _ => "From your account totals before and after the battle (Wargaming API). XP is base XP.",
+            _ => "From your account totals before and after the battle (Wargaming API). XP is as the API counts it: with Premium Account, flags and other bonuses (base XP is on Analytics → My performance, from the replay).",
         };
     }
 

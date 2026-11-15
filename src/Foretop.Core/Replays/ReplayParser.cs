@@ -19,6 +19,7 @@ public static class ReplayParser
     private const uint EntityMethod = 0x08;
     private const uint Position = 0x0A;
     private const uint PlayerPosition = 0x2C;
+    private const uint BattleResults = 0x22;
 
     public static ReplayData Parse(ReplayFile file, EntityDefs defs)
     {
@@ -55,6 +56,7 @@ public static class ReplayParser
         var timeLeft = new List<ValuePoint>();
         var playerBlobs = new List<byte[]>();
         var chat = new List<(float T, long Sender, string Channel, string Text)>();
+        string? resultsJson = null;
         var avatarId = -1;
         float last = 0;
         var failures = new Dictionary<string, int>();
@@ -124,6 +126,14 @@ public static class ReplayParser
                                 if (values.GetValueOrDefault("timeLeft") is long tl) timeLeft.Add(new ValuePoint(t, tl));
                                 break;
                         }
+                        break;
+                    }
+
+                    case BattleResults when size > 4:
+                    {
+                        // The game's own result data for this battle: JSON after a 4-byte prefix.
+                        var start = payload.IndexOf((byte)'{');
+                        if (start >= 0) resultsJson = System.Text.Encoding.UTF8.GetString(payload[start..]);
                         break;
                     }
 
@@ -259,6 +269,8 @@ public static class ReplayParser
                     z.Owners, z.From, z.To ?? last)).ToList(),
             Smokes = smokes.Values.Where(s => s.Points.Count > 0).Select(s => new ReplaySmoke(s.Id, s.From, s.To ?? last, s.Radius, s.Points)).ToList(),
             TimeLeft = timeLeft,
+            ResultsJson = resultsJson,
+            SelfAccountId = selfAccount,
             Chat = chat.Select(c => new ReplayChat(c.T, c.Sender, c.Sender == 0 ? null : players.FirstOrDefault(pl => pl.AvatarId == c.Sender) ?? players.FirstOrDefault(pl => pl.AccountId == c.Sender), c.Channel, c.Text)).ToList(),
             Warnings = warnings,
         };
