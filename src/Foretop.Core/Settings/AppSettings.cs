@@ -17,6 +17,12 @@ public sealed class AppSettings
     public bool AutoDetectBattles { get; set; } = true;
     public bool SwitchToLiveOnBattle { get; set; } = true;
     public bool CompactMode { get; set; }
+    /// <summary>Sidebar shows only the page icons.</summary>
+    public bool SidebarCollapsed { get; set; }
+    /// <summary>Interface font family; null = Foretop's default (Segoe UI).</summary>
+    public string? FontFamily { get; set; }
+    /// <summary>Size of the whole interface, 1 = 100 %.</summary>
+    public double TextScale { get; set; } = 1.0;
     public bool StartMinimized { get; set; }
     public bool StartWithWindows { get; set; }
     public bool ShowBots { get; set; } = true;

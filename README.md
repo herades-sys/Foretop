@@ -21,8 +21,8 @@ game data). It does not touch the game process, memory or network traffic.
 
 | File | Size | |
 |---|---|---|
-| [Foretop-1.2.1-x64.msi](https://github.com/herades-sys/Foretop/releases/download/v1.2.1/Foretop-1.2.1-x64.msi) | 56 MB | Installer, for your Windows account only (no administrator prompt), adds a Start menu entry |
-| [Foretop-1.2.1-portable-x64.zip](https://github.com/herades-sys/Foretop/releases/download/v1.2.1/Foretop-1.2.1-portable-x64.zip) | 69 MB | Portable: unzip anywhere and run `Foretop.exe` |
+| [Foretop-1.3.0-x64.msi](https://github.com/herades-sys/Foretop/releases/download/v1.3.0/Foretop-1.3.0-x64.msi) | 56 MB | Installer, for your Windows account only (no administrator prompt), adds a Start menu entry |
+| [Foretop-1.3.0-portable-x64.zip](https://github.com/herades-sys/Foretop/releases/download/v1.3.0/Foretop-1.3.0-portable-x64.zip) | 69 MB | Portable: unzip anywhere and run `Foretop.exe` |
 
 Both are self-contained: no .NET install needed. Installing a newer MSI replaces the
 old version and keeps your settings and history.
@@ -32,8 +32,8 @@ PC": click *More info* → *Run anyway*. To check a download, compare its SHA-25
 (`Get-FileHash <file>` in PowerShell) with the release:
 
 ```
-Foretop-1.2.1-x64.msi             D2340C4EEEAFA41289BD2B3351CCC229B9DA441618C864CF725A0FC4497A8357
-Foretop-1.2.1-portable-x64.zip    18DD580A811113B513FA501148E5A4F171AD040FAD4EE6DEAD90B975B70CE250
+Foretop-1.3.0-x64.msi             A736E3E9927B2EFEABA58F3E1B4C4D67EDCDEFD6A35B01B48B673C99DEB63A43
+Foretop-1.3.0-portable-x64.zip    AC7B47135F272A58668E446B43F25D01C0194614F9B0B0344AC7152F78C37F33
 ```
 
 ## Install
@@ -47,6 +47,15 @@ You also need:
 - a free **Wargaming application ID**: sign in at
   <https://developers.wargaming.net/applications/>, add an application of type
   *Mobile / Standalone*, paste the ID into Settings → Wargaming API.
+
+## Licence
+
+Foretop is licensed under the [Apache License 2.0](LICENSE). Copyright 2026 herades-sys.
+
+Third-party parts keep their own licences: the .NET runtime and NuGet packages listed with their licences in
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt), which also ships with the app. Foretop contains no game
+files or artwork; it reads them from your own World of Warships installation at run time. Foretop is not
+affiliated with or endorsed by Wargaming.
 
 ## Develop
 

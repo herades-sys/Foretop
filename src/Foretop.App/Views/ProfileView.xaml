@@ -3,6 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:charts="clr-namespace:Foretop.App.Charts">
     <UserControl.Resources>
+        <DataTemplate x:Key="FilterChipTemplate">
+            <ToggleButton Style="{StaticResource Chip}" Content="{Binding Label}" IsChecked="{Binding IsChecked}" MinWidth="34"
+                          IsEnabled="{Binding IsAvailable}" ToolTip="{Binding Tip}" ToolTipService.ShowOnDisabled="True" />
+        </DataTemplate>
         <Style x:Key="Num" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
@@ -143,6 +147,20 @@
                     <Border Style="{StaticResource Card}" Margin="0,12,0,0" Padding="0">
                         <StackPanel>
                             <TextBlock Text="All ships (Random battles)" Style="{StaticResource H2}" Margin="14,12,14,8" />
+                            <!-- Tier and class filter, like the ship carousel filters: nothing selected shows all -->
+                            <WrapPanel Margin="12,0,14,6">
+                                <TextBlock Text="Tier" Style="{StaticResource Dim}" FontSize="11.5" VerticalAlignment="Center" Margin="2,0,6,0" />
+                                <ItemsControl ItemsSource="{Binding TierChips}" ItemTemplate="{StaticResource FilterChipTemplate}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <TextBlock Text="Class" Style="{StaticResource Dim}" FontSize="11.5" VerticalAlignment="Center" Margin="14,0,6,0" />
+                                <ItemsControl ItemsSource="{Binding ClassChips}" ItemTemplate="{StaticResource FilterChipTemplate}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <Button Content="Clear" Command="{Binding ClearShipFilterCommand}" Margin="12,0,0,0" Padding="10,2"
+                                        Visibility="{Binding IsShipFilterActive, Converter={StaticResource BoolVis}}" />
+                            </WrapPanel>
+                            <TextBlock Text="{Binding ShipFilterSummary}" Style="{StaticResource Dim}" FontSize="11.5" Margin="14,0,14,8" />
                             <DataGrid ItemsSource="{Binding Ships}" MaxHeight="520" RowHeight="26">
                                 <DataGrid.Columns>
                                     <DataGridTemplateColumn Header="SHIP" Width="*" MinWidth="200" SortMemberPath="ShipName">

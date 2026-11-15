@@ -13,6 +13,9 @@
     <Geometry x:Key="IconBack">M15 5l-7 7l7 7</Geometry>
     <Geometry x:Key="IconForward">M9 5l7 7l-7 7</Geometry>
     <Geometry x:Key="IconChevron">M9 6l6 6l-6 6</Geometry>
+    <!-- Sidebar: panel with an arrow pointing in (collapse) or out (expand) -->
+    <Geometry x:Key="IconSidebarCollapse">M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1z M9 4v16 M16 9l-3 3l3 3</Geometry>
+    <Geometry x:Key="IconSidebarExpand">M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1z M9 4v16 M13 9l3 3l-3 3</Geometry>
     <Geometry x:Key="IconFolder">M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z</Geometry>
     <Geometry x:Key="IconWarning">M12 4l9 16H3zM12 10v4M12 17v.5</Geometry>
     <Geometry x:Key="IconLayers">M12 4l8 4l-8 4l-8-4zM4 12l8 4l8-4M4 16l8 4l8-4</Geometry>

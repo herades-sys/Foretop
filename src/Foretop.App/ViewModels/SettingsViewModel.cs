@@ -44,6 +44,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _theme = "System";
 
     public IReadOnlyList<string> ThemeOptions => Services.ThemeManager.Options;
+
+    /// <summary>Installed fonts, read when Settings is first shown.</summary>
+    public IReadOnlyList<Services.FontOption> FontOptions => _fontOptions ??= Services.FontManager.InstalledFonts();
+    private IReadOnlyList<Services.FontOption>? _fontOptions;
+    public IReadOnlyList<Services.ScaleOption> TextScaleOptions => Services.FontManager.TextScales;
+    [ObservableProperty] private Services.FontOption? _font;
+    [ObservableProperty] private Services.ScaleOption? _textScale;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized;
     [ObservableProperty] private bool _showBots;
@@ -109,6 +116,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         SwitchToLiveOnBattle = _draft.SwitchToLiveOnBattle;
         CompactMode = _draft.CompactMode;
         Theme = Services.ThemeManager.Options.Contains(_draft.Theme) ? _draft.Theme : "System";
+        Font = FontOptions.FirstOrDefault(f => string.Equals(f.Name, _draft.FontFamily, StringComparison.OrdinalIgnoreCase)) ?? FontOptions[0];
+        TextScale = TextScaleOptions.FirstOrDefault(o => Math.Abs(o.Value - _draft.TextScale) < 0.001) ?? TextScaleOptions[1];
         StartWithWindows = _draft.StartWithWindows;
         StartMinimized = _draft.StartMinimized;
         ShowBots = _draft.ShowBots;
@@ -130,6 +139,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.SwitchToLiveOnBattle = SwitchToLiveOnBattle;
         s.CompactMode = CompactMode;
         s.Theme = Theme;
+        s.FontFamily = Font?.Name;
+        s.TextScale = TextScale?.Value ?? 1.0;
         s.StartWithWindows = StartWithWindows;
         s.StartMinimized = StartMinimized;
         s.ShowBots = ShowBots;

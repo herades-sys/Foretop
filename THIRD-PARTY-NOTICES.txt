@@ -1,0 +1,54 @@
+Foretop - third-party notices
+=============================
+
+Foretop itself is licensed under the Apache License 2.0 (LICENSE). The Windows app also contains the
+software below, each under its own licence.
+
+Component                                   Version   Licence      Copyright
+------------------------------------------  --------  -----------  ---------------------------------------------
+.NET runtime and WPF (self-contained)       10.0      MIT          .NET Foundation and Contributors
+CommunityToolkit.Mvvm                       8.4.2     MIT          .NET Foundation and Contributors
+Microsoft.Data.Sqlite (+ .Core)             11.0.0    MIT          Microsoft Corporation
+Microsoft.Extensions.Logging, .Abstractions,
+  .DependencyInjection(.Abstractions),
+  .Options, .Primitives                     11.0.0    MIT          Microsoft Corporation
+System.Diagnostics.DiagnosticSource         11.0.0    MIT          Microsoft Corporation
+System.Security.Cryptography.ProtectedData  11.0.0    MIT          Microsoft Corporation
+BouncyCastle.Cryptography                   2.7.0     MIT          Legion of the Bouncy Castle Inc. 2000-2026
+SQLitePCLRaw (core, provider, config,
+  bundle_e_sqlite3)                         3.0.5     Apache-2.0   SourceGear, LLC
+SQLite (e_sqlite3 native library)           3.53.4    Public domain (https://sqlite.org/copyright.html)
+
+The .NET runtime's own third-party notices:
+https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT
+
+Fonts: Foretop uses the fonts installed with Windows (Segoe UI, Cascadia Mono/Consolas, or the font chosen
+in Settings) and ships none.
+
+Game data: nothing from World of Warships is included. Ship data, armour models, maps and images are read
+at run time from the user's own installation; ship icons and statistics come from the Wargaming public API.
+
+
+MIT License (applies to the components marked MIT above, with their copyright lines)
+-----------------------------------------------------------------------------------
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial
+portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Apache License 2.0 (applies to SQLitePCLRaw)
+--------------------------------------------
+
+The full text is in LICENSE, next to this file.

@@ -41,6 +41,13 @@ public sealed partial class ShellViewModel : ObservableObject
         Ships = new ShipIntelligenceViewModel(host);
         Replays = new ReplaysViewModel(host);
 
+        IsSidebarCollapsed = host.Settings.Current.SidebarCollapsed;
+        UiScale = Services.FontManager.ClampScale(host.Settings.Current.TextScale);
+        host.Settings.Changed += s => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            UiScale = Services.FontManager.ClampScale(s.TextScale);
+            Services.FontManager.Apply(s.FontFamily);
+        });
         Live.ProfileRequested += OpenProfile;
         Statistics.ProfileRequested += OpenProfile;
         PlayerSearch.ProfileRequested += OpenProfile;
@@ -111,6 +118,21 @@ public sealed partial class ShellViewModel : ObservableObject
     [ObservableProperty] private string _accountName = "";
     [ObservableProperty] private string _clientText = "";
     [ObservableProperty] private bool _clientRunning;
+
+    /// <summary>Sidebar with icons only; remembered in the settings.</summary>
+    [ObservableProperty] private bool _isSidebarCollapsed;
+
+    /// <summary>Interface scale from Settings → Text size.</summary>
+    [ObservableProperty] private double _uiScale = 1.0;
+
+    [RelayCommand]
+    private void ToggleSidebar()
+    {
+        IsSidebarCollapsed = !IsSidebarCollapsed;
+        var s = _host.Settings.Clone();
+        s.SidebarCollapsed = IsSidebarCollapsed;
+        try { _host.Settings.Save(s); } catch (System.IO.IOException) { } // keeps working for this run
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(GoBackCommand))]

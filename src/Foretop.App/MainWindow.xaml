@@ -5,7 +5,7 @@
         xmlns:views="clr-namespace:Foretop.App.Views"
         Title="Foretop" Icon="/Assets/foretop.ico" Width="1560" Height="880" MinWidth="1080" MinHeight="600"
         Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}" FontSize="13"
-        FontFamily="{StaticResource UiFont}" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+        FontFamily="{DynamicResource UiFont}" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:LiveBattleViewModel}"><views:LiveBattleView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><views:SettingsView /></DataTemplate>
@@ -21,16 +21,30 @@
         <KeyBinding Key="K" Modifiers="Control" Command="{x:Static views:ShellCommands.FocusSearch}" />
         <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding GoBackCommand}" />
         <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding GoForwardCommand}" />
+        <KeyBinding Key="B" Modifiers="Control" Command="{Binding ToggleSidebarCommand}" />
     </Window.InputBindings>
 
     <Grid>
+        <!-- Text size in Settings scales the whole interface -->
+        <Grid.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
+        </Grid.LayoutTransform>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="216" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <Border Background="{DynamicResource Sidebar}" BorderBrush="{DynamicResource Border}" BorderThickness="0,0,1,0">
+        <Border BorderBrush="{DynamicResource Border}" BorderThickness="0,0,1,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource Sidebar}" />
+                    <Setter Property="Width" Value="216" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True"><Setter Property="Width" Value="60" /></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Height="44" Margin="16,0">
                     <Grid Width="22" Height="22" VerticalAlignment="Center">
@@ -38,11 +52,26 @@
                         <Path Data="{StaticResource LogoMark}" Stroke="#0B1522" StrokeThickness="1.7" StrokeStartLineCap="Round"
                               StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="15" Height="15" Stretch="Uniform" />
                     </Grid>
-                    <TextBlock Text="Foretop" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,0,0" />
+                    <TextBlock Text="Foretop" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,0,0"
+                               Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InvBoolVis}}" />
                 </StackPanel>
 
                 <!-- Account footer -->
-                <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Padding="19,14">
+                <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Padding="19,14"
+                        Background="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                    <Setter Property="ToolTip">
+                                        <Setter.Value>
+                                            <TextBlock><Run Text="{Binding AccountName, Mode=OneWay}" FontWeight="SemiBold" /><LineBreak /><Run Text="{Binding ClientText, Mode=OneWay}" /></TextBlock>
+                                        </Setter.Value>
+                                    </Setter>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,11,0">
                             <Ellipse.Style>
@@ -56,12 +85,29 @@
                                 </Style>
                             </Ellipse.Style>
                         </Ellipse>
-                        <StackPanel>
+                        <StackPanel Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InvBoolVis}}">
                             <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="160" />
                             <TextBlock Text="{Binding ClientText}" Style="{StaticResource Dim}" FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="160" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
+
+                <!-- Collapse / expand -->
+                <Button DockPanel.Dock="Bottom" Command="{Binding ToggleSidebarCommand}" Margin="8,0,8,8">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource NavAction}">
+                            <Setter Property="Content" Value="Collapse" />
+                            <Setter Property="Tag" Value="{StaticResource IconSidebarCollapse}" />
+                            <Setter Property="ToolTip" Value="Show icons only (Ctrl+B)" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                    <Setter Property="Tag" Value="{StaticResource IconSidebarExpand}" />
+                                    <Setter Property="ToolTip" Value="Expand the sidebar (Ctrl+B)" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
 
                 <StackPanel Margin="0,8,0,0">
                     <RadioButton Style="{StaticResource NavButton}" Content="Dashboard" Tag="{StaticResource IconDashboard}" GroupName="nav"

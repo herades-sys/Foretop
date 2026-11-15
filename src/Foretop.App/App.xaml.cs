@@ -62,6 +62,7 @@ public partial class App : Application
         Services.ThemeManager.Apply(Services.ThemeManager.Resolve(
             e.Args.Contains("--light") ? "Light" : _host.Settings.Current.Theme));
 
+        Services.FontManager.Apply(_host.Settings.Current.FontFamily);
         var shell = new ShellViewModel(_host);
         var window = new MainWindow(_host) { DataContext = shell };
         MainWindow = window;
@@ -154,6 +155,15 @@ public partial class App : Application
             if (Enum.TryParse<Page>(page, true, out var p)) shell.SelectedPage = p;
         }
         if (Arg("--profile") is { } name) shell.OpenProfile(name);
+        // --ship-filter 8,10,BB: pre-select profile ship filter chips (tiers as numbers, classes as DD/CA/BB/CV/SS)
+        if (Arg("--ship-filter") is { } filter)
+            foreach (var part in filter.Split(',', StringSplitOptions.TrimEntries))
+                foreach (var chip in shell.Profiles.TierChips.Where(c => c.Value.ToString() == part).Concat(shell.Profiles.ClassChips.Where(c => c.Label == part)))
+                    chip.IsChecked = true;
+        // --font <family> / --text-scale <1.25>: view only, not saved
+        if (Arg("--font") is { } font) Services.FontManager.Apply(font);
+        if (double.TryParse(Arg("--text-scale"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ts)) shell.UiScale = ts;
+        if (args.Contains("--sidebar-collapsed")) shell.IsSidebarCollapsed = true; // view only, not saved
         // --replay <path|latest> [--replay-time <s>]: open a replay in the minimap player at a time.
         if (Arg("--replay") is { } replay)
         {

@@ -50,6 +50,20 @@ public sealed class ShipStatRow : ObservableObject
     public string LastBattleText => LastBattle?.ToString("d") ?? "—";
 }
 
+/// <summary>
+/// A tier or class button above a player's ship list. None checked = no filter; checked ones are combined
+/// (any checked tier and any checked class), like the ship carousel filters.
+/// </summary>
+public sealed partial class FilterChip(string label, int value, Action changed) : ObservableObject
+{
+    public string Label { get; } = label;
+    public int Value { get; } = value;
+    [ObservableProperty] private bool _isChecked;
+    [ObservableProperty] private bool _isAvailable = true;
+    [ObservableProperty] private string _tip = "";
+    partial void OnIsCheckedChanged(bool value) => changed();
+}
+
 public sealed record EncounterRow(long BattleId, DateTime When, string Battle, string Side, string Ship, string StatsAtTheTime);
 
 public sealed partial class ProfileViewModel : ObservableObject
@@ -66,6 +80,66 @@ public sealed partial class ProfileViewModel : ObservableObject
         _searchTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(350), DispatcherPriority.Background, async (_, _) => await SearchAsync(),
             Dispatcher.CurrentDispatcher);
         _searchTimer.Stop();
+        TierChips = Enumerable.Range(1, 11).Select(t => new FilterChip(t == 11 ? "★" : Roman(t), t, ApplyShipFilter)).ToList();
+        ClassChips = new (string Label, ShipClass Cls)[]
+            {
+                ("DD", ShipClass.Destroyer), ("CA", ShipClass.Cruiser), ("BB", ShipClass.Battleship),
+                ("CV", ShipClass.AirCarrier), ("SS", ShipClass.Submarine),
+            }
+            .Select(c => new FilterChip(c.Label, (int)c.Cls, ApplyShipFilter)).ToList();
+    }
+
+    private static string Roman(int t) => t switch
+    {
+        1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", _ => "X",
+    };
+
+    [RelayCommand]
+    private void ClearShipFilter()
+    {
+        _resettingFilter = true;
+        foreach (var c in TierChips.Concat(ClassChips)) c.IsChecked = false;
+        _resettingFilter = false;
+        ApplyShipFilter();
+    }
+
+    /// <summary>Shows the ships matching the checked tiers and classes, with their combined results.</summary>
+    private void ApplyShipFilter()
+    {
+        if (_resettingFilter) return;
+        var tiers = TierChips.Where(c => c.IsChecked).Select(c => c.Value).ToHashSet();
+        var classes = ClassChips.Where(c => c.IsChecked).Select(c => (ShipClass)c.Value).ToHashSet();
+        var shown = _allShips.Where(r => (tiers.Count == 0 || tiers.Contains(r.Tier)) && (classes.Count == 0 || classes.Contains(r.ShipClass))).ToList();
+        Ships.Clear();
+        foreach (var r in shown) Ships.Add(r);
+
+        IsShipFilterActive = tiers.Count + classes.Count > 0;
+        var battles = shown.Sum(r => r.Battles);
+        var wins = shown.Sum(r => r.Perf.Totals.Wins);
+        var damage = shown.Sum(r => (double)r.Perf.Totals.Damage);
+        var inv = CultureInfo.CurrentCulture;
+        ShipFilterSummary = shown.Count == 0
+            ? (IsShipFilterActive ? "No ships match this filter." : "")
+            : $"{shown.Count:N0} ship{(shown.Count == 1 ? "" : "s")} · {battles:N0} battles"
+              + (battles > 0 ? $" · {(100.0 * wins / battles).ToString("0.0", inv)}% wins · {(damage / battles).ToString("N0", inv)} avg damage" : "")
+              + (IsShipFilterActive ? $" (of {_allShips.Count:N0} ships)" : "");
+    }
+
+    /// <summary>Greys out chips with no ships for this player and puts the counts in their tooltips.</summary>
+    private void UpdateChipCounts()
+    {
+        foreach (var c in TierChips)
+        {
+            var rows = _allShips.Where(r => r.Tier == c.Value).ToList();
+            c.IsAvailable = rows.Count > 0 || c.IsChecked;
+            c.Tip = $"Tier {c.Label}: {rows.Count:N0} ships, {rows.Sum(r => r.Battles):N0} battles";
+        }
+        foreach (var c in ClassChips)
+        {
+            var rows = _allShips.Where(r => r.ShipClass == (ShipClass)c.Value).ToList();
+            c.IsAvailable = rows.Count > 0 || c.IsChecked;
+            c.Tip = $"{ClassName((ShipClass)c.Value)}: {rows.Count:N0} ships, {rows.Sum(r => r.Battles):N0} battles";
+        }
     }
 
     /// <summary>Raised when the user asks to open a recorded battle from the encounters list.</summary>
@@ -90,6 +164,12 @@ public sealed partial class ProfileViewModel : ObservableObject
     public ObservableCollection<StatCard> Cards { get; } = [];
     public ObservableCollection<StatCard> RecentCards { get; } = [];
     public ObservableCollection<ShipStatRow> Ships { get; } = [];
+    public IReadOnlyList<FilterChip> TierChips { get; }
+    public IReadOnlyList<FilterChip> ClassChips { get; }
+    [ObservableProperty] private string _shipFilterSummary = "";
+    [ObservableProperty] private bool _isShipFilterActive;
+    private List<ShipStatRow> _allShips = [];
+    private bool _resettingFilter;
     public ObservableCollection<EncounterRow> Encounters { get; } = [];
 
     public bool HasPlayer => Player is not null;
@@ -247,9 +327,10 @@ public sealed partial class ProfileViewModel : ObservableObject
 
     private void BuildShips(PlayerSummary p)
     {
-        Ships.Clear();
         var rows = (p.Ships ?? []).Select(s => new ShipStatRow(s, _host.Ships.Get(s.ShipId))).ToList();
-        foreach (var r in rows) Ships.Add(r);
+        _allShips = rows;
+        UpdateChipCounts();
+        ApplyShipFilter(); // the filter stays when switching players
 
         MostPlayed = rows.Where(r => r.Ship is not null).OrderByDescending(r => r.Battles).Take(10)
             .Select(r => new ChartBar($"{r.TierText} {r.ShipName}", r.Battles, $"{r.Battles:N0} · {r.WinRateText}", RatingBrushConverter.ForClass(r.ShipClass)))

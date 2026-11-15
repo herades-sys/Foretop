@@ -30,6 +30,9 @@
     <Feature Id="Main" Title="Foretop">
       <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="225F1EB1-B743-4802-B72A-1746BBA64B23">
         <File Id="ForetopExe" Source="$(var.PublishDir)Foretop.exe" />
+        <File Id="LicenseFile" Source="$(var.PublishDir)LICENSE" />
+        <File Id="NoticeFile" Source="$(var.PublishDir)NOTICE" />
+        <File Id="ThirdPartyNotices" Source="$(var.PublishDir)THIRD-PARTY-NOTICES.txt" />
         <!-- Per-user components need a registry key path (ICE38). -->
         <RegistryValue Root="HKCU" Key="Software\Foretop\Installer" Name="Executable" Type="string" Value="[INSTALLFOLDER]Foretop.exe" KeyPath="yes" />
         <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />

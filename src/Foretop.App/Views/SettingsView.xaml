@@ -113,6 +113,26 @@
                         <TextBlock Text="System follows the Windows app theme" Style="{StaticResource Dim}" FontSize="11"
                                    VerticalAlignment="Center" Margin="10,0,0,0" />
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Font" Style="{StaticResource Dim}" VerticalAlignment="Center" Width="60" />
+                        <ComboBox ItemsSource="{Binding FontOptions}" SelectedItem="{Binding Font}" Width="240" MaxDropDownHeight="360"
+                                  VirtualizingPanel.IsVirtualizing="True">
+                            <ComboBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ComboBox.ItemsPanel>
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" FontFamily="{Binding Family}" FontSize="13" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Text="Any font installed on Windows; each is shown in its own style" Style="{StaticResource Dim}" FontSize="11"
+                                   VerticalAlignment="Center" Margin="10,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Text size" Style="{StaticResource Dim}" VerticalAlignment="Center" Width="60" />
+                        <ComboBox ItemsSource="{Binding TextScaleOptions}" SelectedItem="{Binding TextScale}" Width="140" />
+                        <TextBlock Text="Scales the whole interface, so tables and charts keep their proportions" Style="{StaticResource Dim}"
+                                   FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0" />
+                    </StackPanel>
                     <CheckBox Content="Compact mode (fewer columns, tighter rows)" IsChecked="{Binding CompactMode}" />
                     <CheckBox Content="Start with Windows" IsChecked="{Binding StartWithWindows}" />
                     <CheckBox Content="Start minimised" IsChecked="{Binding StartMinimized}" />
@@ -204,6 +224,9 @@
                     </TextBlock>
                     <TextBlock Style="{StaticResource Hint}">
                         Foretop is not affiliated with or endorsed by Wargaming. World of Warships is a trademark of Wargaming.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Hint}">
+                        Copyright 2026 herades-sys. Licensed under the Apache License 2.0; LICENSE, NOTICE and THIRD-PARTY-NOTICES.txt are next to Foretop.exe.
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <Button Content="Open log folder" Command="{Binding OpenLogFolderCommand}" Margin="0,0,6,0" />

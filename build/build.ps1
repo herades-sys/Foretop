@@ -47,6 +47,9 @@ Get-ChildItem "$out\publish" -File | Where-Object { $_.Name -ne 'Foretop.exe' } 
     Move-Item $_.FullName "$out\symbols\" -Force
 }
 
+# Licence files ship next to the exe (MSI and zip).
+foreach ($f in 'LICENSE', 'NOTICE', 'THIRD-PARTY-NOTICES.txt') { Copy-Item "$repo\$f" "$out\publish\" }
+
 Step 'MSI' {
     dotnet build "$repo\installer\Foretop.Installer.wixproj" -c Release --nologo -v q `
         -p:PublishDir="$out\publish\" -p:OutputPath="$out\msi\"
@@ -56,7 +59,7 @@ Copy-Item "$out\msi\Foretop-$version-x64.msi" $dist
 Write-Host '== Portable zip'
 $portable = "$out\portable\Foretop"
 New-Item -ItemType Directory -Force $portable | Out-Null
-Copy-Item "$out\publish\Foretop.exe" $portable
+Copy-Item "$out\publish\Foretop.exe", "$out\publish\LICENSE", "$out\publish\NOTICE", "$out\publish\THIRD-PARTY-NOTICES.txt" $portable
 @"
 Foretop $version - World of Warships battle monitor
 
@@ -64,6 +67,7 @@ Run Foretop.exe. No installation and no .NET install needed.
 Settings, cache, history and logs are stored in %LOCALAPPDATA%\Foretop.
 User guide: docs/USER_GUIDE.md in the source repository.
 
+Licence: Apache License 2.0 (LICENSE, NOTICE); third-party software: THIRD-PARTY-NOTICES.txt.
 Foretop is not affiliated with or endorsed by Wargaming.
 "@ | Set-Content -Encoding utf8 "$portable\README.txt"
 Compress-Archive -Path $portable -DestinationPath "$dist\Foretop-$version-portable-x64.zip" -CompressionLevel Optimal

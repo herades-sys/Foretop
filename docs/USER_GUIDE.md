@@ -34,6 +34,9 @@ The game folder is found automatically from the running game. If it is not, set 
 in Settings → Game folder (the folder that contains `WorldOfWarships.exe` and
 `replays`).
 
+**Sidebar**: **Collapse** at the bottom of the sidebar (or Ctrl+B) shrinks it to the page icons; hover an icon
+for its name. Foretop remembers the choice.
+
 ## 3. Live Battle
 
 Start the game and enter a battle. Within a second or two Foretop switches to
@@ -72,6 +75,12 @@ Type a name (suggestions appear after three letters) or double-click a player in
 battle. You get overall and ranked statistics, recent activity, most played and
 best ships, battles by class and tier, every ship, a win-rate chart and the battles
 you recorded with that player.
+
+Above the ship list, the **Tier** (I–X, ★) and **Class** (DD, CA, BB, CV, SS) buttons filter it, like the
+ship carousel filters in the game: nothing selected shows every ship; select one or more tiers and/or classes
+to narrow the list, and the line above the table adds up battles, win rate and average damage for the ships
+shown. Greyed-out buttons have no ships for that player; **Clear** resets the filter, which otherwise stays when
+you open another player.
 
 ## 5. Battle History and Statistics
 
@@ -187,6 +196,8 @@ The top-bar search also finds ships: type a ship's name and press Enter.
 | Switch to Live Battle | Jump to the battle when one starts. |
 | Show bots | Show AI ships in co-op and operations. |
 | Theme | System (follows Windows), Dark or Light. |
+| Font | Any font installed on Windows (the list shows each in its own style); Default is Segoe UI. |
+| Text size | 90–150 %. Scales the whole interface, so tables and charts keep their proportions. |
 | Compact mode | Fewer columns, tighter rows. |
 | Start with Windows / minimised | Launch on sign-in. |
 | Cache times | How long statistics are reused before fetching again. |

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 — 2026-11-15
+
+- **Sidebar can collapse** to the page icons only (Collapse at the bottom, or Ctrl+B); page names show as
+  tooltips, and the choice is remembered.
+- **Player Profiles: tier and class filter** above the ship list, like the ship carousel filters: pick any tiers
+  (I–X, ★) and classes (DD, CA, BB, CV, SS); a line adds up battles, win rate and average damage of the ships
+  shown.
+- **Settings: font and text size.** Pick any font installed on Windows, and a text size from 90 to 150 % (the
+  whole interface scales, so nothing gets crowded or cut off). Both apply on Save.
+- **Licence:** Apache License 2.0 (LICENSE, NOTICE), with THIRD-PARTY-NOTICES.txt for the .NET runtime and packages;
+  all three ship next to Foretop.exe.
+
 ## 1.2.1 — 2026-11-15
 
 - **Replays: chat.** The battle chat (team and all) plays along with the replay: the latest lines at the bottom left
