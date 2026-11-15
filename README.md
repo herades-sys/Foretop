@@ -15,6 +15,31 @@ game data). It does not touch the game process, memory or network traffic.
 - **Real-game test checklist:** [docs/TESTING.md](docs/TESTING.md)
 - **Changes:** [CHANGELOG.md](CHANGELOG.md)
 
+## Screenshots
+
+**Live Battle**: both teams with each player's statistics as the battle loads, here counting only Tier VI+ battles.
+
+![Live Battle with the Tier VI+ statistics filter](docs/screenshots/live-battle.png)
+
+**Analytics → My performance**: your own results over any period, with where each value comes from.
+
+![My performance](docs/screenshots/my-performance.png)
+
+**Replays**: play back a replay on the minimap with ship tracks, capture points, kills and chat.
+
+![Replay player](docs/screenshots/replays.png)
+
+**Ship Intelligence**, read from the installed game: the armour model, ship profiles and a database of every ship.
+
+![Armour viewer, 3D](docs/screenshots/armour-viewer.png)
+
+![Ship profile](docs/screenshots/ship-profile.png)
+
+![Ship database](docs/screenshots/ship-database.png)
+
+<sub>Player names are replaced by "Player 1, 2…" and clan tags hidden (`--anonymize`). The My performance picture
+shows sample battles; everything else is real game and API data.</sub>
+
 ## Download
 
 **[Latest release](https://github.com/herades-sys/Foretop/releases/latest)**: Windows 10/11, 64-bit.
@@ -115,6 +140,10 @@ Ship Intelligence (applied once the ship data is loaded): `--ship <name>`,
 `--compare-ships "A;B;C"`, `--ships-section <Database|Armour|Statistics|Comparison|Equipment>`,
 `--armour-view <Profile + plan|Side|Top|Bow|3D>`, `--plate <key>`, `--citadel-only`,
 `--account <name>` (session only, not saved).
+Others: `--data-dir <folder>` (use another data folder, so test runs never touch your real settings and database),
+`--anonymize` (player names → "Player 1, 2…", no clan tags; for screenshots), `--stats-filter <min tier>`,
+`--stats-view <Overall|Filtered|Both>`, `--replay <path|latest>`, `--replay-time <s>`, `--update-feed <json>`,
+`--update-panel`, `--enrich-now`, `--sidebar-collapsed`, `--ship-filter 8,10,BB`, `--font <family>`, `--text-scale <1.25>`.
 
 Foretop is not affiliated with or endorsed by Wargaming. World of Warships is a
 trademark of Wargaming. Personal Rating expected values: wows-numbers.com.

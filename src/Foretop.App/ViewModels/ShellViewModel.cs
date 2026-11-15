@@ -274,7 +274,7 @@ public sealed partial class ShellViewModel : ObservableObject
         var s = _host.Watcher.Status;
         ClientRunning = s.State is WatcherState.WaitingForBattle or WatcherState.InBattle;
         var name = _host.Settings.Current.PlayerName;
-        AccountName = string.IsNullOrEmpty(name) ? "Account not seen yet" : name;
+        AccountName = string.IsNullOrEmpty(name) ? "Account not seen yet" : Services.Anonymizer.Name(name);
         var client = !_host.Settings.Current.AutoDetectBattles ? "Detection off"
             : s.State switch
             {

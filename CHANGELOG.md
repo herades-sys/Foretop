@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- README: screenshots of Live Battle, My performance, Replays and Ship Intelligence.
+- Developer switch `--anonymize` (player names → "Player 1, 2…", clan tags hidden) for publishing screenshots.
+
 ## 1.6.0 — 2026-11-15
 
 - **Analytics → My performance**: your own battles over any period (last battle, last 5 … 100, all, date range) with

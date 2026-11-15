@@ -16,7 +16,7 @@ public sealed record ReplayRow(ReplayEntry Entry, string WhenText, string Map, s
 public sealed partial class ReplayShipRow(SceneShip ship) : ObservableObject
 {
     public SceneShip Ship { get; } = ship;
-    public string Name => Ship.Player.Name;
+    public string Name => Services.Anonymizer.Name(Ship.Player.Name);
     public string ShipName => Ship.ShipName + (Ship.IsTestShip ? " (test ship)" : "");
     public bool IsSelf => Ship.IsSelf;
     public string Species => Ship.Species;
@@ -176,7 +176,7 @@ public sealed partial class ReplaysViewModel : ObservableObject
             Chat.Clear();
             RecentChat.Clear();
             Title = $"{row.Map} · {row.Type}";
-            Subtitle = $"{data.PlayerName} in {row.Ship} · {row.WhenText} · {FormatTime(data.Duration)} recorded";
+            Subtitle = $"{Services.Anonymizer.Name(data.PlayerName)} in {row.Ship} · {row.WhenText} · {FormatTime(data.Duration)} recorded";
             Warning = data.Warnings.Count == 0 ? null : string.Join(" ", data.Warnings);
             Duration = Math.Max(1, data.Duration);
             Scene = scene;
@@ -198,7 +198,7 @@ public sealed partial class ReplaysViewModel : ObservableObject
     {
         var ship = c.Sender is { } p ? scene.Ships.FirstOrDefault(s => s.Player == p) : null;
         return new ChatRow(c.T, FormatClock(scene.ClockAt(c.T)) ?? FormatTime(c.T),
-            c.Sender?.Name ?? "Unknown player", c.Sender is { } pl ? Level(pl.Relation) : "",
+            c.Sender is { } named ? Services.Anonymizer.Name(named.Name) : "Unknown player", c.Sender is { } pl ? Level(pl.Relation) : "",
             c.IsTeam ? "Team" : "All", c.Text, ship?.ShipName);
     }
 

@@ -80,8 +80,8 @@ public sealed class PlayerRowViewModel : ObservableObject
     public double? Pr2 => Second.Pr;
 
     // ---- identity
-    public string Name => Summary.Name;
-    public string? ClanTag => Summary.ClanTag is null ? null : $"[{Summary.ClanTag}]";
+    public string Name => Services.Anonymizer.Name(Summary.Name);
+    public string? ClanTag => Services.Anonymizer.Clan(Summary.ClanTag) is { } tag ? $"[{tag}]" : null;
     public bool IsSelf => Summary.Relation == 0;
     public bool IsBot => Summary.IsBot;
     public bool IsFriendly => Summary.IsFriendly;
@@ -178,7 +178,7 @@ public sealed class PlayerRowViewModel : ObservableObject
         {
             var s = Summary;
             var sb = new StringBuilder();
-            sb.Append(ClanTag is null ? "" : ClanTag + " ").AppendLine(s.Name);
+            sb.Append(ClanTag is null ? "" : ClanTag + " ").AppendLine(Name);
             if (s.StatusText is not null) sb.AppendLine(s.StatusText);
             if (s.CreatedAt is { } c) sb.AppendLine($"Account created {c.LocalDateTime:d}");
             if (s.LastBattleAt is { } l) sb.AppendLine($"Last battle {l.LocalDateTime:g}");

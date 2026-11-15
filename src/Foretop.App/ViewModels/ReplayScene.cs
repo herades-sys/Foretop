@@ -100,7 +100,7 @@ public sealed class ReplayScene
     public static ReplayScene Build(ReplayData data, MapAssets map, Func<long, (string Name, string Species, bool IsTest)?> ship)
     {
         var deaths = data.Deaths.GroupBy(d => d.Victim).ToDictionary(g => g.Key, g => g.First());
-        string NameOf(int vehicle) => data.ByVehicle(vehicle)?.Name ?? "?";
+        string NameOf(int vehicle) => data.ByVehicle(vehicle) is { } p ? Services.Anonymizer.Name(p.Name) : "?";
         var ships = data.Players.Select(p =>
         {
             var info = ship(p.ShipId);
@@ -125,7 +125,8 @@ public sealed class ReplayScene
         {
             byVehicle.TryGetValue(d.Victim, out var v);
             byVehicle.TryGetValue(d.Killer, out var k);
-            return new SceneKill(d.T, v?.Player.Name ?? "?", v?.Relation ?? -1, k?.Player.Name ?? "?", k?.Relation ?? -1, v?.ShipName ?? "");
+            return new SceneKill(d.T, v is null ? "?" : Services.Anonymizer.Name(v.Player.Name), v?.Relation ?? -1,
+                k is null ? "?" : Services.Anonymizer.Name(k.Player.Name), k?.Relation ?? -1, v?.ShipName ?? "");
         }).ToList();
         return new ReplayScene
         {

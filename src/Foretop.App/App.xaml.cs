@@ -21,6 +21,8 @@ public partial class App : Application
             return;
         }
         DispatcherUnhandledException += OnUnhandled;
+        // --anonymize: hide player names and clan tags (for published screenshots)
+        Services.Anonymizer.Enabled = e.Args.Contains("--anonymize");
         var dataAt = Array.IndexOf(e.Args, "--data-dir");
         if (dataAt >= 0 && dataAt + 1 < e.Args.Length) Services.AppPaths.UseDataDir(e.Args[dataAt + 1]);
 
@@ -65,6 +67,7 @@ public partial class App : Application
             e.Args.Contains("--light") ? "Light" : _host.Settings.Current.Theme));
 
         Services.FontManager.Apply(_host.Settings.Current.FontFamily);
+        Services.Anonymizer.Self = _host.Settings.Current.PlayerName;
         var shell = new ShellViewModel(_host);
         var window = new MainWindow(_host) { DataContext = shell };
         MainWindow = window;
