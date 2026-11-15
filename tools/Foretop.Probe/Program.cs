@@ -121,4 +121,72 @@ switch (cmd)
         File.WriteAllBytes(args[3], bytes);
         Console.WriteLine($"  wrote {bytes.Length:N0} bytes to {args[3]}");
         break;
+    case "groups":
+    {
+        // groups: ship count per GameParams "group", with examples
+        var gp = GameParamsReader.Load(fs);
+        var texts = GameTexts.Load(root, fs.Build);
+        var ships = gp.Where(kv => GameParamsReader.TypeOf(kv.Value) == "Ship").Select(kv => (Name: kv.Key as string ?? "", Entity: kv.Value)).ToList();
+        string? G(object? e) => e is Dictionary<object, object?> d && d.TryGetValue("group", out var g) ? g as string
+            : e is PyObject o && o.Attrs.TryGetValue("group", out var og) ? og as string : null;
+        foreach (var grp in ships.GroupBy(s => G(s.Entity) ?? "(none)").OrderByDescending(g => g.Count()))
+            Console.WriteLine($"  {grp.Key,-22} {grp.Count(),5}  e.g. {string.Join(", ", grp.Take(6).Select(s => texts.Get("IDS_" + s.Name.Split('_')[0] + "_FULL") ?? s.Name))}");
+        break;
+    }
+    case "texts":
+    {
+        // texts <substring>: game text keys containing the substring
+        var texts = GameTexts.Load(root, fs.Build);
+        foreach (var kv in texts.WithPrefix("IDS_").Where(kv => kv.Key.Contains(args[2], StringComparison.OrdinalIgnoreCase)).Take(80))
+            Console.WriteLine($"  {kv.Key} = {kv.Value}");
+        break;
+    }
+    case "replay":
+    {
+        // replay <file.wowsreplay>: decode and summarise
+        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        sw.Restart();
+        var file = Foretop.Core.Replays.ReplayFile.Read(args[2]);
+        var data = Foretop.Core.Replays.ReplayParser.Parse(file, defs);
+        Console.WriteLine($"decoded in {sw.ElapsedMilliseconds} ms: {data.MapSpace} {data.Scenario} {data.Duration:0} s, {file.Packets.Length:N0} B packets");
+        foreach (var w in data.Warnings) Console.WriteLine("  warning: " + w);
+        foreach (var pl in data.Players.OrderBy(x => x.Relation))
+        {
+            var tr = data.Tracks.GetValueOrDefault(pl.VehicleId);
+            var seen = data.Seen.GetValueOrDefault(pl.VehicleId);
+            var hp = data.Health.GetValueOrDefault(pl.VehicleId);
+            Console.WriteLine($"  {pl.Relation} {pl.ClanTag,-5} {pl.Name,-24} veh {pl.VehicleId,8} acc {pl.AccountId,10} ship {pl.ShipId,11}: {tr?.Count ?? 0,5} pts, seen {seen?.Count ?? 0} spans {seen?.Sum(s => s.To - s.From) ?? 0:0} s, hp {data.MaxHealth.GetValueOrDefault(pl.VehicleId):0} → {hp?.LastOrDefault().Value:0}");
+        }
+        foreach (var d in data.Deaths) Console.WriteLine($"  death t {d.T:0}: {data.ByVehicle(d.Victim)?.Name ?? d.Victim.ToString()} by {data.ByVehicle(d.Killer)?.Name ?? d.Killer.ToString()} reason {d.Reason}");
+        foreach (var z in data.Zones) Console.WriteLine($"  zone {z.Label} at {z.X:0},{z.Z:0} r {z.Radius:0.0} owners {string.Join(" ", z.Owners.Select(o => $"{o.Team}@{o.T:0}"))}");
+        Console.WriteLine($"  smokes {data.Smokes.Count}, first: {(data.Smokes.Count > 0 ? $"{data.Smokes[0].From:0}-{data.Smokes[0].To:0} r {data.Smokes[0].Radius:0.0} pts {data.Smokes[0].Points.Count}" : "-")}");
+        if (args.Length > 3)
+        {
+            // replay <file> <land-check>: share of track points that fall on land in minimap.png, for the scale
+            var space = data.MapSpace.Trim('/');
+            var png = fs.Read(space + "/minimap.png");
+            var half = Foretop.Core.Replays.ReplayLibrary.PlayableHalf(System.Text.Encoding.UTF8.GetString(fs.Read(space + "/space.settings")));
+            File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "minimap.png"), png);
+            using var pts = new StreamWriter(Path.Combine(Path.GetTempPath(), "tracks.csv"));
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            foreach (var tr in data.Tracks.Values) foreach (var q in tr)
+                pts.WriteLine(((q.X + half) / (2 * half)).ToString("0.00000", inv) + ";" + ((half - q.Z) / (2 * half)).ToString("0.00000", inv));
+            Console.WriteLine($"  half {half}; wrote tracks.csv and minimap.png to {Path.GetTempPath()}");
+        }
+        Console.WriteLine($"  clock {data.TimeLeft.Count} samples: {string.Join(" ", data.TimeLeft.Take(6).Select(v => $"{v.Value}@{v.T:0}"))} … {string.Join(" ", data.TimeLeft.TakeLast(3).Select(v => $"{v.Value}@{v.T:0}"))}");
+        break;
+    }
+    case "defs":
+    {
+        // defs <Entity> [n]: client property and method indices as replays use them
+        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        Console.WriteLine("types: " + string.Join(", ", defs.TypeNames.Select((t, i) => $"{i + 1}={t}")));
+        var e = defs.Entity(args[2])!;
+        var max = args.Length > 3 ? int.Parse(args[3]) : 400;
+        for (var i = 0; i < Math.Min(max, e.Properties.Count); i++)
+            Console.WriteLine($"  prop {i,3} {e.Properties[i].Name,-36} {e.Properties[i].Size,6} {e.Properties[i].Flags}");
+        for (var i = 0; i < Math.Min(max, e.ClientMethods.Count); i++)
+            Console.WriteLine($"  meth {i,3} {e.ClientMethods[i].Name,-36} {e.ClientMethods[i].Size,6}");
+        break;
+    }
 }

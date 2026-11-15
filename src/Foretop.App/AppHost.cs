@@ -48,6 +48,9 @@ public sealed class AppHost : IDisposable
         ShipData = new ShipDataStore(AppPaths.DataDir,
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot,
             Loggers.CreateLogger<ShipDataStore>());
+        Stats.IsTestShip = id => ShipData.FindById(id)?.IsTestShip == true;
+        Replays = new Core.Replays.ReplayLibrary(
+            () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot, ShipData);
         ShipIconCache.Instance = new ShipIconCache(Http, AppPaths.IconDir, Loggers.CreateLogger<ShipIconCache>());
     }
 
@@ -74,6 +77,9 @@ public sealed class AppHost : IDisposable
 
     /// <summary>Ship Intelligence data read from the game client.</summary>
     public ShipDataStore ShipData { get; }
+
+    /// <summary>Replay files in the game's replays folder, decoded for the minimap player.</summary>
+    public Core.Replays.ReplayLibrary Replays { get; }
 
     public Region Region => Settings.Current.Region;
 

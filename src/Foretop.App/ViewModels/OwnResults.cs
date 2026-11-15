@@ -48,8 +48,9 @@ public sealed class ResultSummaryView
 /// <summary>One of your battles with its result, for the Dashboard list.</summary>
 public sealed class OwnBattleRow
 {
-    public OwnBattleRow(BattleResult r, ShipInfo? ship, HistoryRow? history)
+    public OwnBattleRow(BattleResult r, ShipInfo? ship, HistoryRow? history, Core.GameData.ShipData? gameShip = null)
     {
+        var test = gameShip?.IsTestShip == true;
         var c = CultureInfo.CurrentCulture;
         Result = r;
         History = history;
@@ -63,25 +64,25 @@ public sealed class OwnBattleRow
             var m => BattleTypes.Label(BattleTypes.FromMatchGroup(m), m),
         };
         Map = history?.Map ?? "";
-        Ship = ship?.Name ?? $"Ship {r.ShipId}";
-        var t = r.Result;
+        Ship = (ship?.Name ?? gameShip?.DisplayName ?? $"Ship {r.ShipId}") + (test ? " (test ship)" : "");
+        var t = test ? null : r.Result; // no damage or other values for ships in testing
         (Outcome, OutcomeLevel) = r.Status switch
         {
             ResultStatus.Pending => (r.EndedAt is null ? "In battle" : "Waiting for result…", "Unknown"),
             ResultStatus.Unavailable => ("No result", "Unknown"),
             ResultStatus.Expired => ("Not counted", "Unknown"),
             ResultStatus.Merged => ("In the row above", "Unknown"),
-            ResultStatus.Combined => ($"{t!.Battles} battles: {t.Wins} W", "Unknown"),
-            _ when t is { Wins: 1 } => ("Victory", "Ok"),
-            _ when t is { Losses: 1 } => ("Defeat", "Problem"),
-            _ when t is { Draws: 1 } => ("Draw", "Warning"),
+            ResultStatus.Combined when t is not null => ($"{t.Battles} battles: {t.Wins} W", "Unknown"),
+            _ when r.Result is { Battles: 1, Wins: 1 } => ("Victory", "Ok"),
+            _ when r.Result is { Battles: 1, Losses: 1 } => ("Defeat", "Problem"),
+            _ when r.Result is { Battles: 1, Draws: 1 } => ("Draw", "Warning"),
             _ => ("—", "Unknown"),
         };
         Damage = t is null ? "" : t.Damage.ToString("N0", c);
         Xp = t is null ? "" : t.Xp.ToString("N0", c);
         Frags = t is null ? "" : t.Frags.ToString(c);
         Survived = t is null ? "" : r.Status == ResultStatus.Combined ? $"{t.Survived}/{t.Battles}" : t.Survived > 0 ? "Yes" : "No";
-        Tooltip = r.Status switch
+        Tooltip = test ? "A ship in testing: no damage or other values are shown, and the battle is left out of the totals." : r.Status switch
         {
             ResultStatus.Unavailable => r.Baseline is null && r.Mode is ResultModes.Random or ResultModes.Ranked or ResultModes.Coop
                 ? "The account totals could not be read at the start of this battle (hidden profile or API not reachable)."

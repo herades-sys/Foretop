@@ -34,7 +34,14 @@
                         <ComboBox Grid.Column="1" ItemsSource="{Binding RegionOptions}" SelectedValuePath="Value" SelectedValue="{Binding Region}" Width="160"
                                   HorizontalAlignment="Left" />
                         <TextBlock Grid.Row="1" Text="Application ID" Style="{StaticResource Label}" />
-                        <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,6">
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,6" Orientation="Horizontal"
+                                    Visibility="{Binding IsEditingApplicationId, Converter={StaticResource InvBoolVis}}">
+                            <TextBlock Text="Saved · encrypted for your Windows account" VerticalAlignment="Center" />
+                            <Button Content="Test" Command="{Binding TestApplicationIdCommand}" Margin="12,0,0,0" />
+                            <Button Content="Change" Command="{Binding EditApplicationIdCommand}" Margin="6,0,0,0" />
+                        </StackPanel>
+                        <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,6"
+                                   Visibility="{Binding IsEditingApplicationId, Converter={StaticResource BoolVis}}">
                             <Button DockPanel.Dock="Right" Content="Test" Command="{Binding TestApplicationIdCommand}" Margin="6,0,0,0" />
                             <ToggleButton x:Name="ShowId" DockPanel.Dock="Right" Content="Show" Style="{StaticResource Chip}" Margin="6,0,0,0"
                                           VerticalAlignment="Center" ToolTip="Show or hide the application ID" />
@@ -48,7 +55,8 @@
                         </DockPanel>
                         <StackPanel Grid.Row="2" Grid.Column="1">
                             <TextBlock Text="{Binding TestResult}" Style="{StaticResource Hint}" />
-                            <TextBlock Style="{StaticResource Hint}">
+                            <TextBlock Style="{StaticResource Hint}"
+                                       Visibility="{Binding IsEditingApplicationId, Converter={StaticResource BoolVis}}">
                                 Free: sign in at developers.wargaming.net, create an application of type “Mobile / Standalone”, paste its ID here.
                                 It is stored encrypted for your Windows account.
                                 <Hyperlink Command="{Binding OpenDeveloperPortalCommand}" Foreground="{StaticResource Accent}">Open the developer portal</Hyperlink>

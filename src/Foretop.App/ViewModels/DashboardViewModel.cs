@@ -51,16 +51,18 @@ public sealed partial class DashboardViewModel : ObservableObject
             if (session.Count > 0 && now - session[0].StartedAt > SessionGap) session = []; // last session is over
             var midnight = new DateTimeOffset(now.Date, now.Offset);
             var today = rows.Where(r => r.StartedAt >= midnight).ToList();
+            bool Test(BattleResult r) => _host.ShipData.FindById(r.ShipId)?.IsTestShip == true;
 
+            // Battles in ships in testing show no values, so they stay out of the totals too.
             SessionResults = new ResultSummaryView("THIS SESSION",
                 session.Count == 0 ? "No battle in the last hour" : $"Since {session[^1].StartedAt.LocalDateTime:t}",
-                ResultTotals.Of(session));
+                ResultTotals.Of(session.Where(r => !Test(r)).ToList()));
             TodayResults = new ResultSummaryView("TODAY", now.ToString("D", System.Globalization.CultureInfo.CurrentCulture),
-                ResultTotals.Of(today));
+                ResultTotals.Of(today.Where(r => !Test(r)).ToList()));
 
             OwnBattles.Clear();
             foreach (var r in rows.Take(12))
-                OwnBattles.Add(new OwnBattleRow(r, _host.Ships.Get(r.ShipId), _historyByKey.GetValueOrDefault(r.BattleKey)));
+                OwnBattles.Add(new OwnBattleRow(r, _host.Ships.Get(r.ShipId), _historyByKey.GetValueOrDefault(r.BattleKey), _host.ShipData.FindById(r.ShipId)));
         }
         catch (Exception ex)
         {

@@ -1,0 +1,226 @@
+<UserControl x:Class="Foretop.App.Views.ReplaysView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foretop.App.Views">
+    <UserControl.Resources>
+        <!-- One ship in the team lists: name, ship, health bar. -->
+        <DataTemplate x:Key="ShipRow">
+            <Grid Margin="0,2,0,3">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDead}" Value="True"><Setter Property="Opacity" Value="0.4" /></DataTrigger>
+                            <DataTrigger Binding="{Binding IsHidden}" Value="True"><Setter Property="Opacity" Value="0.7" /></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding HealthText}" Style="{StaticResource Dim}" FontSize="11" Margin="6,0,0,0"
+                               Typography.NumeralAlignment="Tabular" />
+                    <TextBlock Text="{Binding ShipName}" FontSize="12" TextTrimming="CharacterEllipsis">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelf}" Value="True"><Setter Property="FontWeight" Value="SemiBold" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </DockPanel>
+                <DockPanel Grid.Row="1" Margin="0,1,0,0">
+                    <Border DockPanel.Dock="Right" Width="70" Height="4" CornerRadius="2" Background="{DynamicResource Border2}" VerticalAlignment="Center"
+                            Margin="6,0,0,0">
+                        <Border HorizontalAlignment="Left" CornerRadius="2" Background="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                Width="{Binding HealthFraction, Converter={x:Static views:FractionWidth.Instance}, ConverterParameter=70}" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" Style="{StaticResource Dim}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+            </Grid>
+        </DataTemplate>
+        <Style x:Key="KillName" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Style.Triggers>
+                <Trigger Property="Tag" Value="Ally"><Setter Property="Foreground" Value="{DynamicResource Friendly}" /></Trigger>
+                <Trigger Property="Tag" Value="Self"><Setter Property="Foreground" Value="{DynamicResource Text}" /><Setter Property="FontWeight" Value="SemiBold" /></Trigger>
+                <Trigger Property="Tag" Value="Enemy"><Setter Property="Foreground" Value="{DynamicResource Enemy}" /></Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="22,18,22,12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="290" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="270" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Replay list -->
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Folder" Command="{Binding OpenFolderCommand}" Margin="0,0,6,0" ToolTip="Open the replays folder" />
+                        <Button Content="Reload" Command="{Binding ReloadCommand}" />
+                    </StackPanel>
+                    <TextBlock Text="Replays" Style="{StaticResource H1}" />
+                </DockPanel>
+                <TextBlock Text="{Binding Summary}" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,3,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6">
+                <ListBox x:Name="List" ItemsSource="{Binding Replays}" SelectedItem="{Binding Selected}" BorderThickness="0" Background="Transparent"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" MouseDoubleClick="OnListDoubleClick" KeyDown="OnListKeyDown">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4,5">
+                                <TextBlock Text="{Binding Map}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Style="{StaticResource Dim}" FontSize="11.5" TextTrimming="CharacterEllipsis">
+                                    <Run Text="{Binding Ship, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Type, Mode=OneWay}" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding WhenText}" Style="{StaticResource Dim}" FontSize="11" Margin="0,1,0,0" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </DockPanel>
+
+        <!-- Player -->
+        <DockPanel Grid.Column="2">
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <Button DockPanel.Dock="Right" Content="Open selected" Command="{Binding OpenCommand}" CommandParameter="{x:Null}"
+                        Style="{StaticResource AccentButton}" VerticalAlignment="Top" />
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource H1}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Dim}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding Warning}" Foreground="{DynamicResource StatusAmber}" FontSize="11.5" TextWrapping="Wrap"
+                       Margin="0,0,0,6" Visibility="{Binding Warning, Converter={StaticResource NullVis}}" />
+
+            <!-- Timeline -->
+            <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Padding="12,8" Margin="0,8,0,0"
+                    IsEnabled="{Binding HasScene}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="−30 s" Command="{Binding SkipCommand}" CommandParameter="-30" Margin="0,0,4,0" />
+                        <Button Command="{Binding PlayPauseCommand}" MinWidth="64" Margin="0,0,4,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource AccentButton}">
+                                    <Setter Property="Content" Value="Play" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPlaying}" Value="True"><Setter Property="Content" Value="Pause" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="+30 s" Command="{Binding SkipCommand}" CommandParameter="30" Margin="0,0,10,0" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ItemsControl ItemsSource="{Binding Speeds}" Margin="10,0,8,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <RadioButton Style="{StaticResource Chip}" GroupName="replaySpeed" Margin="0,0,3,0" Content="{Binding}" ContentStringFormat="{}{0}×"
+                                                 Command="{Binding DataContext.SetSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                 CommandParameter="{Binding}">
+                                        <RadioButton.IsChecked>
+                                            <MultiBinding Converter="{x:Static views:EqualsConverter.Instance}" Mode="OneWay">
+                                                <Binding />
+                                                <Binding Path="DataContext.Speed" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                            </MultiBinding>
+                                        </RadioButton.IsChecked>
+                                    </RadioButton>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <CheckBox Content="Trails" IsChecked="{Binding ShowTrails}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <CheckBox Content="Names" IsChecked="{Binding ShowNames}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0" MinWidth="86">
+                        <TextBlock Text="{Binding ClockText}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Right"
+                                   Typography.NumeralAlignment="Tabular" ToolTip="Battle clock (time left)" />
+                        <TextBlock Text="{Binding TimeText}" Style="{StaticResource Dim}" FontSize="10.5" HorizontalAlignment="Right"
+                                   Typography.NumeralAlignment="Tabular" ToolTip="Replay time" />
+                    </StackPanel>
+                    <Slider Minimum="0" Maximum="{Binding Duration}" Value="{Binding Time}" VerticalAlignment="Center" IsMoveToPointEnabled="True"
+                            SmallChange="1" LargeChange="30" />
+                </DockPanel>
+            </Border>
+
+            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6">
+                <Grid>
+                    <views:ReplayCanvas Scene="{Binding Scene}" Time="{Binding Time}" ShowTrails="{Binding ShowTrails}" ShowNames="{Binding ShowNames}"
+                                        Margin="6" />
+                    <TextBlock Text="Opening the replay…" Style="{StaticResource Dim}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding IsOpening, Converter={StaticResource BoolVis}}" />
+                    <TextBlock Text="{Binding Message}" Foreground="{DynamicResource StatusRed}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center" Visibility="{Binding Message, Converter={StaticResource NullVis}}" />
+                    <TextBlock Style="{StaticResource Dim}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" MaxWidth="420"
+                               TextWrapping="Wrap">
+                        <TextBlock.Visibility>
+                            <MultiBinding Converter="{x:Static views:AllFalseToVisible.Instance}">
+                                <Binding Path="HasScene" />
+                                <Binding Path="IsOpening" />
+                            </MultiBinding>
+                        </TextBlock.Visibility>
+                        Pick a replay and press Open, or double-click it. The minimap shows where every ship went, what was spotted,
+                        capture points, smoke and the kill feed. It is read from the replay file only.
+                    </TextBlock>
+                </Grid>
+            </Border>
+        </DockPanel>
+
+        <!-- Teams and kill feed -->
+        <ScrollViewer Grid.Column="4" VerticalScrollBarVisibility="Auto" Visibility="{Binding HasScene, Converter={StaticResource BoolVis}}">
+            <StackPanel>
+                <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="YOUR TEAM" Style="{StaticResource Dim}" FontSize="11" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding Allies}" ItemTemplate="{StaticResource ShipRow}" Tag="{DynamicResource Friendly}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="ENEMY TEAM" Style="{StaticResource Dim}" FontSize="11" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding Enemies}" ItemTemplate="{StaticResource ShipRow}" Tag="{DynamicResource Enemy}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="KILLS" Style="{StaticResource Dim}" FontSize="11" Margin="0,0,0,6" />
+                        <TextBlock Text="No ships sunk yet." Style="{StaticResource Dim}" FontSize="11.5"
+                                   Visibility="{Binding Kills.Count, Converter={x:Static views:ZeroToVisible.Instance}}" />
+                        <ItemsControl ItemsSource="{Binding Kills}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="38" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding TimeText}" Style="{StaticResource Dim}" FontSize="11" Typography.NumeralAlignment="Tabular" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Killer}" Tag="{Binding KillerLevel}" Style="{StaticResource KillName}" />
+                                        <TextBlock Grid.Column="2" Text=" ✕ " Style="{StaticResource Dim}" FontSize="11" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Victim}" Tag="{Binding VictimLevel}" Style="{StaticResource KillName}"
+                                                   ToolTip="{Binding VictimShip}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -126,6 +126,18 @@
             <views:ShipStatisticsView Visibility="{Binding Section, Converter={x:Static views:EqualsToVisible.Instance}, ConverterParameter=Statistics}" />
             <views:ShipComparisonView Visibility="{Binding Section, Converter={x:Static views:EqualsToVisible.Instance}, ConverterParameter=Comparison}" />
             <views:ShipEquipmentView Visibility="{Binding Section, Converter={x:Static views:EqualsToVisible.Instance}, ConverterParameter=Equipment}" />
+
+            <!-- Test ship: covers the profile, armour and equipment (the comparison does not accept test ships) -->
+            <Border Background="{DynamicResource Bg}" Visibility="{Binding ShowTestShipNotice, Converter={StaticResource BoolVis}}">
+                <Border Width="580" VerticalAlignment="Top" Margin="0,40,0,0" Padding="28" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="TEST SHIP" Foreground="{DynamicResource StatusAmber}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding Current.DisplayName}" Style="{StaticResource H1}" HorizontalAlignment="Center" Margin="0,4,0,10" />
+                        <TextBlock Text="{Binding TestShipNotice}" Style="{StaticResource Dim}" TextWrapping="Wrap" TextAlignment="Center" />
+                        <Button Content="Back to the ship list" Command="{Binding LeaveTestShipCommand}" HorizontalAlignment="Center" Margin="0,16,0,0" />
+                    </StackPanel>
+                </Border>
+            </Border>
         </Grid>
     </Grid>
 </UserControl>

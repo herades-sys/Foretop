@@ -15,6 +15,7 @@
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:PlayerSearchViewModel}"><views:PlayerSearchView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ShipIntelligenceViewModel}"><views:ShipIntelligenceView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReplaysViewModel}"><views:ReplaysView /></DataTemplate>
     </Window.Resources>
     <Window.InputBindings>
         <KeyBinding Key="K" Modifiers="Control" Command="{x:Static views:ShellCommands.FocusSearch}" />
@@ -75,6 +76,8 @@
                                  IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Ships}" />
                     <RadioButton Style="{StaticResource NavButton}" Content="Battle History" Tag="{StaticResource IconHistory}" GroupName="nav"
                                  IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=History}" />
+                    <RadioButton Style="{StaticResource NavButton}" Content="Replays" Tag="{StaticResource IconReplay}" GroupName="nav"
+                                 IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Replays}" />
                     <RadioButton Style="{StaticResource NavButton}" Content="Analytics" Tag="{StaticResource IconAnalytics}" GroupName="nav"
                                  IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Analytics}" />
                     <RadioButton Style="{StaticResource NavButton}" Content="Settings" Tag="{StaticResource IconSettings}" GroupName="nav"

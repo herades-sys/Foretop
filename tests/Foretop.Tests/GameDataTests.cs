@@ -87,9 +87,12 @@ public class GameDataTests
     [InlineData("specialUnsellable", "Premium", true)]
     [InlineData("event", "Event", false)]
     [InlineData("disabled", "Not obtainable", false)]
+    [InlineData("demoWithoutStats", "Test ship", false)]
+    [InlineData("demoWithoutStatsPrem", "Test ship", false)]
     public void Availability_groups(string group, string label, bool obtainable)
     {
         Assert.Equal(label, ShipExtractor.Availability(group));
         Assert.Equal(obtainable, ShipExtractor.IsObtainable(group));
+        Assert.Equal(label == "Test ship", ShipExtractor.IsTestShip(group));
     }
 }

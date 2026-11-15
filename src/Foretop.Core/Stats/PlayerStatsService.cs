@@ -42,6 +42,12 @@ public sealed class PlayerStatsService
         _log = (ILogger?)log ?? NullLogger.Instance;
     }
 
+    /// <summary>
+    /// Ships whose statistics are never shown (ships in testing). Their per-ship results are dropped before anything
+    /// is derived from them: no ship row, no current-ship values, and they do not count towards PR.
+    /// </summary>
+    public Func<long, bool>? IsTestShip { get; set; }
+
     /// <summary>(session key, new state). Raised from background threads.</summary>
     public event Action<string, PlayerSummary>? PlayerUpdated;
 
@@ -161,7 +167,7 @@ public sealed class PlayerStatsService
                     var (ships, shipsStale) = await GetShipStatsAsync(region, id, priority, forceRefresh, ct).ConfigureAwait(false);
                     var perf = ships
                         .Select(x => (x.ShipId, Totals: StatTotals.From(x.Pvp), x.LastBattleTime))
-                        .Where(x => x.Totals is { Battles: > 0 })
+                        .Where(x => x.Totals is { Battles: > 0 } && IsTestShip?.Invoke(x.ShipId) != true)
                         .Select(x => new ShipPerformance(x.ShipId, x.Totals!,
                             PersonalRating.Compute([(x.ShipId, x.Totals!)], expected), FromUnix(x.LastBattleTime)))
                         .OrderByDescending(x => x.Totals.Battles)

@@ -154,6 +154,23 @@ public partial class App : Application
             if (Enum.TryParse<Page>(page, true, out var p)) shell.SelectedPage = p;
         }
         if (Arg("--profile") is { } name) shell.OpenProfile(name);
+        // --replay <path|latest> [--replay-time <s>]: open a replay in the minimap player at a time.
+        if (Arg("--replay") is { } replay)
+        {
+            shell.SelectedPage = Page.Replays;
+            _ = OpenReplayAsync();
+            async Task OpenReplayAsync()
+            {
+                await shell.Replays.EnsureLoadedAsync();
+                var row = replay == "latest" ? shell.Replays.Replays.FirstOrDefault()
+                    : shell.Replays.Replays.FirstOrDefault(r => r.Entry.Path.Equals(System.IO.Path.GetFullPath(replay), StringComparison.OrdinalIgnoreCase));
+                if (row is null) return;
+                await shell.Replays.OpenCommand.ExecuteAsync(row);
+                if (double.TryParse(Arg("--replay-time"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var at))
+                    shell.Replays.Time = at;
+                if (args.Contains("--replay-play")) shell.Replays.PlayPauseCommand.Execute(null);
+            }
+        }
         // --account <name>: use this account name for the session only (not saved), for testing Ship Statistics.
         if (Arg("--account") is { } account && ((App)Current)._host is { } host) host.Settings.Current.PlayerName = account;
         // Ship Intelligence: --ship <name> opens a ship, --compare-ships "A;B;C" fills the comparison,

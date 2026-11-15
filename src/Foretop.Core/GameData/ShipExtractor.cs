@@ -9,7 +9,7 @@ namespace Foretop.Core.GameData;
 /// </summary>
 public static class ShipExtractor
 {
-    public const int FormatVersion = 4;
+    public const int FormatVersion = 5;
 
     public static ShipDataSet Extract(string build, Dictionary<object, object?> gp, GameTexts texts, IProgress<(int Done, int Total)>? progress = null,
         Action<string>? warn = null)
@@ -61,6 +61,35 @@ public static class ShipExtractor
         var species = Str(typeinfo, "species") ?? "";
         var tier = (int)(Num(e, "level") ?? 0);
         var group = Str(e, "group") ?? "";
+
+        if (IsTestShip(group))
+        {
+            // Identity only; the game itself shows no statistics for these ships while they are tested.
+            return new ShipData
+            {
+                Name = name,
+                Index = index,
+                Id = Long(Num(e, "id")) ?? 0,
+                DisplayName = texts.Ids(index + "_FULL") ?? texts.Ids(index) ?? name,
+                Description = texts.Ids(index + "_DESCR"),
+                Year = texts.Ids(index + "_YEAR"),
+                Nation = nation,
+                NationName = texts.Ids(nation) ?? nation.Replace('_', ' '),
+                Species = species,
+                Tier = tier,
+                Group = group,
+                Availability = Availability(group),
+                Obtainable = false,
+                IsTestShip = true,
+                IsPaperShip = Get(e, "isPaperShip") is true,
+                Modules = [],
+                Stock = new ShipConfig(),
+                Top = new ShipConfig(),
+                Consumables = [],
+                UpgradeSlots = [],
+                Armour = [],
+            };
+        }
 
         var sui = Get(e, "ShipUpgradeInfo");
         var rawModules = Entries(sui).Where(kv => Get(kv.Value, "ucType") is string).Select(kv => (Name: (string)kv.Key, Node: kv.Value)).ToList();
@@ -547,8 +576,12 @@ public static class ShipExtractor
         "upgradeableExclusive" => "Exclusive",
         "earlyAccess" => "Early access",
         "event" or "legendaryBattle" or "coopOnly" or "clan" => "Event",
+        _ when IsTestShip(group) => "Test ship",
         _ => "Not obtainable",
     };
+
+    /// <summary>Ships in testing: the game's own "demo without stats" groups (52 ships in build 13533378).</summary>
+    public static bool IsTestShip(string? group) => group is not null && group.StartsWith("demoWithoutStats", StringComparison.Ordinal);
 
     internal static bool IsObtainable(string group) =>
         Availability(group) is "Tech tree" or "Premium" or "Special" or "Supership" or "Exclusive" or "Early access";

@@ -15,6 +15,7 @@ public enum Page
     Profiles,
     Ships,
     History,
+    Replays,
     Analytics,
     Settings,
 }
@@ -38,6 +39,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Dashboard = new DashboardViewModel(host);
         PlayerSearch = new PlayerSearchViewModel(host);
         Ships = new ShipIntelligenceViewModel(host);
+        Replays = new ReplaysViewModel(host);
 
         Live.ProfileRequested += OpenProfile;
         Statistics.ProfileRequested += OpenProfile;
@@ -91,6 +93,7 @@ public sealed partial class ShellViewModel : ObservableObject
     public DashboardViewModel Dashboard { get; }
     public PlayerSearchViewModel PlayerSearch { get; }
     public ShipIntelligenceViewModel Ships { get; }
+    public ReplaysViewModel Replays { get; }
 
     [ObservableProperty] private Page _selectedPage = Page.Dashboard;
     [ObservableProperty] private object _currentContent;
@@ -141,6 +144,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
         CurrentContent = PageContent(newValue);
         if (newValue == Page.History) _ = History.EnsureLoadedAsync();
+        if (newValue == Page.Replays) _ = Replays.EnsureLoadedAsync();
         if (newValue == Page.Analytics) _ = Statistics.EnsureLoadedAsync();
         if (newValue == Page.Dashboard) _ = Dashboard.EnsureLoadedAsync();
         if (newValue == Page.PlayerSearch) PlayerSearch.OnShown();
@@ -192,6 +196,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Page.Profiles => Profiles,
         Page.Ships => Ships,
         Page.History => History,
+        Page.Replays => Replays,
         Page.Analytics => Statistics,
         Page.Settings => Settings,
         _ => Dashboard,
@@ -207,6 +212,7 @@ public sealed partial class ShellViewModel : ObservableObject
             Page.Profiles => (string.IsNullOrEmpty(Profiles.Title) ? (null, "Player Profiles") : ("Player Profiles", Profiles.Title)),
             Page.Ships => ("Ship Intelligence", Ships.SectionTitle),
             Page.History => (null, "Battle History"),
+            Page.Replays => (null, "Replays"),
             Page.Analytics => (null, "Analytics"),
             Page.Settings => (null, "Settings"),
             _ => (null, ""),

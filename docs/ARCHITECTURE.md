@@ -166,7 +166,9 @@ span covered.
 - **Other players' battle results** are not available: `tempArenaInfo.json` has none,
   and the replay's results block (block 1) was empty in a real Random battle on
   2026-11-15 (block 2 only holds the recording player's account ID). Your **own**
-  results come from the API instead (below).
+  results come from the API instead (below). The replay's packet stream does end
+  with a battle-results packet (section 9), which could later fill in results for
+  battles Foretop did not watch.
 
 ### Own battle results (`BattleResultTracker`, Dashboard)
 
@@ -212,6 +214,7 @@ foretop/
     Settings/  AppSettings, SettingsStore, ISecretProtector
     GameData/  GameFileSystem (idx/pkg), Unpickler, GameParamsReader, GameTexts, ShipExtractor,
                ShipDataStore (per-build cache, helper process), ArmourGeometry, Ballistics, ArmourMaterials
+    Replays/   ReplayFile (decrypt), EntityDefs + BigWorldReader (entity definitions), ReplayParser, ReplayLibrary
   src/Foretop.App/           net10.0-windows, WPF
     ViewModels/  Shell, LiveBattle, PlayerRow, Settings, …
     Views/       XAML per screen (Ship Intelligence: ShipIntelligenceView hosts ShipDatabase/Profile,
@@ -350,3 +353,31 @@ Read-only, from the installed client; details and verified values in [GAME_DATA.
    thickness class with simple shading; click selection is a point-in-triangle test from the nearest triangle back.
 4. **Own results** (Ship Statistics): `PlayerStatsService` for the account in Settings, joined to the game records by
    `ship_id` (the GameParams `id`).
+
+## 9. Replays (minimap player)
+
+The Replays page lists `<game>\replays\**\*.wowsreplay` (header block 0 only, so the list is instant) and plays one
+back on the map. Read-only; format details in [GAME_DATA.md](GAME_DATA.md#replays-wowsreplay).
+
+1. **File** (`ReplayFile`): JSON header blocks, then the packet stream: Blowfish-ECB with each 8-byte block XOR-ed with
+   the previous plain block, then zlib (BouncyCastle for Blowfish, .NET for zlib). A 13-minute Random battle: 2.0 MB
+   file → 6.6 MB of packets, decoded in about 0.3 s.
+2. **Entity definitions** (`EntityDefs`): `scripts/entities.xml`, `entity_defs/*.def`, `interfaces/*.def` and
+   `alias.xml` from the client. Method and property numbers are computed from them (stable sort by encoded size,
+   inherited definitions first), so a patch that adds a method does not break decoding. `BigWorldReader` decodes
+   values of any defined type.
+3. **Parser** (`ReplayParser`): positions (`Position` for other ships, `PlayerPosition` for the controlled one),
+   visibility spans (entity create … leave), `Vehicle.health`/`maxHealth`/`teamId`, `Avatar.receiveVehicleDeath`,
+   capture points (`InteractiveZone` with control-point index and owner team), smoke (`SmokeScreen.points`), the battle
+   clock (`BattleLogic.timeLeft`). Players come from the arena JSON and are linked to their vehicle entity through the
+   pickled player list of `Avatar.onArenaStateReceived`, whose keys are found by value (name, vehicle id, account id)
+   because their numbering changes between versions.
+4. **Map** (`ReplayLibrary`): `spaces/<map>/minimap_water.png` + `minimap.png` (760 px) and the playable square from
+   `space.settings` (chunk bounds minus two chunks per side; ±700 on Tears of the Desert). Checked by sampling 8,345
+   track points: 0.26 % fall on land at this scale, 2–15 % at 0.8–1.2× or with the axis flipped.
+5. **Player** (`ReplaysViewModel`, `ReplayScene`, `ReplayCanvas`): interpolates positions between packets (not across
+   gaps over 6 s), draws ships the client could not see hollow at their last known position and sunk ships as a
+   cross; 1–40× speed, team lists with health, kill feed by battle clock.
+
+Not decoded yet: shells, torpedoes, planes, capture progress, ribbons and chat. The large packet at the end of the
+stream (type 0x22) is the battle-results JSON with the recording player's own credits and XP; it is not used yet.

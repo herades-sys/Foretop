@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0 — 2026-11-15
+
+- **Replays**: new page that lists the game's replays and plays one back on the minimap: ship tracks with heading,
+  health and names, ships out of view at their last known position, sunk ships, capture points with owner, smoke,
+  battle clock, team lists and kill feed; 1–40× speed. Decoded with the client's own entity definitions.
+
+- **Test ships** (the game's "demo without stats" ships, 52 in the current build) show no damage and no statistics
+  anywhere: only name, nation, tier and class are read from the game; their pages show a notice instead of
+  characteristics, armour and equipment; they cannot be compared; per-ship player results for them are not shown and
+  do not count towards PR; Dashboard results and Replays hide their damage and hit points.
+- Ship Database: the list no longer comes up empty ("0 of 1,246") after the ship data is reloaded while the page is
+  open (the nation filter lost its value).
+- Armour viewer: thickness bands use five distinct hues (violet, teal, green, amber, red) instead of shades of
+  amber, and plates within a band are a little darker or lighter by thickness, so neighbouring plates stand apart.
+- Armour viewer: the hull can no longer be dragged out of its panel; it stays inside, or covers the panel when
+  zoomed in.
+- Settings: a saved application ID is no longer shown; the field appears again with "Change".
+
 ## 1.1.0 — 2026-11-15
 
 Renamed from Broadside to Foretop (settings and data move over on first start) and

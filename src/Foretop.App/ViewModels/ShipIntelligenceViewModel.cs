@@ -133,7 +133,40 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
     [ObservableProperty] private string? _banner;
     [ObservableProperty] private string? _failure;
 
-    partial void OnSectionChanged(ShipSection value) => UpdateTitle();
+    partial void OnSectionChanged(ShipSection value)
+    {
+        UpdateTitle();
+        OnPropertyChanged(nameof(ShowTestShipNotice));
+    }
+
+    partial void OnCurrentChanged(ShipData? value)
+    {
+        OnPropertyChanged(nameof(ShowTestShipNotice));
+        OnPropertyChanged(nameof(TestShipNotice));
+    }
+
+    partial void OnShowProfileChanged(bool value) => OnPropertyChanged(nameof(ShowTestShipNotice));
+
+    /// <summary>
+    /// A test ship is opened: its profile, armour and equipment are replaced by a notice. The ship list still shows it
+    /// (identity only) and the comparison does not accept it.
+    /// </summary>
+    public bool ShowTestShipNotice => Current?.IsTestShip == true &&
+        (Section is ShipSection.Armour or ShipSection.Equipment || (Section == ShipSection.Database && ShowProfile));
+
+    [RelayCommand]
+    private void LeaveTestShip()
+    {
+        ShowProfile = false;
+        Section = ShipSection.Database;
+        UpdateTitle();
+    }
+
+    public string TestShipNotice => Current is { IsTestShip: true } s
+        ? $"{s.DisplayName} is a test ship: {s.NationName}, tier {ShipFacts.TierRoman(s.Tier)} {ShipFacts.ClassName(s.Species).ToLower(CultureInfo.CurrentCulture)}. "
+          + "The game marks it as being tested, so its characteristics can still change and the game itself shows no statistics for it. "
+          + "Foretop shows none either: no damage, armour, modules, equipment or results."
+        : "";
 
     private void UpdateTitle() => SectionTitle = Section switch
     {
@@ -191,7 +224,7 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
     public ObservableCollection<string> NationOptions { get; } = ["All nations"];
     public IReadOnlyList<string> TierOptions { get; } = ["All tiers", "★", "X", "IX", "VIII", "VII", "VI", "V", "IV", "III", "II", "I"];
     public IReadOnlyList<string> AvailabilityOptions { get; } =
-        ["Obtainable ships", "All ships", "Tech tree", "Premium", "Special", "Supership", "Event", "Not obtainable"];
+        ["Obtainable ships", "All ships", "Tech tree", "Premium", "Special", "Supership", "Event", "Test ship", "Not obtainable"];
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _nation = "All nations";
@@ -227,9 +260,12 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
             Rows.Add(row);
         }
         var nations = set.Ships.Where(s => s.Obtainable).Select(s => s.NationName).Distinct().OrderBy(n => n, StringComparer.CurrentCulture).ToList();
+        // Clearing the list makes the bound ComboBox write null into Nation; keep the choice across a reload.
+        var keep = Nation;
         NationOptions.Clear();
         NationOptions.Add("All nations");
         foreach (var n in nations) NationOptions.Add(n);
+        Nation = keep is not null && NationOptions.Contains(keep) ? keep : "All nations";
         ApplyFilter();
         if (Current is not null && _host.ShipData.Find(Current.Name) is { } again) Open(again);
     }
@@ -237,6 +273,7 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
     private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ShipRow.IsSelected)) return;
+        if (sender is ShipRow { IsSelected: true, Ship.IsTestShip: true } test) { test.IsSelected = false; return; } // nothing to compare
         SelectedCount = Rows.Count(r => r.IsSelected);
         CompareSelectedCommand.NotifyCanExecuteChanged();
     }
@@ -333,7 +370,7 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
     [RelayCommand]
     private void AddCurrentToComparison()
     {
-        if (Current is null) return;
+        if (Current is null || Current.IsTestShip) return;
         if (!Compared.Contains(Current))
         {
             if (Compared.Count >= 4) Compared.RemoveAt(0);
@@ -781,9 +818,25 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
         _ => "Very heavy · 300 mm and more",
     };
 
-    private static Color ArmourColour(double mm) => ArmourBrush(mm) is SolidColorBrush b ? b.Color : Colors.Gray;
+    /// <summary>
+    /// Viewer colour: the band's hue, a little darker at the thin end of the band and lighter at the thick end, so two
+    /// neighbouring plates in the same band (say 25 and 45 mm) still read as different plates.
+    /// </summary>
+    private static Color ArmourColour(double mm)
+    {
+        var c = ArmourBrush(mm) is SolidColorBrush b ? b.Color : Colors.Gray;
+        var (lo, hi) = mm switch { < 20 => (0.0, 20.0), < 50 => (20.0, 50.0), < 150 => (50.0, 150.0), < 300 => (150.0, 300.0), _ => (300.0, 650.0) };
+        var t = Math.Clamp((mm - lo) / (hi - lo), 0, 1);
+        if (t < 0.5)
+        {
+            var f = 0.72 + 0.56 * t; // 0.72 … 1.0
+            return Color.FromRgb((byte)(c.R * f), (byte)(c.G * f), (byte)(c.B * f));
+        }
+        var w = (t - 0.5) * 0.5; // up to 25 % towards white
+        return Color.FromRgb((byte)(c.R + (255 - c.R) * w), (byte)(c.G + (255 - c.G) * w), (byte)(c.B + (255 - c.B) * w));
+    }
 
-    /// <summary>Design colour scale: one hue, brighter (dark theme) = thicker.</summary>
+    /// <summary>Thickness colour scale: five distinct hues from thin (violet) to thick (red).</summary>
     public static Brush ArmourBrush(double mm) => RatingBrushConverter.Res(mm switch
     {
         < 20 => "Armour1",

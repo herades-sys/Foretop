@@ -107,6 +107,7 @@ public sealed class ArmourCanvas : FrameworkElement
         var fit = FitBox(mesh, rot);
         var margin = 28.0;
         var scale = Math.Min((ActualWidth - 2 * margin) / Math.Max(1, fit.Width), (ActualHeight - 2 * margin) / Math.Max(1, fit.Height)) * _zoom;
+        ClampPan(fit, scale, margin);
         var cx = ActualWidth / 2 + _pan.X;
         var cy = ActualHeight / 2 + _pan.Y;
         var mx = fit.X + fit.Width / 2;
@@ -210,6 +211,17 @@ public sealed class ArmourCanvas : FrameworkElement
             var hint = Text("Drag to rotate · Shift-drag to move · wheel to zoom · double-click to reset");
             dc.DrawText(hint, new Point(10, ActualHeight - hint.Height - 6));
         }
+    }
+
+    /// <summary>
+    /// Keeps the hull from being dragged out of the panel: a hull smaller than the panel stays fully inside it, a hull
+    /// zoomed larger than the panel always covers it, so there is never more than the margin of empty space at an edge.
+    /// </summary>
+    private void ClampPan(Rect fit, double scale, double margin)
+    {
+        var limX = Math.Abs(ActualWidth - 2 * margin - fit.Width * scale) / 2;
+        var limY = Math.Abs(ActualHeight - 2 * margin - fit.Height * scale) / 2;
+        _pan = new Vector(Math.Clamp(_pan.X, -limX, limX), Math.Clamp(_pan.Y, -limY, limY));
     }
 
     private static Rect FitBox(ArmourMesh mesh, Matrix4x4 rot)

@@ -85,6 +85,9 @@
                                             <DataTrigger Binding="{Binding Availability}" Value="Supership">
                                                 <Setter TargetName="text" Property="Foreground" Value="{DynamicResource AccentLight}" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding Availability}" Value="Test ship">
+                                                <Setter TargetName="text" Property="Foreground" Value="{DynamicResource StatusRed}" />
+                                            </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

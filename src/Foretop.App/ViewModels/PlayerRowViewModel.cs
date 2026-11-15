@@ -11,12 +11,19 @@ public sealed class PlayerRowViewModel : ObservableObject
 {
     private static readonly CultureInfo Inv = CultureInfo.CurrentCulture;
 
-    public PlayerRowViewModel(PlayerSummary summary, ShipInfo? ship, Region region)
+    public PlayerRowViewModel(PlayerSummary summary, ShipInfo? ship, Region region, Core.GameData.ShipData? gameShip = null)
     {
         Summary = summary;
         Ship = ship;
         Region = region;
+        GameShip = gameShip;
     }
+
+    /// <summary>The ship as read from the game files (names ships the API does not list, marks test ships).</summary>
+    public Core.GameData.ShipData? GameShip { get; }
+
+    /// <summary>A ship in testing: no ship statistics are shown for it (the stats service drops them too).</summary>
+    public bool IsTestShip => GameShip?.IsTestShip == true;
 
     public PlayerSummary Summary { get; private set; }
     public ShipInfo? Ship { get; private set; }
@@ -43,11 +50,19 @@ public sealed class PlayerRowViewModel : ObservableObject
     public long? AccountId => Summary.AccountId;
 
     // ---- ship
-    public string ShipName => Ship?.Name ?? $"Unknown ship ({Summary.ShipId})";
-    public int Tier => Ship?.Tier ?? 0;
-    public string TierText => Ship?.TierRoman ?? "?";
-    public ShipClass ShipClass => Ship?.Class ?? ShipClass.Unknown;
-    public string ClassShort => Ship?.ClassShort ?? "?";
+    public string ShipName => (Ship?.Name ?? GameShip?.DisplayName ?? $"Unknown ship ({Summary.ShipId})") + (IsTestShip ? " (test ship)" : "");
+    public int Tier => Ship?.Tier ?? GameShip?.Tier ?? 0;
+    public string TierText => Ship?.TierRoman ?? (GameShip is { Tier: > 0 } g ? ShipFacts.TierRoman(g.Tier) : "?");
+    public ShipClass ShipClass => Ship?.Class ?? GameShip?.Species switch
+    {
+        "Destroyer" => ShipClass.Destroyer, "Cruiser" => ShipClass.Cruiser, "Battleship" => ShipClass.Battleship,
+        "AirCarrier" => ShipClass.AirCarrier, "Submarine" => ShipClass.Submarine, _ => ShipClass.Unknown,
+    };
+    public string ClassShort => Ship?.ClassShort ?? ShipClass switch
+    {
+        ShipClass.Destroyer => "DD", ShipClass.Cruiser => "CA", ShipClass.Battleship => "BB",
+        ShipClass.AirCarrier => "CV", ShipClass.Submarine => "SS", _ => "?",
+    };
     public int ClassOrder => ShipClass switch
     {
         ShipClass.AirCarrier => 0, ShipClass.Battleship => 1, ShipClass.Cruiser => 2,
@@ -94,11 +109,13 @@ public sealed class PlayerRowViewModel : ObservableObject
     public double? DamageRatio => Summary.DamageRatio;
 
     // ---- current ship
-    public int? ShipBattles => Summary.CurrentShip?.Battles;
-    public double? ShipWinRate => Summary.CurrentShip?.WinRate;
-    public double? ShipAvgDamage => Summary.CurrentShip?.AvgDamage;
-    public double? ShipDamageRatio => Summary.ShipDamageRatio;
-    public double? ShipPr => Summary.ShipPr;
+    // Also blank for battles recorded before a ship was known to be in testing.
+    private StatTotals? CurrentShip => IsTestShip ? null : Summary.CurrentShip;
+    public int? ShipBattles => CurrentShip?.Battles;
+    public double? ShipWinRate => CurrentShip?.WinRate;
+    public double? ShipAvgDamage => CurrentShip?.AvgDamage;
+    public double? ShipDamageRatio => IsTestShip ? null : Summary.ShipDamageRatio;
+    public double? ShipPr => IsTestShip ? null : Summary.ShipPr;
     public string ShipWinRateText => Pct(ShipWinRate);
 
     /// <summary>Win rate used for colouring: none below 10 battles in the ship, where it means little.</summary>
@@ -106,7 +123,7 @@ public sealed class PlayerRowViewModel : ObservableObject
 
     /// <summary>Overall win rate colour needs at least 50 battles.</summary>
     public double? WinRateRated => Battles >= 50 ? WinRate : null;
-    public string ShipBattlesText => ShipBattles is int b ? FormatCount(b) : (Summary.State == LoadState.Ready ? "0" : "—");
+    public string ShipBattlesText => ShipBattles is int b ? FormatCount(b) : (Summary.State == LoadState.Ready && !IsTestShip ? "0" : "—");
     public string ShipAvgDamageText => Num(ShipAvgDamage);
 
     // ---- recent
@@ -140,7 +157,12 @@ public sealed class PlayerRowViewModel : ObservableObject
                 sb.AppendLine($"Personal Rating {PrText} ({PersonalRating.BandLabel(PersonalRating.Band(s.Pr))}) — third-party, wows-numbers expected values");
                 if (s.DamageRatio is { } dr) sb.AppendLine($"  Damage vs. expected: {dr:P0}");
             }
-            if (s.CurrentShip is { } cs)
+            if (IsTestShip)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"{ShipName}: ship in testing, no ship statistics shown");
+            }
+            else if (s.CurrentShip is { } cs)
             {
                 sb.AppendLine();
                 sb.AppendLine($"{ShipName}: {cs.Battles:N0} battles, {Pct(cs.WinRate)}, {Num(cs.AvgDamage)} dmg"

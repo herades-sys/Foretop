@@ -128,8 +128,16 @@ public sealed class ShipDataStore
         if (set.Maps.Count > 0) Game.BattleTypes.MapNames = set.Maps;
     }
 
-    private void Index(ShipDataSet set) =>
+    private void Index(ShipDataSet set)
+    {
         _byName = set.Ships.GroupBy(s => s.Name).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        _byId = set.Ships.Where(s => s.Id != 0).GroupBy(s => s.Id).ToDictionary(g => g.Key, g => g.First());
+    }
+
+    private Dictionary<long, ShipData>? _byId;
+
+    /// <summary>A ship by its id (GameParams id = Wargaming API ship_id = arena info shipId).</summary>
+    public ShipData? FindById(long id) => _byId is not null && _byId.TryGetValue(id, out var s) ? s : null;
 
     private void Set(ShipDataState state, string? message)
     {
@@ -228,6 +236,30 @@ public sealed class ShipDataStore
                 if (_meshes.Count > 24) _meshes.Clear();
                 _meshes[ship.HullModel] = mesh;
                 return mesh;
+            }, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _fsGate.Release();
+        }
+    }
+
+    /// <summary>Runs <paramref name="work"/> on the game's file index (opened once, reopened after a game update).</summary>
+    public async Task<T?> WithFileSystemAsync<T>(Func<GameFileSystem, T> work, CancellationToken ct = default)
+    {
+        await _fsGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            return await Task.Run(() =>
+            {
+                var root = _gameRoot();
+                if (root is null || GameFileSystem.NewestBuild(root) is null) return default;
+                if (_fs is null || _fs.Root != root || _fs.Build != GameFileSystem.NewestBuild(root))
+                {
+                    _fs = GameFileSystem.Open(root);
+                    _meshes.Clear();
+                }
+                return work(_fs);
             }, ct).ConfigureAwait(false);
         }
         finally

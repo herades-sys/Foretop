@@ -22,7 +22,17 @@ read-only; nothing in the game folder is changed.
 `dump <outdir> <names…>`, `type <TypeName> <out.json>`, `ships <out.json>`, `armour <hull .model>`, `field <entity> <key>`.
 Run as `dotnet run --project tools/Foretop.Probe -- <game folder> <command> …`.
 
-The cache carries `ShipExtractor.FormatVersion` (now 4); a cache from an older format is rebuilt automatically.
+The cache carries `ShipExtractor.FormatVersion` (now 5); a cache from an older format is rebuilt automatically.
+
+## Test ships
+
+GameParams `group` `demoWithoutStats` (21 ships) and `demoWithoutStatsPrem` (31) are ships in testing, e.g. Vladimir
+Monomakh, Cumberland, Montana 2, Kléber TE. The game shows no statistics for them. Foretop extracts only their identity
+(name, nation, tier, class, description, artwork): no configuration, modules, consumables, upgrades, armour or hull
+model (format 5). The app shows them as "Test ship" in the list, with a notice instead of profile, armour and equipment;
+they cannot be compared; per-ship player results for them are dropped (`PlayerStatsService.IsTestShip`), so Live
+Battle, profiles, Ship Statistics and PR never use them; the Dashboard hides damage/XP/frags of a battle in one and
+leaves it out of the totals; Replays show no hit points for them.
 
 ## Verified against the design's Yamato values
 
@@ -85,6 +95,29 @@ consumables `IDS_DOCK_CONSUME_TITLE_<NAME_UPPER>`; upgrades `IDS_TITLE_/IDS_DESC
 Maps: `IDS_SPACES/<SPACE_UPPER>` (87 in build 13533378), keyed by `tempArenaInfo.json`'s `mapDisplayName`.
 The internal names often differ completely: `28_naval_mission` = "Tears of the Desert", `45_Zigzag` = "Loop",
 `38_Canada` = "Shatter". Stored in the ship-data cache (`Maps`, format 4) and used for every map name in the app.
+
+## Replays (`.wowsreplay`)
+
+Verified on a build 13533378 Random battle (Tears of the Desert, 822 s, 24 players).
+
+- File: magic `0x11343212`, block count, length-prefixed blocks (0 = arena JSON, 1 = results, empty here,
+  2 = `"<account id>.<arena id>"`), then uint32 unpacked size, uint32 packed size, and the packed stream:
+  Blowfish-ECB, key `29 B7 C9 09 38 3F 84 88 FA 98 EC 4E 13 19 79 FB`, each block XOR-ed with the previous plain block,
+  then zlib.
+- Packets: uint32 size, uint32 type, float32 time (s), payload. Types used: `0x00` BasePlayerCreate (avatar id),
+  `0x04` EntityLeave, `0x05` EntityCreate (id i32, type u16 1-based in `entities.xml` order, vehicle i32, space i32,
+  position, direction, then u32 length + state: u8 count, (u8 property index, value)…), `0x07` EntityProperty and
+  `0x08` EntityMethod (id, index, u32 length, value), `0x0A` Position (id, vehicle, position, error, yaw/pitch/roll,
+  flag; 45 bytes), `0x2C` PlayerPosition (id, 0, position, yaw/pitch/roll; 32 bytes), `0x22` battle results (JSON).
+- Indices: client methods and client-visible properties (`ALL_CLIENTS`, `OTHER_CLIENTS`, `OWN_CLIENT`,
+  `CELL_PUBLIC_AND_OWN`, `BASE_AND_CLIENT`), parent and interfaces first, then own, stable-sorted by encoded size with
+  anything variable-length last. Checked: `Vehicle.health` = 28, `regenerationHealth` = 29, `ruddersAngle` = 40,
+  `visibilityTime` = 42, `Avatar.onArenaStateReceived` = 154 all match the packets. Own-first ordering gives 37 and 149.
+- Values: strings, blobs and open arrays have a u8 length, or 0xFF and a 24-bit length; nullable `FIXED_DICT` has a
+  u8 flag first.
+- Yaw: 0 = north, clockwise positive. World X east, Z north; the minimap square is ±(playable half), north up.
+- `InteractiveZone.componentsState.controlPoint.index` 0/1/2 = A/B/C; `captureLogic` holds progress and capture time.
+- There are no game texts for death reasons, so the player shows who sank whom, not the weapon.
 
 ## Open
 

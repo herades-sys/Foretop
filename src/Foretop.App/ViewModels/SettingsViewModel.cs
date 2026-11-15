@@ -54,6 +54,14 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _saveResult = "";
     [ObservableProperty] private bool _isTesting;
 
+    /// <summary>
+    /// A saved ID is hidden behind a "Saved" line; the input box only appears when there is no ID yet or after "Change".
+    /// </summary>
+    [ObservableProperty] private bool _isEditingApplicationId;
+
+    [RelayCommand]
+    private void EditApplicationId() => IsEditingApplicationId = true;
+
     public string DataFolder => AppPaths.DataDir;
     public string VersionText => $"Foretop {AppInfo.Version}";
 
@@ -94,6 +102,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         Region = _draft.Region;
         ApplicationId = _host.Settings.GetApplicationId() ?? "";
+        IsEditingApplicationId = string.IsNullOrWhiteSpace(ApplicationId);
         GameRoot = _draft.GameRoot ?? "";
         PlayerName = _draft.PlayerName ?? "";
         AutoDetectBattles = _draft.AutoDetectBattles;
@@ -136,6 +145,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             ApiRatePerSecond = s.ApiRatePerSecond;
             _host.Watcher.Poke();
             SaveResult = "Saved.";
+            if (!string.IsNullOrWhiteSpace(ApplicationId)) IsEditingApplicationId = false;
             _ = _host.Ships.EnsureLoadedAsync(s.Region, CancellationToken.None);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

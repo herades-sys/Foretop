@@ -157,7 +157,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
             var summary = saved.TryGetValue(v.Name, out var old)
                 ? old
                 : new PlayerSummary { Name = v.Name, Relation = v.Relation, ShipId = v.ShipId, IsBot = v.IsBot };
-            var row = new PlayerRowViewModel(summary, _host.Ships.Get(v.ShipId), region);
+            var row = new PlayerRowViewModel(summary, _host.Ships.Get(v.ShipId), region, _host.ShipData.FindById(v.ShipId));
             _rowsByName[v.Name] = row;
             (v.IsFriendly ? FriendlyRows : EnemyRows).Add(row);
         }

@@ -102,6 +102,23 @@ battle's result.
 - It needs your account name (Settings → Your account, filled in automatically) and a
   public profile.
 
+### Replays
+
+**Replays** in the sidebar lists the replays the game saved (`<game>\replays`, newest first).
+Double-click one, or select it and press **Open selected**, to watch the battle on the minimap:
+
+- Ships are arrows pointing where they sail: yours white, allies teal, enemies red, with a
+  health bar and the ship name. A hollow arrow is an enemy (or ally) your client could not
+  see at that moment, at the last place it was seen; a cross is a sunk ship.
+- Capture points carry their letter and turn the owner's colour; grey circles are smoke.
+- **Play / Pause** (or Space), ±30 s, 1–40× speed, and the slider to jump anywhere. The big
+  clock is the battle clock (time left), the small one the replay time.
+- Right: both teams with health (faded = sunk, dimmer = not in view) and the kill feed.
+
+Only what your game client received is shown: enemies appear while someone on your team
+had them spotted, as in the battle. Replays need replay recording switched on in the game
+and the game installation (Foretop reads the map images and message layout from it).
+
 ## 6. Ship Intelligence
 
 Ship Intelligence reads every ship's characteristics, armour and artwork straight
@@ -113,6 +130,10 @@ stays in use until it is done. Nothing in the game folder is changed.
   and key figures. Filter by name, nation, class, tier and availability (the
   default shows the 954 ships you can obtain). Double-click a ship to open its
   profile; tick up to four ships and click **Compare ships**.
+- **Test ships** (availability "Test ship": ships the game marks as still being
+  tested) show only name, nation, tier and class. Foretop shows no damage,
+  characteristics, armour, equipment or statistics for them, anywhere in the app,
+  and they cannot be compared.
 - **Ship profile**: artwork, description, key figures, general characteristics,
   main armament, shells with penetration by range, turret armour and a summary.
   **Stock / Fully upgraded** switches the configuration.

@@ -38,10 +38,11 @@
     <SolidColorBrush x:Key="ClassBB" Color="#F0BD5C" />
     <SolidColorBrush x:Key="ClassCV" Color="#C99BF5" />
     <SolidColorBrush x:Key="ClassSS" Color="#6BD8CB" />
-    <SolidColorBrush x:Key="Armour1" Color="#8A5A1C" />
-    <SolidColorBrush x:Key="Armour2" Color="#B47A22" />
-    <SolidColorBrush x:Key="Armour3" Color="#D99A2E" />
-    <SolidColorBrush x:Key="Armour4" Color="#F0BD5C" />
-    <SolidColorBrush x:Key="Armour5" Color="#FBE2A8" />
+    <!-- Armour thickness: distinct hues, thin to thick (no blue: that is the selection accent). -->
+    <SolidColorBrush x:Key="Armour1" Color="#8E6BC9" />
+    <SolidColorBrush x:Key="Armour2" Color="#2FB3A3" />
+    <SolidColorBrush x:Key="Armour3" Color="#8DC63F" />
+    <SolidColorBrush x:Key="Armour4" Color="#F2B33D" />
+    <SolidColorBrush x:Key="Armour5" Color="#E5533D" />
     <SolidColorBrush x:Key="ArmourNone" Color="#55606F" />
 </ResourceDictionary>

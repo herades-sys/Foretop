@@ -30,6 +30,12 @@ public sealed record ShipData
     public required string Group { get; init; }         // raw GameParams group
     public required string Availability { get; init; }  // Tech tree, Premium, Special, Supership, …
     public bool Obtainable { get; init; }
+
+    /// <summary>
+    /// A ship the game marks as in testing (group demoWithoutStats / demoWithoutStatsPrem). Only its identity is
+    /// extracted: no characteristics, damage, armour, modules or equipment, and no player statistics are shown for it.
+    /// </summary>
+    public bool IsTestShip { get; init; }
     public bool IsPaperShip { get; init; }
     public double? Length { get; init; }                // metres (hull size[0])
     public required List<ModuleData> Modules { get; init; }
