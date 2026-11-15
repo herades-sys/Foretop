@@ -49,6 +49,7 @@ public sealed class AppHost : IDisposable
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot,
             Loggers.CreateLogger<ShipDataStore>());
         Stats.IsTestShip = id => ShipData.FindById(id)?.IsTestShip == true;
+        Stats.ShipTier = id => Ships.Get(id)?.Tier is int t and > 0 ? t : ShipData.FindById(id)?.Tier is int g and > 0 ? g : null;
         Replays = new Core.Replays.ReplayLibrary(
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot, ShipData);
         ShipIconCache.Instance = new ShipIconCache(Http, AppPaths.IconDir, Loggers.CreateLogger<ShipIconCache>());

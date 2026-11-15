@@ -35,6 +35,21 @@ public partial class TeamTable : UserControl
 
     public bool ShowRecent { get => (bool)GetValue(ShowRecentProperty); set => SetValue(ShowRecentProperty, value); }
 
+    /// <summary>Which statistics the columns show ("ALL TIERS", "TIER VI+"); shown next to the team name.</summary>
+    public static readonly DependencyProperty BadgeProperty =
+        DependencyProperty.Register(nameof(Badge), typeof(string), typeof(TeamTable), new PropertyMetadata(null));
+    public string? Badge { get => (string?)GetValue(BadgeProperty); set => SetValue(BadgeProperty, value); }
+
+    public static readonly DependencyProperty BadgeTipProperty =
+        DependencyProperty.Register(nameof(BadgeTip), typeof(string), typeof(TeamTable), new PropertyMetadata(null));
+    public string? BadgeTip { get => (string?)GetValue(BadgeTipProperty); set => SetValue(BadgeTipProperty, value); }
+
+    /// <summary>Overall and filtered values in two lines per cell: taller rows.</summary>
+    public static readonly DependencyProperty TwoLineProperty =
+        DependencyProperty.Register(nameof(TwoLine), typeof(bool), typeof(TeamTable),
+            new PropertyMetadata(false, (d, _) => ((TeamTable)d).ApplyCompact(((TeamTable)d).Compact)));
+    public bool TwoLine { get => (bool)GetValue(TwoLineProperty); set => SetValue(TwoLineProperty, value); }
+
     public TeamTable()
     {
         InitializeComponent();
@@ -53,7 +68,7 @@ public partial class TeamTable : UserControl
     {
         XpColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         RecentColumn.Visibility = compact || !ShowRecent ? Visibility.Collapsed : Visibility.Visible;
-        Grid.RowHeight = compact ? 24 : 28;
+        Grid.RowHeight = TwoLine ? (compact ? 34 : 38) : compact ? 24 : 28;
     }
 
     private void UpdateSummary()

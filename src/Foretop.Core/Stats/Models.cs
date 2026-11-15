@@ -13,6 +13,9 @@ public sealed record StatTotals(
     public double? AvgFrags => Battles > 0 ? (double)Frags / Battles : null;
     public double? SurvivalRate => Battles > 0 ? 100.0 * Survived / Battles : null;
     public double? AvgPlanes => Battles > 0 ? (double)PlanesKilled / Battles : null;
+    public int Deaths => Battles - Survived;
+    /// <summary>Kills ÷ deaths; null when there are no deaths (or no battles), shown as "—", never as a division by zero.</summary>
+    public double? KillDeath => Deaths > 0 ? (double)Frags / Deaths : null;
 
     public static StatTotals? From(StatsBlockDto? b) => b is null
         ? null
@@ -130,6 +133,12 @@ public sealed record PlayerSummary
     public RecentStats? Recent28 { get; init; }
 
     public IReadOnlyList<ShipPerformance>? Ships { get; init; }
+
+    /// <summary>
+    /// Totals over ships of tier V+ … X+ and XI only (see <see cref="TierFilter"/>). Kept when a battle is saved, unlike
+    /// <see cref="Ships"/>, so recorded battles can be filtered too. Null until the per-ship statistics are loaded.
+    /// </summary>
+    public IReadOnlyList<TierStats>? ByTier { get; init; }
     public DateTimeOffset? StatsFetchedAt { get; init; }
 
     /// <summary>The API was unreachable, so these are older cached statistics.</summary>

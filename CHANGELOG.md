@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.0 — 2026-11-15
+
+- **Live Battle: statistics filter by tier.** All tiers, Tier V+ … X+ or Tier XI only: battles, win rate, damage, XP
+  and PR are recalculated from each player's per-ship statistics (weighted totals; PR over the same ships). Overall /
+  Filtered / Both views, a badge on each team table, team averages and strength estimate follow; the player tooltip
+  shows overall and filtered side by side with kills, survival and K/D. Remembered if you want. Recorded battles keep
+  their filtered values. The old "Tier" filter for rows is now called "Ship tier".
+
 ## 1.4.0 — 2026-11-15
 
 - **Updates from GitHub.** Foretop checks for a new release after start and once a day. An **Update** button in the

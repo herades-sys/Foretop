@@ -177,6 +177,37 @@ switch (cmd)
         Console.WriteLine($"  clock {data.TimeLeft.Count} samples: {string.Join(" ", data.TimeLeft.Take(6).Select(v => $"{v.Value}@{v.T:0}"))} … {string.Join(" ", data.TimeLeft.TakeLast(3).Select(v => $"{v.Value}@{v.T:0}"))}");
         break;
     }
+    case "unpack":
+    {
+        // unpack <hex file> <out.json>: Foretop's compressed cache value (hex of api_cache.zjson) as JSON
+        var hex = File.ReadAllText(args[2]).Trim();
+        using var input = new MemoryStream(Convert.FromHexString(hex));
+        using var brotli = new System.IO.Compression.BrotliStream(input, System.IO.Compression.CompressionMode.Decompress);
+        using var reader = new StreamReader(brotli, System.Text.Encoding.UTF8);
+        File.WriteAllText(args[3], reader.ReadToEnd());
+        break;
+    }
+    case "results":
+    {
+        // results <file.wowsreplay> <out.json>: the battle-results packet (type 0x22) as written in the replay
+        var file = Foretop.Core.Replays.ReplayFile.Read(args[2]);
+        var pk = file.Packets;
+        for (var p = 0; p + 12 <= pk.Length;)
+        {
+            var size = BitConverter.ToInt32(pk, p);
+            var type = BitConverter.ToUInt32(pk, p + 4);
+            var t = BitConverter.ToSingle(pk, p + 8);
+            if (type == 0x22)
+            {
+                var body = pk.AsSpan(p + 12, size);
+                var start = body.IndexOf((byte)'{');
+                Console.WriteLine($"0x22 at t {t:0.0}: {size:N0} bytes, JSON starts at {start}, first bytes {Convert.ToHexString(body[..Math.Min(8, size)])}");
+                File.WriteAllBytes(args[3], body[start..].ToArray());
+            }
+            p += 12 + size;
+        }
+        break;
+    }
     case "defs":
     {
         // defs <Entity> [n]: client property and method indices as replays use them

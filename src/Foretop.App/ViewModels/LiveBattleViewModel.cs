@@ -45,6 +45,10 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         FriendlyView = MakeView(FriendlyRows);
         EnemyView = MakeView(EnemyRows);
         _selectedSort = SortOptions[0];
+        var st = host.Settings.Current;
+        _rememberStatsFilter = st.RememberStatsFilter;
+        _selectedStatsFilter = StatsFilterOptions.FirstOrDefault(o => st.RememberStatsFilter && o.MinTier == st.StatsMinTier) ?? StatsFilterOptions[0];
+        _statsViewMode = Enum.TryParse<StatsView>(st.StatsView, out var sv) ? sv : StatsView.Filtered;
         ApplySort();
 
         _refreshTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(350), DispatcherPriority.Background, (_, _) => FlushUpdates(), _ui);
@@ -112,6 +116,70 @@ public sealed partial class LiveBattleViewModel : ObservableObject
 
     public bool CompactMode => _host.Settings.Current.CompactMode;
 
+    // ------------------------------------------------------------------ statistics filter
+
+    /// <summary>All tiers, Tier V+ … X+, Tier XI only.</summary>
+    public IReadOnlyList<StatsFilterOption> StatsFilterOptions { get; } =
+        [new(0, TierFilter.Label(0)), .. TierFilter.Levels.Select(t => new StatsFilterOption(t, TierFilter.Label(t)))];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StatsMinTier), nameof(IsStatsFilterActive), nameof(TableBadge), nameof(TableBadgeTip), nameof(ShowBothLines))]
+    private StatsFilterOption _selectedStatsFilter;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TableBadge), nameof(TableBadgeTip), nameof(ShowBothLines))]
+    private StatsView _statsViewMode;
+
+    public bool ShowBothLines => IsStatsFilterActive && StatsViewMode == StatsView.Both;
+
+    [ObservableProperty] private bool _rememberStatsFilter;
+
+    public int StatsMinTier => SelectedStatsFilter.MinTier;
+    public bool IsStatsFilterActive => StatsMinTier > 0;
+
+    /// <summary>What the stat columns show, on each team table: "ALL TIERS", "TIER VI+", "ALL TIERS / TIER VI+".</summary>
+    public string TableBadge => !IsStatsFilterActive || StatsViewMode == StatsView.Overall ? TierFilter.Badge(0)
+        : StatsViewMode == StatsView.Filtered ? TierFilter.Badge(StatsMinTier)
+        : TierFilter.Badge(0) + " / " + TierFilter.Badge(StatsMinTier);
+
+    public string TableBadgeTip => !IsStatsFilterActive
+        ? "Battles, win rate, damage, XP and PR over all of the player's Random battles (official account totals)."
+        : StatsViewMode switch
+        {
+            StatsView.Overall => $"Overall statistics shown; the {TierFilter.Label(StatsMinTier)} filter is set but switched to Overall. Hover a player for both.",
+            StatsView.Filtered => $"Battles, win rate, damage, XP and PR over the player's {TierFilter.Label(StatsMinTier)} ships only: the official per-ship totals added up and recalculated by Foretop. Team averages and the strength estimate use them too. 7-day values are not available per tier.",
+            _ => $"First line: overall. Second line: {TierFilter.Label(StatsMinTier)} only (calculated by Foretop from the official per-ship totals).",
+        };
+
+    partial void OnSelectedStatsFilterChanged(StatsFilterOption value) => ApplyStatsFilter();
+    partial void OnStatsViewModeChanged(StatsView value) => ApplyStatsFilter();
+    partial void OnRememberStatsFilterChanged(bool value) => SaveStatsFilter();
+
+    private void ApplyStatsFilter()
+    {
+        foreach (var r in FriendlyRows.Concat(EnemyRows)) r.SetStatsFilter(StatsMinTier, StatsViewMode);
+        UpdateTeamSummaries();
+        ApplySort();
+        SaveStatsFilter();
+    }
+
+    /// <summary>False in development runs (--stats-filter), which must not change the saved choice.</summary>
+    public bool PersistStatsFilter { get; set; } = true;
+
+    private void SaveStatsFilter()
+    {
+        if (!PersistStatsFilter) return;
+        var cur = _host.Settings.Current;
+        var tier = RememberStatsFilter ? StatsMinTier : 0;
+        var view = StatsViewMode.ToString();
+        if (cur.RememberStatsFilter == RememberStatsFilter && cur.StatsMinTier == tier && cur.StatsView == view) return;
+        var s = _host.Settings.Clone();
+        s.RememberStatsFilter = RememberStatsFilter;
+        s.StatsMinTier = tier;
+        s.StatsView = view;
+        try { _host.Settings.Save(s); } catch (System.IO.IOException) { } // the choice still applies for this run
+    }
+
     partial void OnSelectedSortChanged(SortOption value) => ApplySort();
     partial void OnSelectedTierChanged(string value) => RefreshFilter();
     partial void OnShowDDChanged(bool value) => RefreshFilter();
@@ -158,6 +226,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
                 ? old
                 : new PlayerSummary { Name = v.Name, Relation = v.Relation, ShipId = v.ShipId, IsBot = v.IsBot };
             var row = new PlayerRowViewModel(summary, _host.Ships.Get(v.ShipId), region, _host.ShipData.FindById(v.ShipId));
+            row.SetStatsFilter(StatsMinTier, StatsViewMode);
             _rowsByName[v.Name] = row;
             (v.IsFriendly ? FriendlyRows : EnemyRows).Add(row);
         }
@@ -260,8 +329,10 @@ public sealed partial class LiveBattleViewModel : ObservableObject
 
     private void UpdateTeamSummaries()
     {
-        FriendlySummary = TeamSummary.From(FriendlyRows.Select(r => r.Summary).ToList());
-        EnemySummary = TeamSummary.From(EnemyRows.Select(r => r.Summary).ToList());
+        // Team averages and the strength estimate follow the statistics the columns show.
+        var project = StatsMinTier > 0 && StatsViewMode != StatsView.Overall;
+        FriendlySummary = TeamSummary.From(FriendlyRows.Select(r => project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).ToList());
+        EnemySummary = TeamSummary.From(EnemyRows.Select(r => project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).ToList());
         HasRecentData = FriendlyRows.Concat(EnemyRows).Any(r => r.Summary.Recent7 is { Totals.Battles: > 0 });
         FriendlyShare = TeamComparison.FriendlyShare(FriendlySummary, EnemySummary);
         ComparisonText = FriendlyShare is double s

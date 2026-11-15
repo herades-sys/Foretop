@@ -60,8 +60,26 @@ Start the game and enter a battle. Within a second or two Foretop switches to
 Win rates from fewer than 50 battles (10 in a ship, 5 in the last week) stay grey,
 because they say little.
 
-Use **Sort**, **Tier** and the **class chips** above the tables to reorder or
-filter both teams. **Comparison** shows the teams' averages side by side, their
+Use **Sort**, **Ship tier** and the **class chips** above the tables to reorder or
+filter both teams.
+
+**Statistics filter** (above the tables): count only each player's battles in ships of a minimum tier, so accounts
+with thousands of low-tier battles are not flattered by them. Choose **All tiers**, **Tier V+** … **Tier X+** or
+**Tier XI only**:
+
+- Battles, win rate, damage, XP and PR are recalculated from the player's official per-ship statistics: the totals
+  of every eligible ship are added up, then divided (win rate = wins ÷ battles, average damage = damage ÷ battles,
+  and so on; never an average of per-ship averages). PR uses the same formula and expected values, over the same ships.
+- **Overall / Filtered / Both** chooses what the columns show; Both puts the filtered value under the overall one.
+  The badge next to each team name says which it is (ALL TIERS, TIER VI+ …). Team averages and the strength
+  estimate follow the columns.
+- Hover a player for both blocks: overall and filtered, with kills, survival and kills/deaths.
+- The 7-day column has no per-tier split (it comes from Foretop's own snapshots of the account totals) and shows
+  "—" while filtered values are shown. Ships whose tier is unknown (removed from the game) are left out and counted
+  in the tooltip.
+- Switching is instant and needs no extra requests. **Remember** keeps the choice for the next start; otherwise
+  Foretop starts with all tiers.
+- Battles recorded before Foretop 1.5.0 have no filtered values ("—"); **Refresh** loads them. **Comparison** shows the teams' averages side by side, their
 composition and an estimated strength split. The estimate summarises past
 performance; it is not a prediction of the result.
 

@@ -6,6 +6,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Foretop.App.ViewModels;
 
+/// <summary>An entry of the Live Battle statistics filter.</summary>
+public sealed record StatsFilterOption(int MinTier, string Label)
+{
+    public override string ToString() => Label;
+}
+
+/// <summary>Which statistics the Live Battle columns show while a tier filter is set.</summary>
+public enum StatsView { Overall, Filtered, Both }
+
 /// <summary>One table row. Wraps the latest <see cref="PlayerSummary"/> plus ship encyclopedia data.</summary>
 public sealed class PlayerRowViewModel : ObservableObject
 {
@@ -40,6 +49,35 @@ public sealed class PlayerRowViewModel : ObservableObject
         Ship = ship;
         OnPropertyChanged(string.Empty);
     }
+
+    // ---- statistics filter (Live Battle toolbar)
+    private int _minTier;
+    private StatsView _view = StatsView.Filtered;
+
+    public void SetStatsFilter(int minTier, StatsView view)
+    {
+        if (_minTier == minTier && _view == view) return;
+        _minTier = minTier;
+        _view = view;
+        OnPropertyChanged(string.Empty);
+    }
+
+    private bool FilterActive => _minTier > 0;
+
+    /// <summary>The summary the main columns show: filtered when a filter is set and the view is "Filtered".</summary>
+    private PlayerSummary Primary => FilterActive && _view == StatsView.Filtered ? TierFilter.Project(Summary, _minTier) : Summary;
+
+    /// <summary>"Both": the filtered values as a second line under the overall ones.</summary>
+    public bool ShowSecond => FilterActive && _view == StatsView.Both;
+    private PlayerSummary Second => TierFilter.Project(Summary, _minTier);
+    public string BattlesText2 => Second.Overall?.Battles is int b ? FormatCount(b) : "—";
+    public string WinRateText2 => Pct(Second.Overall?.WinRate);
+    public double? WinRateRated2 => Second.Overall is { Battles: >= 50 } o ? o.WinRate : null;
+    public string AvgDamageText2 => Num(Second.Overall?.AvgDamage);
+    public double? DamageRatio2 => Second.DamageRatio;
+    public string AvgXpText2 => Num(Second.Overall?.AvgXp);
+    public string PrText2 => Second.Pr is double p ? p.ToString("0", Inv) : "—";
+    public double? Pr2 => Second.Pr;
 
     // ---- identity
     public string Name => Summary.Name;
@@ -91,12 +129,12 @@ public sealed class PlayerRowViewModel : ObservableObject
     };
 
     // ---- overall (official totals, derived averages)
-    public int? Battles => Summary.Overall?.Battles;
-    public double? WinRate => Summary.Overall?.WinRate;
-    public double? AvgDamage => Summary.Overall?.AvgDamage;
-    public double? AvgXp => Summary.Overall?.AvgXp;
-    public double? AvgFrags => Summary.Overall?.AvgFrags;
-    public double? SurvivalRate => Summary.Overall?.SurvivalRate;
+    public int? Battles => Primary.Overall?.Battles;
+    public double? WinRate => Primary.Overall?.WinRate;
+    public double? AvgDamage => Primary.Overall?.AvgDamage;
+    public double? AvgXp => Primary.Overall?.AvgXp;
+    public double? AvgFrags => Primary.Overall?.AvgFrags;
+    public double? SurvivalRate => Primary.Overall?.SurvivalRate;
 
     public string BattlesText => Battles is int b ? FormatCount(b) : "—";
     public string WinRateText => Pct(WinRate);
@@ -104,9 +142,9 @@ public sealed class PlayerRowViewModel : ObservableObject
     public string AvgXpText => Num(AvgXp);
 
     // ---- third-party
-    public double? Pr => Summary.Pr;
+    public double? Pr => Primary.Pr;
     public string PrText => Pr is double p ? p.ToString("0", Inv) : "—";
-    public double? DamageRatio => Summary.DamageRatio;
+    public double? DamageRatio => Primary.DamageRatio;
 
     // ---- current ship
     // Also blank for battles recorded before a ship was known to be in testing.
@@ -127,10 +165,10 @@ public sealed class PlayerRowViewModel : ObservableObject
     public string ShipAvgDamageText => Num(ShipAvgDamage);
 
     // ---- recent
-    public double? RecentWinRate => Summary.Recent7 is { Totals.Battles: > 0 } r ? r.Totals.WinRate : null;
-    public double? RecentWinRateRated => Summary.Recent7 is { Totals.Battles: >= 5 } r ? r.Totals.WinRate : null;
-    public int? RecentBattles => Summary.Recent7?.Totals.Battles;
-    public string RecentText => Summary.Recent7 is { } r
+    public double? RecentWinRate => Primary.Recent7 is { Totals.Battles: > 0 } r ? r.Totals.WinRate : null;
+    public double? RecentWinRateRated => Primary.Recent7 is { Totals.Battles: >= 5 } r ? r.Totals.WinRate : null;
+    public int? RecentBattles => Primary.Recent7?.Totals.Battles;
+    public string RecentText => Primary.Recent7 is { } r
         ? r.Totals.Battles > 0 ? $"{Pct(r.Totals.WinRate)} ({r.Totals.Battles})" : "0 battles"
         : "—";
 
@@ -154,8 +192,40 @@ public sealed class PlayerRowViewModel : ObservableObject
             if (s.Pr is not null)
             {
                 sb.AppendLine();
-                sb.AppendLine($"Personal Rating {PrText} ({PersonalRating.BandLabel(PersonalRating.Band(s.Pr))}) — third-party, wows-numbers expected values");
+                sb.AppendLine($"Personal Rating {s.Pr:0} ({PersonalRating.BandLabel(PersonalRating.Band(s.Pr))}) — third-party, wows-numbers expected values");
                 if (s.DamageRatio is { } dr) sb.AppendLine($"  Damage vs. expected: {dr:P0}");
+            }
+            if (FilterActive)
+            {
+                sb.AppendLine();
+                var label = TierFilter.Label(_minTier);
+                if (TierFilter.For(s, _minTier) is not { } t)
+                {
+                    sb.AppendLine($"{label}: not available" + (s.State == LoadState.Ready || s.Overall is not null
+                        ? " (ship statistics not loaded for this battle; Refresh loads them)" : ""));
+                }
+                else
+                {
+                    var ft = t.Totals;
+                    sb.AppendLine($"{label} (sum of the official per-ship totals of {t.Ships} ships; calculated by Foretop):");
+                    if (ft.Battles == 0)
+                    {
+                        sb.AppendLine("  no battles at these tiers");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"  {ft.Battles:N0} battles, {ft.Wins:N0} wins, {ft.Losses:N0} defeats, {ft.Draws:N0} draws: {Pct(ft.WinRate)}");
+                        sb.AppendLine($"  {Num(ft.AvgDamage)} dmg, {Num(ft.AvgXp)} XP, {ft.AvgFrags:0.00} kills per battle");
+                        sb.AppendLine($"  survival {Pct(ft.SurvivalRate)}, kills/deaths {(ft.KillDeath is double kd ? kd.ToString("0.00", Inv) : "— (no deaths)")}");
+                        sb.AppendLine(t.Pr is double fp
+                            ? $"  PR {fp:0} ({PersonalRating.BandLabel(PersonalRating.Band(fp))}), same formula over these ships only"
+                            : "  PR: not available (no expected values for these ships)");
+                    }
+                    if (t.UnknownTierShips > 0)
+                        sb.AppendLine($"  {t.UnknownTierShips} ship(s) of unknown tier not included");
+                    if (s.Overall is { Battles: > 0 } all && t.Totals.Battles > 0)
+                        sb.AppendLine($"  = {100.0 * t.Totals.Battles / all.Battles:0}% of their {all.Battles:N0} Random battles");
+                }
             }
             if (IsTestShip)
             {
@@ -168,6 +238,8 @@ public sealed class PlayerRowViewModel : ObservableObject
                 sb.AppendLine($"{ShipName}: {cs.Battles:N0} battles, {Pct(cs.WinRate)}, {Num(cs.AvgDamage)} dmg"
                               + (s.ShipPr is double sp ? $", PR {sp:0}" : ""));
             }
+            if (FilterActive && s.Recent7 is not null)
+                sb.AppendLine("Recent activity below is for all tiers (Foretop's snapshots have no per-tier split).");
             if (s.Recent7 is { } r7)
                 sb.AppendLine($"Last {r7.Days} days: {r7.Totals.Battles} battles, {Pct(r7.Totals.WinRate)}  (Foretop snapshots)");
             if (s.Recent28 is { } r28)

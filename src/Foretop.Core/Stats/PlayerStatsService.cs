@@ -48,6 +48,9 @@ public sealed class PlayerStatsService
     /// </summary>
     public Func<long, bool>? IsTestShip { get; set; }
 
+    /// <summary>Tier of a ship (null when unknown); needed for the tier-filtered totals.</summary>
+    public Func<long, int?>? ShipTier { get; set; }
+
     /// <summary>(session key, new state). Raised from background threads.</summary>
     public event Action<string, PlayerSummary>? PlayerUpdated;
 
@@ -178,6 +181,7 @@ public sealed class PlayerStatsService
                     Set(h.Name, s => s with
                     {
                         Ships = perf,
+                        ByTier = ShipTier is { } tierOf ? TierFilter.ComputeAll(perf, tierOf, expected) : null,
                         Pr = pr,
                         DamageRatio = PersonalRating.DamageRatio(pairs, expected),
                         CurrentShip = current?.Totals,

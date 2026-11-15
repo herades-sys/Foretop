@@ -176,6 +176,17 @@ public partial class App : Application
         // --font <family> / --text-scale <1.25>: view only, not saved
         if (Arg("--font") is { } font) Services.FontManager.Apply(font);
         if (double.TryParse(Arg("--text-scale"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ts)) shell.UiScale = ts;
+        // --stats-filter <min tier> [--stats-view Overall|Filtered|Both]: Live Battle statistics filter, for snapshots
+        if (int.TryParse(Arg("--stats-filter"), out var minTier) && shell.Live.StatsFilterOptions.FirstOrDefault(o => o.MinTier == minTier) is { } opt)
+        {
+            shell.Live.PersistStatsFilter = false; // a development run must not change the saved choice
+            shell.Live.SelectedStatsFilter = opt;
+        }
+        if (Enum.TryParse<ViewModels.StatsView>(Arg("--stats-view"), true, out var sv))
+        {
+            shell.Live.PersistStatsFilter = false;
+            shell.Live.StatsViewMode = sv;
+        }
         if (args.Contains("--sidebar-collapsed")) shell.IsSidebarCollapsed = true; // view only, not saved
         // --replay <path|latest> [--replay-time <s>]: open a replay in the minimap player at a time.
         if (Arg("--replay") is { } replay)

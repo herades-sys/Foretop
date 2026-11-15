@@ -28,6 +28,12 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="{Binding Header, ElementName=Root}" Style="{StaticResource H2}"
                                Foreground="{Binding Accent, ElementName=Root}" VerticalAlignment="Center" />
+                    <Border DockPanel.Dock="Left" Margin="10,0,0,0" Padding="7,1" CornerRadius="9" VerticalAlignment="Center"
+                            BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="1" ToolTip="{Binding BadgeTip, ElementName=Root}"
+                            Visibility="{Binding Badge, ElementName=Root, Converter={StaticResource NullVis}}">
+                        <TextBlock Text="{Binding Badge, ElementName=Root}" FontSize="10.5" FontWeight="SemiBold"
+                                   Foreground="{Binding Accent, ElementName=Root}" />
+                    </Border>
                     <TextBlock x:Name="SummaryText" Style="{StaticResource Dim}" FontSize="11.5" Margin="14,0,0,0"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
@@ -91,7 +97,11 @@
                     <DataGridTemplateColumn Header="BATTLES" Width="58" SortMemberPath="Battles">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding BattlesText}" Style="{StaticResource Num}" />
+<StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding BattlesText}" Style="{StaticResource Num}" />
+                                    <TextBlock Text="{Binding BattlesText2}" Style="{StaticResource Num}" FontSize="10.5" Foreground="{StaticResource TextDim}"
+                                               Visibility="{Binding ShowSecond, Converter={StaticResource BoolVis}}" />
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -99,8 +109,12 @@
                     <DataGridTemplateColumn Header="WR" Width="52" SortMemberPath="WinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding WinRateText}" Style="{StaticResource Num}"
-                                           Foreground="{Binding WinRateRated, Converter={StaticResource Rating}, ConverterParameter=wr}" />
+<StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding WinRateText}" Style="{StaticResource Num}"
+                                               Foreground="{Binding WinRateRated, Converter={StaticResource Rating}, ConverterParameter=wr}" />
+                                    <TextBlock Text="{Binding WinRateText2}" Style="{StaticResource Num}" FontSize="10.5" Foreground="{Binding WinRateRated2, Converter={StaticResource Rating}, ConverterParameter=wr}"
+                                               Visibility="{Binding ShowSecond, Converter={StaticResource BoolVis}}" />
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -108,8 +122,12 @@
                     <DataGridTemplateColumn Header="DMG" Width="58" SortMemberPath="AvgDamage">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding AvgDamageText}" Style="{StaticResource Num}"
-                                           Foreground="{Binding DamageRatio, Converter={StaticResource Rating}, ConverterParameter=ratio}" />
+<StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding AvgDamageText}" Style="{StaticResource Num}"
+                                               Foreground="{Binding DamageRatio, Converter={StaticResource Rating}, ConverterParameter=ratio}" />
+                                    <TextBlock Text="{Binding AvgDamageText2}" Style="{StaticResource Num}" FontSize="10.5" Foreground="{Binding DamageRatio2, Converter={StaticResource Rating}, ConverterParameter=ratio}"
+                                               Visibility="{Binding ShowSecond, Converter={StaticResource BoolVis}}" />
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -117,7 +135,11 @@
                     <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="48" SortMemberPath="AvgXp">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding AvgXpText}" Style="{StaticResource Num}" />
+<StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding AvgXpText}" Style="{StaticResource Num}" />
+                                    <TextBlock Text="{Binding AvgXpText2}" Style="{StaticResource Num}" FontSize="10.5" Foreground="{StaticResource TextDim}"
+                                               Visibility="{Binding ShowSecond, Converter={StaticResource BoolVis}}" />
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -125,8 +147,12 @@
                     <DataGridTemplateColumn Header="PR" Width="46" SortMemberPath="Pr">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding PrText}" Style="{StaticResource Num}" FontWeight="SemiBold"
-                                           Foreground="{Binding Pr, Converter={StaticResource Rating}, ConverterParameter=pr}" />
+<StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding PrText}" Style="{StaticResource Num}" FontWeight="SemiBold"
+                                               Foreground="{Binding Pr, Converter={StaticResource Rating}, ConverterParameter=pr}" />
+                                    <TextBlock Text="{Binding PrText2}" Style="{StaticResource Num}" FontSize="10.5" Foreground="{Binding Pr2, Converter={StaticResource Rating}, ConverterParameter=pr}"
+                                               Visibility="{Binding ShowSecond, Converter={StaticResource BoolVis}}" />
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

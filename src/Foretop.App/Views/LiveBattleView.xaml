@@ -71,7 +71,44 @@
         </Border>
 
         <!-- Filters + comparison -->
-        <DockPanel Grid.Row="2" Margin="0,12,0,10" Visibility="{Binding HasBattle, Converter={StaticResource BoolVis}}">
+        <StackPanel Grid.Row="2" Margin="0,12,0,10" Visibility="{Binding HasBattle, Converter={StaticResource BoolVis}}">
+        <!-- Statistics filter: which of each player's battles the statistics count -->
+        <Border HorizontalAlignment="Left" Margin="0,0,0,10" Padding="12,6" CornerRadius="6" BorderThickness="1"
+                Background="{DynamicResource Panel}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsStatsFilterActive}" Value="True">
+                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="STATISTICS FILTER" Style="{StaticResource Dim}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <ComboBox ItemsSource="{Binding StatsFilterOptions}" SelectedItem="{Binding SelectedStatsFilter}" Width="130"
+                          ToolTip="Count only each player's battles in ships of this tier and above (recalculated from their per-ship statistics)" />
+                <Border Style="{StaticResource SegmentedHost}" Margin="10,0,10,0" IsEnabled="{Binding IsStatsFilterActive}">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton GroupName="statsview" Style="{StaticResource Segment}" Content="Overall" ToolTip="Show overall statistics"
+                                     IsChecked="{Binding StatsViewMode, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Overall}" />
+                        <RadioButton GroupName="statsview" Style="{StaticResource Segment}" Content="Filtered" ToolTip="Show filtered statistics"
+                                     IsChecked="{Binding StatsViewMode, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Filtered}" />
+                        <RadioButton GroupName="statsview" Style="{StaticResource Segment}" Content="Both" ToolTip="Compare both: overall above, filtered below"
+                                     IsChecked="{Binding StatsViewMode, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Both}" />
+                    </StackPanel>
+                </Border>
+                <CheckBox Content="Remember" IsChecked="{Binding RememberStatsFilter}" VerticalAlignment="Center"
+                          ToolTip="Keep this filter for the next start (otherwise Foretop starts with all tiers)" />
+                <Border Margin="12,0,0,0" Padding="8,2" CornerRadius="9" Background="{DynamicResource AccentButtonBg}" VerticalAlignment="Center"
+                        Visibility="{Binding IsStatsFilterActive, Converter={StaticResource BoolVis}}" ToolTip="{Binding TableBadgeTip}">
+                    <TextBlock Text="{Binding SelectedStatsFilter.Label}" Foreground="{DynamicResource AccentButtonFg}" FontSize="11.5" FontWeight="SemiBold" />
+                </Border>
+            </StackPanel>
+        </Border>
+        <DockPanel>
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                 <Border Style="{StaticResource SegmentedHost}" Margin="0,0,18,0">
                     <StackPanel Orientation="Horizontal">
@@ -82,7 +119,7 @@
                 </Border>
                 <TextBlock Text="Sort" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}" DisplayMemberPath="Label" Width="150" />
-                <TextBlock Text="Tier" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="14,0,6,0" />
+                <TextBlock Text="Ship tier" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="14,0,6,0" />
                 <ComboBox ItemsSource="{Binding TierOptions}" SelectedItem="{Binding SelectedTier}" Width="100" MinWidth="90" />
                 <TextBlock Text="Class" Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="14,0,4,0" />
                 <ToggleButton Style="{StaticResource Chip}" Content="DD" IsChecked="{Binding ShowDD}" />
@@ -97,6 +134,7 @@
                            TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </DockPanel>
+        </StackPanel>
 
         <!-- Teams -->
         <Grid Grid.Row="3">
@@ -121,10 +159,12 @@
             </Grid.ColumnDefinitions>
             <views:TeamTable Grid.Column="0" Header="FRIENDLY TEAM" Accent="{StaticResource Friendly}"
                              Rows="{Binding FriendlyView}" Summary="{Binding FriendlySummary}" Compact="{Binding CompactMode}"
-                             ShowRecent="{Binding HasRecentData}" />
+                             ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
+                             TwoLine="{Binding ShowBothLines}" />
             <views:TeamTable Grid.Column="2" Header="ENEMY TEAM" Accent="{StaticResource Enemy}"
                              Rows="{Binding EnemyView}" Summary="{Binding EnemySummary}" Compact="{Binding CompactMode}"
-                             ShowRecent="{Binding HasRecentData}" />
+                             ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
+                             TwoLine="{Binding ShowBothLines}" />
         </Grid>
 
         <!-- Team comparison -->

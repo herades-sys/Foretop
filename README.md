@@ -21,8 +21,8 @@ game data). It does not touch the game process, memory or network traffic.
 
 | File | Size | |
 |---|---|---|
-| [Foretop-1.4.0-x64.msi](https://github.com/herades-sys/Foretop/releases/download/v1.4.0/Foretop-1.4.0-x64.msi) | 56 MB | Installer, for your Windows account only (no administrator prompt), adds a Start menu entry |
-| [Foretop-1.4.0-portable-x64.zip](https://github.com/herades-sys/Foretop/releases/download/v1.4.0/Foretop-1.4.0-portable-x64.zip) | 69 MB | Portable: unzip anywhere and run `Foretop.exe` |
+| [Foretop-1.5.0-x64.msi](https://github.com/herades-sys/Foretop/releases/download/v1.5.0/Foretop-1.5.0-x64.msi) | 56 MB | Installer, for your Windows account only (no administrator prompt), adds a Start menu entry |
+| [Foretop-1.5.0-portable-x64.zip](https://github.com/herades-sys/Foretop/releases/download/v1.5.0/Foretop-1.5.0-portable-x64.zip) | 69 MB | Portable: unzip anywhere and run `Foretop.exe` |
 
 Both are self-contained: no .NET install needed. Installing a newer MSI replaces the
 old version and keeps your settings and history. From 1.4.0 on, Foretop finds new releases itself and
@@ -33,8 +33,8 @@ PC": click *More info* → *Run anyway*. To check a download, compare its SHA-25
 (`Get-FileHash <file>` in PowerShell) with the release:
 
 ```
-Foretop-1.4.0-x64.msi             8C5B19B2ED9CEAE1854AB499E8BCBE40B8B841CBFAB7C5863DB47F5747FF8452
-Foretop-1.4.0-portable-x64.zip    0659BC9E22ADFB82994FCB8D5691A794531794DE90C0E2535E359F99D219F60E
+Foretop-1.5.0-x64.msi             743B44A9DA293234B1F12E056AEE718622FE56EA0C5168E3F846F91672C909B1
+Foretop-1.5.0-portable-x64.zip    AA218E37A77B108FDD2B0635BC926CF9B85378148AFBE2978AA1CB3139AAB0EC
 ```
 
 ## Install

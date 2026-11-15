@@ -25,6 +25,13 @@ public sealed class AppSettings
     public double TextScale { get; set; } = 1.0;
     /// <summary>Look for a newer Foretop on GitHub after start and once a day.</summary>
     public bool CheckForUpdates { get; set; } = true;
+
+    /// <summary>Live Battle statistics filter: minimum tier (0 = all tiers, 11 = tier XI only).</summary>
+    public int StatsMinTier { get; set; }
+    /// <summary>Overall, Filtered or Both.</summary>
+    public string StatsView { get; set; } = "Filtered";
+    /// <summary>Keep the statistics filter for the next start; otherwise Foretop starts with all tiers.</summary>
+    public bool RememberStatsFilter { get; set; } = true;
     public bool StartMinimized { get; set; }
     public bool StartWithWindows { get; set; }
     public bool ShowBots { get; set; } = true;
