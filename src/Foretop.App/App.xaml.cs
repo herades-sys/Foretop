@@ -183,6 +183,20 @@ public partial class App : Application
             foreach (var part in filter.Split(',', StringSplitOptions.TrimEntries))
                 foreach (var chip in shell.Profiles.TierChips.Where(c => c.Value.ToString() == part).Concat(shell.Profiles.ClassChips.Where(c => c.Label == part)))
                     chip.IsChecked = true;
+        // --best-tiers 8,9 / --best-min 50: Best performing ships filter on the profile (a number not in the list = custom)
+        if (Arg("--best-tiers") is { } bestTiers)
+            foreach (var part in bestTiers.Split(',', StringSplitOptions.TrimEntries))
+                foreach (var chip in shell.Profiles.BestTierChips.Where(c => c.Value.ToString() == part))
+                    chip.IsChecked = true;
+        if (int.TryParse(Arg("--best-min"), out var bestMin))
+        {
+            if (shell.Profiles.MinBattlesOptions.FirstOrDefault(o => o.Value == bestMin) is { } known) shell.Profiles.SelectedMinBattles = known;
+            else
+            {
+                shell.Profiles.SelectedMinBattles = shell.Profiles.MinBattlesOptions.Last();
+                shell.Profiles.CustomMinBattles = bestMin.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+        }
         // --font <family> / --text-scale <1.25>: view only, not saved
         if (Arg("--font") is { } font) Services.FontManager.Apply(font);
         if (double.TryParse(Arg("--text-scale"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ts)) shell.UiScale = ts;

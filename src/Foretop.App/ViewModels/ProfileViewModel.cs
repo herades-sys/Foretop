@@ -64,6 +64,12 @@ public sealed partial class FilterChip(string label, int value, Action changed) 
     partial void OnIsCheckedChanged(bool value) => changed();
 }
 
+/// <summary>A minimum-battles choice for Best performing ships; Value null = custom.</summary>
+public sealed record MinBattlesOption(int? Value)
+{
+    public override string ToString() => Value is int v ? $"{v}+ battles" : "Custom…";
+}
+
 public sealed record EncounterRow(long BattleId, DateTime When, string Battle, string Side, string Ship, string StatsAtTheTime);
 
 public sealed partial class ProfileViewModel : ObservableObject
@@ -87,6 +93,132 @@ public sealed partial class ProfileViewModel : ObservableObject
                 ("CV", ShipClass.AirCarrier), ("SS", ShipClass.Submarine),
             }
             .Select(c => new FilterChip(c.Label, (int)c.Cls, ApplyShipFilter)).ToList();
+        BestTierChips = ShipRanking.Tiers.Select(t => new FilterChip(ShipRanking.Roman(t), t, OnBestFilterChanged)).ToList();
+        MinBattlesOptions = [new(1), new(5), new(10), new(DefaultMinBattles), new(50), new(100), new(null)];
+        _selectedMinBattles = MinBattlesOptions[3];
+    }
+
+    // ---- Best performing ships: tier and minimum-battles filter (kept for the session, across players) ----
+
+    private const int DefaultMinBattles = 20;
+    private bool _resettingBest;
+    private int _lastCustomMin = DefaultMinBattles;
+
+    public IReadOnlyList<FilterChip> BestTierChips { get; }
+    public IReadOnlyList<MinBattlesOption> MinBattlesOptions { get; }
+    [ObservableProperty] private MinBattlesOption _selectedMinBattles;
+    [ObservableProperty] private string _customMinBattles = DefaultMinBattles.ToString(CultureInfo.InvariantCulture);
+    [ObservableProperty] private string _bestShipsTitle = $"Best performing ships (PR, {DefaultMinBattles}+ battles)";
+    [ObservableProperty] private string _bestShipsSummary = "";
+    [ObservableProperty] private string? _bestShipsEmpty;
+    [ObservableProperty] private string? _customMinError;
+    [ObservableProperty] private bool _isBestFilterActive;
+
+    public bool IsCustomMin => SelectedMinBattles.Value is null;
+
+    /// <summary>The "All tiers" chip: checked when no tier is chosen; checking it clears the tiers.</summary>
+    public bool AllBestTiers
+    {
+        get => !BestTierChips.Any(c => c.IsChecked);
+        set
+        {
+            if (value) ClearBestTiers();
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>The minimum in force: the chosen option, or the last valid custom number.</summary>
+    public int MinBattles => SelectedMinBattles.Value ?? _lastCustomMin;
+
+    partial void OnSelectedMinBattlesChanged(MinBattlesOption value)
+    {
+        OnPropertyChanged(nameof(IsCustomMin));
+        if (value.Value is null) ParseCustomMin();
+        OnBestFilterChanged();
+    }
+
+    partial void OnCustomMinBattlesChanged(string value)
+    {
+        if (!IsCustomMin) return;
+        ParseCustomMin();
+        OnBestFilterChanged();
+    }
+
+    private void ParseCustomMin()
+    {
+        if (int.TryParse(CustomMinBattles.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var n) && n >= 1)
+        {
+            _lastCustomMin = n;
+            CustomMinError = null;
+        }
+        else CustomMinError = $"Enter a whole number of 1 or more (using {_lastCustomMin:N0}).";
+    }
+
+    [RelayCommand]
+    private void ClearBestTiers()
+    {
+        _resettingBest = true;
+        foreach (var c in BestTierChips) c.IsChecked = false;
+        _resettingBest = false;
+        OnBestFilterChanged();
+    }
+
+    [RelayCommand]
+    private void ResetBestFilter()
+    {
+        _resettingBest = true;
+        foreach (var c in BestTierChips) c.IsChecked = false;
+        SelectedMinBattles = MinBattlesOptions.First(o => o.Value == DefaultMinBattles);
+        CustomMinBattles = DefaultMinBattles.ToString(CultureInfo.InvariantCulture);
+        CustomMinError = null;
+        _resettingBest = false;
+        OnBestFilterChanged();
+    }
+
+    private void OnBestFilterChanged()
+    {
+        if (_resettingBest) return;
+        OnPropertyChanged(nameof(AllBestTiers));
+        BuildBestShips();
+    }
+
+    /// <summary>Ranks the player's ships by PR within the chosen tiers and minimum battles.</summary>
+    private void BuildBestShips()
+    {
+        var tiers = BestTierChips.Where(c => c.IsChecked).Select(c => c.Value).ToHashSet();
+        var min = MinBattles;
+        var inv = CultureInfo.CurrentCulture;
+        var result = ShipRanking.Rank(_allShips.Select(r => (r.Perf, r.Ship)), tiers, min);
+
+        BestShips = result.Top
+            .Select(r => new ChartBar($"{ShipRanking.Roman(r.Ship.Tier)} {r.Ship.Name}", r.Pr,
+                $"PR {r.Pr.ToString("0", inv)} · {r.Battles:N0} battle{(r.Battles == 1 ? "" : "s")}", RatingBrushConverter.For(r.Pr, "pr")))
+            .ToList();
+
+        BestShipsTitle = $"Best performing ships (PR, {min:N0}+ battles)";
+        IsBestFilterActive = tiers.Count > 0 || min != DefaultMinBattles;
+        var filters = $"{ShipRanking.TierLabel(tiers)} · {min:N0}+ battles";
+        var count = result.Matching == 0 ? "no ships match"
+            : result.Matching > result.Top.Count ? $"top {result.Top.Count} of {result.Matching:N0} matching ships"
+            : $"{result.Matching:N0} ship{(result.Matching == 1 ? "" : "s")} match{(result.Matching == 1 ? "es" : "")}";
+        var left = new List<string>();
+        if (result.WithoutPr > 0) left.Add($"{result.WithoutPr:N0} without a PR (no expected values)");
+        if (result.UnknownShips > 0) left.Add($"{result.UnknownShips:N0} with an unknown tier");
+        BestShipsSummary = $"{filters}: {count}" + (left.Count > 0 ? $". Not ranked: {string.Join(", ", left)}." : "");
+
+        BestShipsEmpty = result.Top.Count > 0 ? null
+            : _allShips.Count == 0 ? "No ship statistics for this player."
+            : tiers.Count > 0 ? $"No ships in {ShipRanking.TierLabel(tiers)} with {min:N0}+ battles and a PR. Lower the minimum battles or choose other tiers."
+            : $"No ships with {min:N0}+ battles and a PR. Lower the minimum battles.";
+
+        foreach (var c in BestTierChips)
+        {
+            var ofTier = _allShips.Where(r => r.Tier == c.Value).ToList();
+            var qualifying = ofTier.Count(r => r.Battles >= min && r.Pr is not null);
+            c.IsAvailable = ofTier.Count > 0 || c.IsChecked;
+            c.Tip = ofTier.Count == 0 ? $"Tier {c.Label}: no ships"
+                : $"Tier {c.Label}: {qualifying:N0} of {ofTier.Count:N0} ship{(ofTier.Count == 1 ? "" : "s")} with {min:N0}+ battles and a PR";
+        }
     }
 
     private static string Roman(int t) => t switch
@@ -336,9 +468,7 @@ public sealed partial class ProfileViewModel : ObservableObject
             .Select(r => new ChartBar($"{r.TierText} {r.ShipName}", r.Battles, $"{r.Battles:N0} · {r.WinRateText}", RatingBrushConverter.ForClass(r.ShipClass)))
             .ToList();
 
-        BestShips = rows.Where(r => r.Ship is not null && r.Battles >= 20 && r.Pr is not null).OrderByDescending(r => r.Pr).Take(10)
-            .Select(r => new ChartBar($"{r.TierText} {r.ShipName}", r.Pr!.Value, $"PR {r.PrText} · {r.Battles:N0} b", RatingBrushConverter.For(r.Pr, "pr")))
-            .ToList();
+        BuildBestShips(); // tier and minimum-battles filter stay when switching players
 
         var total = Math.Max(1, rows.Sum(r => r.Battles));
         ClassBreakdown = rows.GroupBy(r => r.ShipClass).Where(g => g.Key != ShipClass.Unknown)

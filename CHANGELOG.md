@@ -3,6 +3,10 @@
 ## Unreleased
 
 - README: screenshots of Live Battle, My performance, Replays and Ship Intelligence.
+- Player Profiles → **Best performing ships**: filter by tier (All tiers, or any of I–XI together) and minimum
+  battles (1+, 5+, 10+, 20+, 50+, 100+ or custom; 20+ by default). The ranking, title and scale follow at once; the
+  line under the filters shows the active filters, how many ships match and which ships are not ranked (no PR,
+  unknown tier). Kept for the session. PR per ship is unchanged.
 - Developer switch `--anonymize` (player names → "Player 1, 2…", clan tags hidden) for publishing screenshots.
 
 ## 1.6.0 — 2026-11-15

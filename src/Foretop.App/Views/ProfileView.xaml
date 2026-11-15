@@ -121,8 +121,39 @@
                         </Border>
                         <Border Grid.Column="2" Style="{StaticResource Card}">
                             <StackPanel>
-                                <TextBlock Text="Best performing ships (PR, 20+ battles)" Style="{StaticResource H2}" Margin="0,0,0,8" />
-                                <charts:BarChart Items="{Binding BestShips}" LabelWidth="160" />
+                                <TextBlock Text="{Binding BestShipsTitle}" Style="{StaticResource H2}" Margin="0,0,0,8" />
+                                <!-- Tier filter: All tiers, or any combination of tiers (click several for a range) -->
+                                <WrapPanel Margin="-2,0,0,6">
+                                    <ToggleButton Style="{StaticResource Chip}" Content="All tiers" IsChecked="{Binding AllBestTiers}" Margin="2,0,6,4"
+                                                  ToolTip="Show every tier (clears the tier selection)" />
+                                    <ItemsControl ItemsSource="{Binding BestTierChips}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <ToggleButton Style="{StaticResource Chip}" Content="{Binding Label}" IsChecked="{Binding IsChecked}" MinWidth="32"
+                                                              Margin="2,0,2,4" IsEnabled="{Binding IsAvailable}" ToolTip="{Binding Tip}"
+                                                              ToolTipService.ShowOnDisabled="True" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                </WrapPanel>
+                                <WrapPanel Margin="0,0,0,6">
+                                    <TextBlock Text="Minimum battles" Style="{StaticResource Dim}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <ComboBox ItemsSource="{Binding MinBattlesOptions}" SelectedItem="{Binding SelectedMinBattles}" Width="120"
+                                              ToolTip="Only ships with at least this many Random battles are ranked" />
+                                    <TextBox Text="{Binding CustomMinBattles, UpdateSourceTrigger=PropertyChanged}" Width="64" Margin="6,0,0,0"
+                                             VerticalContentAlignment="Center" ToolTip="Custom minimum number of battles"
+                                             Visibility="{Binding IsCustomMin, Converter={StaticResource BoolVis}}" />
+                                    <Button Content="Reset filters" Command="{Binding ResetBestFilterCommand}" Margin="10,0,0,0" Padding="10,2"
+                                            ToolTip="All tiers, 20+ battles" Visibility="{Binding IsBestFilterActive, Converter={StaticResource BoolVis}}" />
+                                </WrapPanel>
+                                <TextBlock Text="{Binding CustomMinError}" Foreground="{StaticResource RateYellow}" FontSize="11.5" TextWrapping="Wrap"
+                                           Margin="0,0,0,4" Visibility="{Binding CustomMinError, Converter={StaticResource NullVis}}" />
+                                <TextBlock Text="{Binding BestShipsSummary}" Style="{StaticResource Dim}" FontSize="11.5" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                <TextBlock Text="{Binding BestShipsEmpty}" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,4,0,4"
+                                           Visibility="{Binding BestShipsEmpty, Converter={StaticResource NullVis}}" />
+                                <charts:BarChart Items="{Binding BestShips}" LabelWidth="170"
+                                                 Visibility="{Binding BestShipsEmpty, Converter={StaticResource InvNullVis}}" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Row="2" Style="{StaticResource Card}">

@@ -100,6 +100,14 @@ to narrow the list, and the line above the table adds up battles, win rate and a
 shown. Greyed-out buttons have no ships for that player; **Clear** resets the filter, which otherwise stays when
 you open another player.
 
+**Best performing ships** ranks the player's ships by their Personal Rating (the same per-ship PR as in the ship
+list), ten at most. Above it, **All tiers** or any tiers from I to XI (click several, e.g. VI, VII and VIII for a
+range) and **Minimum battles** (1+, 5+, 10+, 20+, 50+, 100+ or a custom number; 20+ to start with) choose which
+ships take part; both apply together. The tier is the ship's real tier from the ship list. The line under the
+filters names the active filters and how many ships match; ships without a PR (no expected values) or with an
+unknown tier are never ranked and are counted there. **Reset filters** goes back to all tiers and 20+ battles.
+The choice stays while Foretop runs, also when you open another player.
+
 ## 5. Battle History and Statistics
 
 Every detected battle (and every replay you open) is saved with everyone's
