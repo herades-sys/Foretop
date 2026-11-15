@@ -54,6 +54,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _startMinimized;
     [ObservableProperty] private bool _showBots;
+    [ObservableProperty] private bool _checkForUpdates;
+    public Services.UpdateService Updates => _host.Updates;
     [ObservableProperty] private double _apiRatePerSecond;
     [ObservableProperty] private int _playerCacheMinutes;
     [ObservableProperty] private int _clanCacheHours;
@@ -121,6 +123,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         StartWithWindows = _draft.StartWithWindows;
         StartMinimized = _draft.StartMinimized;
         ShowBots = _draft.ShowBots;
+        CheckForUpdates = _draft.CheckForUpdates;
         ApiRatePerSecond = _draft.ApiRatePerSecond;
         PlayerCacheMinutes = _draft.PlayerCacheMinutes;
         ClanCacheHours = _draft.ClanCacheHours;
@@ -144,6 +147,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.StartWithWindows = StartWithWindows;
         s.StartMinimized = StartMinimized;
         s.ShowBots = ShowBots;
+        s.CheckForUpdates = CheckForUpdates;
         s.ApiRatePerSecond = Math.Clamp(ApiRatePerSecond, 1, 10);
         s.PlayerCacheMinutes = Math.Clamp(PlayerCacheMinutes, 0, 7 * 24 * 60);
         s.ClanCacheHours = Math.Clamp(ClanCacheHours, 0, 24 * 30);

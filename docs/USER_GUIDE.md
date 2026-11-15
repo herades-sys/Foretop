@@ -172,7 +172,21 @@ that is under Ship Statistics and Player Profiles.
 
 The top-bar search also finds ships: type a ship's name and press Enter.
 
-## 7. Where the numbers come from
+## 7. Updates
+
+Foretop looks for a new version on GitHub about 20 seconds after it starts and then once a day (Settings →
+About → Updates; **Check now** checks at once). When there is one, an **Update x.y.z** button appears in the top
+bar. It opens the release notes with:
+
+- **Install and restart** (installed version): downloads the installer, checks it against GitHub's SHA-256,
+  closes Foretop, installs the update with a progress bar and starts Foretop again. Settings and history stay.
+- **Open download page** (portable version): download the new zip and replace `Foretop.exe`.
+- **Skip this version** hides the button until a newer one comes out; **Later** just closes the panel.
+
+Downloaded installers are kept in `%LOCALAPPDATA%\Foretop\updates`. The check only reads the public release page
+and sends nothing about you; it needs the GitHub repository to be public.
+
+## 8. Where the numbers come from
 
 - **Official** — battles, wins, damage, XP, frags, survival, planes: straight from
   the Wargaming API.
@@ -183,7 +197,7 @@ The top-bar search also finds ships: type a ship's name and press Enter.
   Foretop compares its own snapshots of a player. A player's recent numbers appear
   once Foretop has seen them at least 7 days earlier.
 
-## 8. Settings reference
+## 9. Settings reference
 
 | Setting | Meaning |
 |---|---|
@@ -198,11 +212,12 @@ The top-bar search also finds ships: type a ship's name and press Enter.
 | Theme | System (follows Windows), Dark or Light. |
 | Font | Any font installed on Windows (the list shows each in its own style); Default is Segoe UI. |
 | Text size | 90–150 %. Scales the whole interface, so tables and charts keep their proportions. |
+| Check for updates | Look for a new version on GitHub after start and once a day (About → Updates). |
 | Compact mode | Fewer columns, tighter rows. |
 | Start with Windows / minimised | Launch on sign-in. |
 | Cache times | How long statistics are reused before fetching again. |
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 Run **Settings → Run check** first; it names the problem in most cases.
 
@@ -218,11 +233,12 @@ Run **Settings → Run check** first; it names the problem in most cases.
 | Files left in `%LOCALAPPDATA%\Programs\Foretop` after uninstalling | The exe was in use (often a virus scan right after running it). Delete the folder, or it goes after the next restart. |
 | Something else | Settings → About → *Open log folder*, and look at the newest `foretop-*.log`. |
 
-## 10. Privacy and fair play
+## 11. Privacy and fair play
 
 Foretop reads one file the game itself writes for replays. It does not read game
 memory, inject code, capture network traffic or automate anything. It talks only to
-the Wargaming API (player statistics) and wows-numbers.com (PR expected values).
+the Wargaming API (player statistics), wows-numbers.com (PR expected values) and GitHub (the update check, which
+only reads the public release page).
 
 Foretop is not affiliated with or endorsed by Wargaming. World of Warships is a
 trademark of Wargaming.

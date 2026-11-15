@@ -52,7 +52,11 @@ public sealed class AppHost : IDisposable
         Replays = new Core.Replays.ReplayLibrary(
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot, ShipData);
         ShipIconCache.Instance = new ShipIconCache(Http, AppPaths.IconDir, Loggers.CreateLogger<ShipIconCache>());
+        Updates = new UpdateService(this);
     }
+
+    /// <summary>New Foretop versions from GitHub releases.</summary>
+    public UpdateService Updates { get; }
 
     public ILoggerFactory Loggers { get; }
     public ILogger Log { get; }

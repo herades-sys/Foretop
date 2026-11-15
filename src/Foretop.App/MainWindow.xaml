@@ -172,6 +172,22 @@
                     </TextBox>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Command="{Binding Updates.TogglePanelCommand}" Margin="0,0,8,0" Cursor="Hand" ToolTip="A newer Foretop is available"
+                                Visibility="{Binding Updates.ShowNotice, Converter={StaticResource BoolVis}}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{DynamicResource AccentButtonBg}" CornerRadius="11" Padding="10,3">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Data="M12 4v11 M7 10l5 5l5 -5 M5 19h14" Stroke="{DynamicResource AccentButtonFg}" StrokeThickness="2"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="11" Height="11"
+                                                  Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Updates.NoticeText}" Foreground="{DynamicResource AccentButtonFg}" FontSize="12"
+                                                       FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                         <Border Style="{StaticResource Pill}" ToolTip="{Binding ApiStatusTooltip}" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
@@ -187,6 +203,37 @@
             </Border>
 
             <ContentControl Grid.Row="1" Content="{Binding CurrentContent}" Focusable="False" />
+
+            <!-- Update panel (opened from the top-bar notice) -->
+            <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,14,0" Width="460" Padding="16,14"
+                    Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="8"
+                    Visibility="{Binding Updates.IsPanelOpen, Converter={StaticResource BoolVis}}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.35" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="{Binding Updates.Available.Title}" Style="{StaticResource H2}" />
+                    <TextBlock Style="{StaticResource Dim}" FontSize="11.5" Margin="0,2,0,8">
+                        <Run Text="You have" /> <Run Text="{Binding VersionShort, Mode=OneWay}" /><Run Text=" · released " /><Run
+                            Text="{Binding Updates.Available.PublishedAt, Mode=OneWay, StringFormat=d}" />
+                    </TextBlock>
+                    <ScrollViewer MaxHeight="230" VerticalScrollBarVisibility="Auto">
+                        <TextBlock Text="{Binding Updates.NotesPreview}" TextWrapping="Wrap" FontSize="12" />
+                    </ScrollViewer>
+                    <TextBlock Text="{Binding Updates.ProgressText}" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,8,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding Updates.ProgressText, Converter={StaticResource NullVis}}" />
+                    <TextBlock Style="{StaticResource Dim}" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding Updates.IsInstalledCopy, Converter={StaticResource InvBoolVis}}"
+                               Text="This is the portable version: download the new zip from the release page and replace Foretop.exe." />
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Content="{Binding Updates.InstallLabel}" Command="{Binding Updates.InstallCommand}" Style="{StaticResource AccentButton}"
+                                Margin="0,0,6,0" />
+                        <Button Content="Release page" Command="{Binding Updates.OpenReleasePageCommand}" Margin="0,0,6,0" />
+                        <Button Content="Skip this version" Command="{Binding Updates.SkipCommand}" Margin="0,0,6,0" />
+                        <Button Content="Later" Command="{Binding Updates.LaterCommand}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

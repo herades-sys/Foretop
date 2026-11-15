@@ -122,6 +122,10 @@ public sealed partial class ShellViewModel : ObservableObject
     /// <summary>Sidebar with icons only; remembered in the settings.</summary>
     [ObservableProperty] private bool _isSidebarCollapsed;
 
+    /// <summary>Update notice in the top bar.</summary>
+    public Services.UpdateService Updates => _host.Updates;
+    public string VersionShort => "Foretop " + Services.AppInfo.Version;
+
     /// <summary>Interface scale from Settings → Text size.</summary>
     [ObservableProperty] private double _uiScale = 1.0;
 

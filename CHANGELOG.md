@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 — 2026-11-15
+
+- **Updates from GitHub.** Foretop checks for a new release after start and once a day. An **Update** button in the
+  top bar shows the release notes; **Install and restart** downloads the installer, verifies it against GitHub's
+  SHA-256, installs it and starts the new version (the portable version opens the download page instead).
+  **Skip this version**, **Later**, and in Settings → About: automatic check on/off and **Check now**.
+
 ## 1.3.0 — 2026-11-15
 
 - **Sidebar can collapse** to the page icons only (Collapse at the bottom, or Ctrl+B); page names show as

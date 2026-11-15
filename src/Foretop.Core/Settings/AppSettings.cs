@@ -23,6 +23,8 @@ public sealed class AppSettings
     public string? FontFamily { get; set; }
     /// <summary>Size of the whole interface, 1 = 100 %.</summary>
     public double TextScale { get; set; } = 1.0;
+    /// <summary>Look for a newer Foretop on GitHub after start and once a day.</summary>
+    public bool CheckForUpdates { get; set; } = true;
     public bool StartMinimized { get; set; }
     public bool StartWithWindows { get; set; }
     public bool ShowBots { get; set; } = true;

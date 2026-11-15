@@ -81,6 +81,19 @@ public partial class App : Application
             _host.Results.Attach(_host.Watcher);
             _ = _host.Results.ResumeAsync();
         }
+        // Update check: not in development snapshot runs, unless they bring their own release file (--update-feed).
+        var feedAt = Array.IndexOf(e.Args, "--update-feed");
+        var feed = feedAt >= 0 && feedAt + 1 < e.Args.Length ? e.Args[feedAt + 1] : null;
+        if (!e.Args.Contains("--snapshot") || feed is not null) _host.Updates.Start(_host.Settings.Current.CheckForUpdates, feed);
+        if (e.Args.Contains("--update-panel")) _host.Updates.IsPanelOpen = true;
+        var checkUpdates = _host.Settings.Current.CheckForUpdates;
+        _host.Settings.Changed += s =>
+        {
+            if (s.CheckForUpdates == checkUpdates) return;
+            checkUpdates = s.CheckForUpdates;
+            Dispatcher.BeginInvoke(() => _host.Updates.SetEnabled(checkUpdates));
+        };
+
         if (_host.Settings.Current.AutoDetectBattles) _host.Watcher.Start();
         _host.Settings.Changed += s =>
         {

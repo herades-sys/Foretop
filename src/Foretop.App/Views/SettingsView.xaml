@@ -231,6 +231,19 @@
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <Button Content="Open log folder" Command="{Binding OpenLogFolderCommand}" Margin="0,0,6,0" />
                     </StackPanel>
+
+                    <!-- Updates -->
+                    <TextBlock Text="Updates" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <CheckBox Content="Check for new versions on GitHub after start and once a day (applies on Save)" IsChecked="{Binding CheckForUpdates}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Button Content="Check now" Command="{Binding Updates.CheckCommand}" Margin="0,0,6,0" />
+                        <Button Content="Show update" Command="{Binding Updates.TogglePanelCommand}" Margin="0,0,10,0"
+                                Visibility="{Binding Updates.Available, Converter={StaticResource NullVis}}" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Updates.StatusText}" FontSize="12" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Updates.LastCheckedText}" Style="{StaticResource Dim}" FontSize="11" />
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>
