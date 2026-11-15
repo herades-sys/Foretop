@@ -3,6 +3,8 @@ namespace Foretop.Core.Replays;
 /// <summary>One ship in the battle. Relation: 0 = the recording player, 1 = ally, 2 = enemy (as in the arena info).</summary>
 public sealed record ReplayPlayer(string Name, long ShipId, int Relation, int VehicleId, long AccountId, string? ClanTag)
 {
+    /// <summary>The id chat lines name as sender; 0 when the replay has no chat to find it from.</summary>
+    public long AvatarId { get; init; }
     public bool IsSelf => Relation == 0;
     public bool IsEnemy => Relation == 2;
 }
@@ -16,6 +18,15 @@ public readonly record struct ValuePoint(float T, float Value);
 public readonly record struct Visibility(float From, float To);
 
 public sealed record ReplayDeath(float T, int Victim, int Killer, int Reason);
+
+/// <summary>
+/// A chat line the recording client received. Channel is the game's namespace ("battle_common" = all,
+/// "battle_team" = team); Sender is null when the id matches no player (system lines).
+/// </summary>
+public sealed record ReplayChat(float T, long SenderId, ReplayPlayer? Sender, string Channel, string Text)
+{
+    public bool IsTeam => Channel.Contains("team", StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>A capture point; Label is the in-game letter from its control-point index ("" for other zone kinds).</summary>
 public sealed record ReplayZone(int EntityId, float X, float Z, float Radius, string Label, IReadOnlyList<(float T, int Team)> Owners, float From, float To)
@@ -53,6 +64,7 @@ public sealed class ReplayData
     public required IReadOnlyList<ReplayDeath> Deaths { get; init; }
     public required IReadOnlyList<ReplayZone> Zones { get; init; }
     public required IReadOnlyList<ReplaySmoke> Smokes { get; init; }
+    public IReadOnlyList<ReplayChat> Chat { get; init; } = [];
 
     /// <summary>In-game clock (seconds left) by replay time; empty when the replay did not carry it.</summary>
     public required IReadOnlyList<ValuePoint> TimeLeft { get; init; }

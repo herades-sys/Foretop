@@ -118,6 +118,11 @@ Verified on a build 13533378 Random battle (Tears of the Desert, 822 s, 24 playe
 - Yaw: 0 = north, clockwise positive. World X east, Z north; the minimap square is ±(playable half), north up.
 - `InteractiveZone.componentsState.controlPoint.index` 0/1/2 = A/B/C; `captureLogic` holds progress and capture time.
 - There are no game texts for death reasons, so the player shows who sank whom, not the weapon.
+- Chat: `Avatar.onChatMessage` (index 152) with `PLAYER_ID` sender, then three unnamed strings: channel
+  (`battle_team`, `battle_common`), the text, and one more (empty so far). The sender is neither the account id nor the
+  vehicle id: it is a third id in the `onArenaStateReceived` player records, found by matching the senders' values
+  (checked: 7 lines from 3 allies). Only lines the recording client received are in the replay, so enemy team chat is
+  never there. `receiveChatHistory` (a blob, for reconnects) is not read.
 
 ## Open
 

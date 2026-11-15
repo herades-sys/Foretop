@@ -15,6 +15,7 @@ public class ReplayTests
         <root>
           <ENTITY_ID>INT32</ENTITY_ID>
           <TEAM_ID>INT8</TEAM_ID>
+          <PLAYER_ID>INT32</PLAYER_ID>
           <MAYBE>FIXED_DICT <Properties><a><Type>UINT8</Type></a></Properties> <AllowNone>true</AllowNone></MAYBE>
         </root>
         """;
@@ -37,7 +38,7 @@ public class ReplayTests
             </root>
             """,
         ["scripts/entity_defs/interfaces/Chat.def"] = """
-            <root><ClientMethods><onChatMessage><Arg>STRING</Arg></onChatMessage><onTick><Arg>UINT32</Arg><Arg>UINT32</Arg><Arg>UINT32</Arg></onTick></ClientMethods></root>
+            <root><ClientMethods><onChatMessage><Arg>PLAYER_ID</Arg><Arg>STRING</Arg><Arg>STRING</Arg><Arg>STRING</Arg></onChatMessage><onTick><Arg>UINT32</Arg><Arg>UINT32</Arg><Arg>UINT32</Arg></onTick></ClientMethods></root>
             """,
         ["scripts/entity_defs/Vehicle.def"] = """
             <root>
@@ -154,15 +155,24 @@ public class ReplayTests
     }
 
     [Fact]
-    public void Parser_builds_tracks_health_kills_and_links_players()
+    public void Parser_builds_tracks_health_kills_chat_and_links_players()
     {
         var defs = Defs();
         var avatar = defs.Entity("Avatar")!;
         var vehicle = defs.Entity("Vehicle")!;
         const int me = 1001, foe = 1003, avatarId = 1000;
-        // Pickled player list (protocol 0): [[(1, 'Bob'), (2, 1001), (3, 549692505)], [(1, 'Eve'), (2, 1003), (3, 7)]]
+        // Pickled player list (protocol 0): [[(1, 'Bob'), (2, 1001), (3, 549692505), (4, 900001)], [(1, 'Eve'), (2, 1003), (3, 7), (4, 900002)]]
+        // Key 4 is the id chat lines name as sender.
         var pickle = Encoding.ASCII.GetBytes(
-            "(l(l(I1\nS'Bob'\nta(I2\nI1001\nta(I3\nI549692505\ntaa(l(I1\nS'Eve'\nta(I2\nI1003\nta(I3\nI7\ntaa.");
+            "(l(l(I1\nS'Bob'\nta(I2\nI1001\nta(I3\nI549692505\nta(I4\nI900001\ntaa(l(I1\nS'Eve'\nta(I2\nI1003\nta(I3\nI7\nta(I4\nI900002\ntaa.");
+        void Chat(BinaryWriter w, int sender, string channel, string text)
+        {
+            var args = new MemoryStream();
+            var a = new BinaryWriter(args);
+            a.Write(sender);
+            foreach (var str in new[] { channel, text, "" }) { var b = Encoding.UTF8.GetBytes(str); a.Write((byte)b.Length); a.Write(b); }
+            w.Write(avatarId); w.Write(avatar.MethodIndex("onChatMessage")); w.Write((int)args.Length); w.Write(args.ToArray());
+        }
 
         var p = new Packets()
             .Add(0x00, 0, w => { w.Write(avatarId); w.Write((short)1); })
@@ -188,6 +198,8 @@ public class ReplayTests
          .Add(0x0A, 2, w => { w.Write(foe); w.Write(0); Vec(w, -100, 0, 50); Vec(w, 0, 0, 0); w.Write(0.5f); w.Write(0f); w.Write(0f); w.Write((byte)0); })
          .Add(0x07, 3, w => { w.Write(foe); w.Write(vehicle.PropertyIndex("health")); w.Write(4); w.Write(12_345f); })
          .Add(0x08, 4, w => { w.Write(avatarId); w.Write(avatar.MethodIndex("receiveVehicleDeath")); w.Write(12); w.Write(foe); w.Write(me); w.Write(17); })
+         .Add(0x08, 4.5f, w => Chat(w, 900002, "battle_common", "gl hf"))
+         .Add(0x08, 6, w => Chat(w, 900001, "battle_team", "wp"))
          .Add(0x04, 5, w => w.Write(foe))
          .Add(0x0A, 9, w => { w.Write(me); w.Write(0); Vec(w, 11, 0, 21); Vec(w, 0, 0, 0); w.Write(1.5f); w.Write(0f); w.Write(0f); w.Write((byte)0); });
 
@@ -215,6 +227,11 @@ public class ReplayTests
         Assert.Equal(new Visibility(0, 9), Assert.Single(data.Seen[me])); // own ship: whole replay
         Assert.Equal(9, data.Duration);
         Assert.Equal(new DateTime(2026, 11, 15, 0, 52, 51), data.StartedAt);
+
+        Assert.Equal(2, data.Chat.Count);
+        Assert.Equal((4.5f, "Eve", false, "gl hf"), (data.Chat[0].T, data.Chat[0].Sender?.Name, data.Chat[0].IsTeam, data.Chat[0].Text));
+        Assert.Equal(("Bob", true, "wp"), (data.Chat[1].Sender?.Name, data.Chat[1].IsTeam, data.Chat[1].Text));
+        Assert.Equal(900002, eve.AvatarId);
     }
 
     [Theory]

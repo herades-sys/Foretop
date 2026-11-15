@@ -369,15 +369,15 @@ back on the map. Read-only; format details in [GAME_DATA.md](GAME_DATA.md#replay
 3. **Parser** (`ReplayParser`): positions (`Position` for other ships, `PlayerPosition` for the controlled one),
    visibility spans (entity create … leave), `Vehicle.health`/`maxHealth`/`teamId`, `Avatar.receiveVehicleDeath`,
    capture points (`InteractiveZone` with control-point index and owner team), smoke (`SmokeScreen.points`), the battle
-   clock (`BattleLogic.timeLeft`). Players come from the arena JSON and are linked to their vehicle entity through the
-   pickled player list of `Avatar.onArenaStateReceived`, whose keys are found by value (name, vehicle id, account id)
-   because their numbering changes between versions.
+   clock (`BattleLogic.timeLeft`), chat (`Avatar.onChatMessage`). Players come from the arena JSON and are linked to their vehicle entity through the
+   pickled player list of `Avatar.onArenaStateReceived`, whose keys are found by value (name, vehicle id, account id,
+   chat sender id) because their numbering changes between versions.
 4. **Map** (`ReplayLibrary`): `spaces/<map>/minimap_water.png` + `minimap.png` (760 px) and the playable square from
    `space.settings` (chunk bounds minus two chunks per side; ±700 on Tears of the Desert). Checked by sampling 8,345
    track points: 0.26 % fall on land at this scale, 2–15 % at 0.8–1.2× or with the axis flipped.
 5. **Player** (`ReplaysViewModel`, `ReplayScene`, `ReplayCanvas`): interpolates positions between packets (not across
    gaps over 6 s), draws ships the client could not see hollow at their last known position and sunk ships as a
-   cross; 1–40× speed, team lists with health, kill feed by battle clock.
+   cross; 1–40× speed, team lists with health, kill feed by battle clock, chat log and the latest lines over the map.
 
-Not decoded yet: shells, torpedoes, planes, capture progress, ribbons and chat. The large packet at the end of the
+Not decoded yet: shells, torpedoes, planes, capture progress and ribbons. The large packet at the end of the
 stream (type 0x22) is the battle-results JSON with the recording player's own credits and XP; it is not used yet.

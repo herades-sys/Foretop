@@ -113,10 +113,12 @@ Double-click one, or select it and press **Open selected**, to watch the battle 
 - Capture points carry their letter and turn the owner's colour; grey circles are smoke.
 - **Play / Pause** (or Space), ±30 s, 1–40× speed, and the slider to jump anywhere. The big
   clock is the battle clock (time left), the small one the replay time.
-- Right: both teams with health (faded = sunk, dimmer = not in view) and the kill feed.
+- Right: both teams with health (faded = sunk, dimmer = not in view), the kill feed and the **chat** up to the
+  current moment. Click a chat line to jump to it. The latest lines also show at the bottom left of the map, as in
+  the game; **Chat** under the map switches that off.
 
 Only what your game client received is shown: enemies appear while someone on your team
-had them spotted, as in the battle. Replays need replay recording switched on in the game
+had them spotted, as in the battle, and the chat has your team's messages and messages to all, not the enemy team's. Replays need replay recording switched on in the game
 and the game installation (Foretop reads the map images and message layout from it).
 
 ## 6. Ship Intelligence

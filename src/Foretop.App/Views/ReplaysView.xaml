@@ -50,6 +50,17 @@
                 <Trigger Property="Tag" Value="Enemy"><Setter Property="Foreground" Value="{DynamicResource Enemy}" /></Trigger>
             </Style.Triggers>
         </Style>
+        <!-- One chat line: [Team] Name: text, the name in the sender's team colour. -->
+        <DataTemplate x:Key="ChatLine">
+            <TextBlock TextWrapping="Wrap" FontSize="11.5" Margin="0,1" ToolTip="{Binding SenderShip}">
+                <Run Text="{Binding Channel, Mode=OneWay, StringFormat=[{0}]}" Foreground="{DynamicResource TextDim}" />
+                <Run x:Name="SenderRun" Text="{Binding Sender, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=": " Foreground="{DynamicResource TextDim}" /><Run Text="{Binding Text, Mode=OneWay}" />
+            </TextBlock>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding SenderLevel}" Value="Ally"><Setter TargetName="SenderRun" Property="Foreground" Value="{DynamicResource Friendly}" /></DataTrigger>
+                <DataTrigger Binding="{Binding SenderLevel}" Value="Enemy"><Setter TargetName="SenderRun" Property="Foreground" Value="{DynamicResource Enemy}" /></DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid Margin="22,18,22,12">
@@ -143,7 +154,8 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <CheckBox Content="Trails" IsChecked="{Binding ShowTrails}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                        <CheckBox Content="Names" IsChecked="{Binding ShowNames}" VerticalAlignment="Center" />
+                        <CheckBox Content="Names" IsChecked="{Binding ShowNames}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <CheckBox Content="Chat" IsChecked="{Binding ShowChat}" VerticalAlignment="Center" ToolTip="Show the latest chat lines on the map" />
                     </StackPanel>
                     <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0" MinWidth="86">
                         <TextBlock Text="{Binding ClockText}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Right"
@@ -160,6 +172,19 @@
                 <Grid>
                     <views:ReplayCanvas Scene="{Binding Scene}" Time="{Binding Time}" ShowTrails="{Binding ShowTrails}" ShowNames="{Binding ShowNames}"
                                         Margin="6" />
+                    <!-- Latest chat over the map, as in the game -->
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" MaxWidth="360" Padding="8,5" CornerRadius="4"
+                            Background="{DynamicResource ChatOverlay}" IsHitTestVisible="False">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RecentChat.Count}" Value="0"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                    <DataTrigger Binding="{Binding ShowChat}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <ItemsControl ItemsSource="{Binding RecentChat}" ItemTemplate="{StaticResource ChatLine}" />
+                    </Border>
                     <TextBlock Text="Opening the replay…" Style="{StaticResource Dim}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                Visibility="{Binding IsOpening, Converter={StaticResource BoolVis}}" />
                     <TextBlock Text="{Binding Message}" Foreground="{DynamicResource StatusRed}" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -218,6 +243,30 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="CHAT" Style="{StaticResource Dim}" FontSize="11" Margin="0,0,0,6" />
+                        <TextBlock Text="{Binding ChatSummary}" Style="{StaticResource Dim}" FontSize="11.5"
+                                   Visibility="{Binding Chat.Count, Converter={x:Static views:ZeroToVisible.Instance}}" />
+                        <ScrollViewer x:Name="ChatScroll" MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Chat}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Background="Transparent" Cursor="Hand" MouseLeftButtonUp="OnChatClick" ToolTip="Jump to this message">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding TimeText}" Style="{StaticResource Dim}" FontSize="11" Margin="0,2,0,0"
+                                                       Typography.NumeralAlignment="Tabular" />
+                                            <ContentPresenter Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource ChatLine}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </StackPanel>
                 </Border>
             </StackPanel>

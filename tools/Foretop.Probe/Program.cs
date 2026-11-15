@@ -173,6 +173,7 @@ switch (cmd)
                 pts.WriteLine(((q.X + half) / (2 * half)).ToString("0.00000", inv) + ";" + ((half - q.Z) / (2 * half)).ToString("0.00000", inv));
             Console.WriteLine($"  half {half}; wrote tracks.csv and minimap.png to {Path.GetTempPath()}");
         }
+        foreach (var c in data.Chat) Console.WriteLine($"  chat t {c.T:0} [{c.Channel}] {c.SenderId} {c.Sender?.Name ?? "?"}: {c.Text}");
         Console.WriteLine($"  clock {data.TimeLeft.Count} samples: {string.Join(" ", data.TimeLeft.Take(6).Select(v => $"{v.Value}@{v.T:0}"))} … {string.Join(" ", data.TimeLeft.TakeLast(3).Select(v => $"{v.Value}@{v.T:0}"))}");
         break;
     }
@@ -186,7 +187,12 @@ switch (cmd)
         for (var i = 0; i < Math.Min(max, e.Properties.Count); i++)
             Console.WriteLine($"  prop {i,3} {e.Properties[i].Name,-36} {e.Properties[i].Size,6} {e.Properties[i].Flags}");
         for (var i = 0; i < Math.Min(max, e.ClientMethods.Count); i++)
+        {
             Console.WriteLine($"  meth {i,3} {e.ClientMethods[i].Name,-36} {e.ClientMethods[i].Size,6}");
+            // defs <Entity> <n> <filter>: also the arguments of the matching methods
+            if (args.Length > 4 && e.ClientMethods[i].Name.Contains(args[4], StringComparison.OrdinalIgnoreCase))
+                foreach (var a in e.ClientMethods[i].Args) Console.WriteLine($"        {a.Name,-24} {a.Type.ToString().Replace("\n", " ")}");
+        }
         break;
     }
 }

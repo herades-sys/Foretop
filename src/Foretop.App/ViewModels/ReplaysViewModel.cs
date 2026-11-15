@@ -42,6 +42,9 @@ public sealed partial class ReplayShipRow(SceneShip ship) : ObservableObject
     }
 }
 
+/// <summary>A chat line; Channel is "Team" or "All". Clicking it jumps to its time.</summary>
+public sealed record ChatRow(float T, string TimeText, string Sender, string SenderLevel, string Channel, string Text, string? SenderShip);
+
 public sealed record KillRow(string TimeText, string Killer, string KillerLevel, string Victim, string VictimLevel, string VictimShip);
 
 /// <summary>Replay list and minimap player.</summary>
@@ -64,6 +67,10 @@ public sealed partial class ReplaysViewModel : ObservableObject
     public ObservableCollection<ReplayShipRow> Allies { get; } = [];
     public ObservableCollection<ReplayShipRow> Enemies { get; } = [];
     public ObservableCollection<KillRow> Kills { get; } = [];
+    public ObservableCollection<ChatRow> Chat { get; } = [];
+    /// <summary>The last few lines, shown over the minimap like the in-game chat.</summary>
+    public ObservableCollection<ChatRow> RecentChat { get; } = [];
+    private List<ChatRow> _allChat = [];
     public IReadOnlyList<double> Speeds { get; } = [1, 2, 5, 10, 20, 40];
 
     [ObservableProperty] private ReplayRow? _selected;
@@ -83,6 +90,8 @@ public sealed partial class ReplaysViewModel : ObservableObject
     [ObservableProperty] private string _timeText = "";
     [ObservableProperty] private bool _showTrails = true;
     [ObservableProperty] private bool _showNames = true;
+    [ObservableProperty] private bool _showChat = true;
+    [ObservableProperty] private string _chatSummary = "";
 
     public bool HasScene => Scene is not null;
 
@@ -162,6 +171,10 @@ public sealed partial class ReplaysViewModel : ObservableObject
                 Allies.Add(new ReplayShipRow(s));
             foreach (var s in scene.Ships.Where(s => s.Relation == 2).OrderBy(s => ClassOrder(s.Species)).ThenBy(s => s.ShipName))
                 Enemies.Add(new ReplayShipRow(s));
+            _allChat = data.Chat.Select(c => ChatLine(c, scene)).ToList();
+            ChatSummary = _allChat.Count == 0 ? "No chat in this replay." : "No messages yet.";
+            Chat.Clear();
+            RecentChat.Clear();
             Title = $"{row.Map} · {row.Type}";
             Subtitle = $"{data.PlayerName} in {row.Ship} · {row.WhenText} · {FormatTime(data.Duration)} recorded";
             Warning = data.Warnings.Count == 0 ? null : string.Join(" ", data.Warnings);
@@ -179,6 +192,22 @@ public sealed partial class ReplaysViewModel : ObservableObject
         {
             IsOpening = false;
         }
+    }
+
+    private static ChatRow ChatLine(ReplayChat c, ReplayScene scene)
+    {
+        var ship = c.Sender is { } p ? scene.Ships.FirstOrDefault(s => s.Player == p) : null;
+        return new ChatRow(c.T, FormatClock(scene.ClockAt(c.T)) ?? FormatTime(c.T),
+            c.Sender?.Name ?? "Unknown player", c.Sender is { } pl ? Level(pl.Relation) : "",
+            c.IsTeam ? "Team" : "All", c.Text, ship?.ShipName);
+    }
+
+    /// <summary>Jumps to a chat line (a little before it, so its context plays).</summary>
+    public void JumpTo(float t)
+    {
+        if (Scene is null) return;
+        Time = Math.Clamp(t - 3, 0, Duration);
+        RefreshLists();
     }
 
     private static int ClassOrder(string species) => species switch
@@ -253,6 +282,20 @@ public sealed partial class ReplaysViewModel : ObservableObject
             Kills.Clear();
             foreach (var k in shown)
                 Kills.Add(new KillRow(FormatClock(scene.ClockAt(k.T)) ?? FormatTime(k.T), k.Killer, Level(k.KillerRelation), k.Victim, Level(k.VictimRelation), k.VictimShip));
+        }
+
+        // Chat up to now, oldest first as in the game; the overlay keeps lines of the last 30 s (at most 6).
+        var said = _allChat.Count(c => c.T <= t);
+        if (said != Chat.Count)
+        {
+            Chat.Clear();
+            foreach (var c in _allChat.Take(said)) Chat.Add(c);
+        }
+        var recent = _allChat.Take(said).Where(c => c.T > t - 30).TakeLast(6).ToList();
+        if (!recent.SequenceEqual(RecentChat))
+        {
+            RecentChat.Clear();
+            foreach (var c in recent) RecentChat.Add(c);
         }
     }
 

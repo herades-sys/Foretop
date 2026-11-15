@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 — 2026-11-15
+
+- **Replays: chat.** The battle chat (team and all) plays along with the replay: the latest lines at the bottom left
+  of the map, as in the game (switch with **Chat**), and the full log up to the current moment beside the kill feed,
+  with the sender in their team colour. Click a line to jump to it.
+
 ## 1.2.0 — 2026-11-15
 
 - **Replays**: new page that lists the game's replays and plays one back on the minimap: ship tracks with heading,

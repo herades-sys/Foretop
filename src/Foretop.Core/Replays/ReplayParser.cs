@@ -40,6 +40,7 @@ public static class ReplayParser
         var mArena = avatarDef.MethodIndex("onArenaStateReceived");
         var mGameRoom = avatarDef.MethodIndex("onGameRoomStateChanged");
         var mSpawned = avatarDef.MethodIndex("onNewPlayerSpawnedInBattle");
+        var mChat = avatarDef.MethodIndex("onChatMessage");
 
         var types = new Dictionary<int, string>();
         var tracks = new Dictionary<int, List<TrackPoint>>();
@@ -53,6 +54,7 @@ public static class ReplayParser
         var smokes = new Dictionary<int, SmokeBuilder>();
         var timeLeft = new List<ValuePoint>();
         var playerBlobs = new List<byte[]>();
+        var chat = new List<(float T, long Sender, string Channel, string Text)>();
         var avatarId = -1;
         float last = 0;
         var failures = new Dictionary<string, int>();
@@ -189,6 +191,16 @@ public static class ReplayParser
                         var data = payload[12..];
                         if (index == mDeath && data.Length >= 12)
                             deaths.Add(new ReplayDeath(t, BitConverter.ToInt32(data), BitConverter.ToInt32(data[4..]), BitConverter.ToInt32(data[8..])));
+                        else if (index == mChat && mChat >= 0 && avatarDef.ClientMethods[index].Args.Count >= 3)
+                        {
+                            // onChatMessage(sender, channel, text, extra): the three strings are unnamed in the definition.
+                            var r = new BigWorldReader(data, defs);
+                            var a = avatarDef.ClientMethods[index].Args;
+                            var sender = Convert.ToInt64(r.Read(a[0].Type), CultureInfo.InvariantCulture);
+                            var channel = r.Read(a[1].Type) as string ?? "";
+                            var text = r.Read(a[2].Type) as string ?? "";
+                            chat.Add((t, sender, channel, text));
+                        }
                         else if (index == mArena || index == mGameRoom || index == mSpawned)
                         {
                             var r = new BigWorldReader(data, defs);
@@ -214,7 +226,8 @@ public static class ReplayParser
 
         var vehicleIds = types.Where(kv => kv.Value == "Vehicle").Select(kv => kv.Key).ToHashSet();
         long? selfAccount = file.ExtraBlocks.Select(b => b.Split('.')[0].Trim()).Select(s => long.TryParse(s, out var a) ? a : (long?)null).FirstOrDefault(a => a > 0);
-        var players = BuildPlayers(root, playerBlobs, vehicleIds, selfAccount, warnings);
+        var chatSenders = chat.Select(c => c.Sender).Where(id => id != 0).ToHashSet();
+        var players = BuildPlayers(root, playerBlobs, vehicleIds, selfAccount, chatSenders, warnings);
 
         // The recording player's ship is in view the whole time.
         if (players.FirstOrDefault(pl => pl.IsSelf) is { VehicleId: > 0 } self)
@@ -246,6 +259,7 @@ public static class ReplayParser
                     z.Owners, z.From, z.To ?? last)).ToList(),
             Smokes = smokes.Values.Where(s => s.Points.Count > 0).Select(s => new ReplaySmoke(s.Id, s.From, s.To ?? last, s.Radius, s.Points)).ToList(),
             TimeLeft = timeLeft,
+            Chat = chat.Select(c => new ReplayChat(c.T, c.Sender, c.Sender == 0 ? null : players.FirstOrDefault(pl => pl.AvatarId == c.Sender) ?? players.FirstOrDefault(pl => pl.AccountId == c.Sender), c.Channel, c.Text)).ToList(),
             Warnings = warnings,
         };
     }
@@ -289,7 +303,8 @@ public static class ReplayParser
     /// list of <c>onArenaStateReceived</c>. Its records are (key index, value) pairs whose key numbering changes
     /// between versions, so the keys are found by their values: the player's name and the vehicle's entity id.
     /// </summary>
-    private static List<ReplayPlayer> BuildPlayers(JsonElement root, List<byte[]> blobs, HashSet<int> vehicleIds, long? selfAccount, List<string> warnings)
+    private static List<ReplayPlayer> BuildPlayers(JsonElement root, List<byte[]> blobs, HashSet<int> vehicleIds, long? selfAccount,
+        HashSet<long> chatSenders, List<string> warnings)
     {
         var arena = new List<(string Name, long ShipId, int Relation)>();
         if (root.TryGetProperty("vehicles", out var vs))
@@ -318,12 +333,13 @@ public static class ReplayParser
             .GroupBy(k => k).OrderByDescending(g => g.Count()).Select(g => (long?)g.Key).FirstOrDefault();
         var nameKey = Vote(v => v is string s && names.Contains(s));
         var vehicleKey = Vote(v => v is long l && vehicleIds.Contains((int)l));
-        // Account id: a large integer that is the same kind for every record and is not the vehicle id.
         // Account id: the key whose value in the recording player's record is the id in header block 2 ("<account>.<arena>").
         long? accountKey = null;
         var selfName = root.TryGetProperty("playerName", out var pn) ? pn.GetString() : null;
         if (selfAccount is long sa && nameKey is long nk0 && records.FirstOrDefault(r => r.GetValueOrDefault(nk0) as string == selfName) is { } selfRec)
             accountKey = selfRec.Where(kv => kv.Value is long l && l == sa).Select(kv => (long?)kv.Key).FirstOrDefault();
+        // Chat sender id (the player's avatar entity): the key whose values are the ids chat lines name.
+        var avatarKey = chatSenders.Count == 0 ? null : Vote(v => v is long l && chatSenders.Contains(l));
         // Clan tag: short strings (empty without a clan) that differ between players; the realm ("EU") is the same for all.
         var clanKey = records.SelectMany(r => r).Where(kv => kv.Value is string s && s.Length <= 5 && !names.Contains(s))
             .GroupBy(kv => kv.Key)
@@ -344,7 +360,8 @@ public static class ReplayParser
             var vehicle = rec is not null && vehicleKey is long vk && rec.GetValueOrDefault(vk) is long vid ? (int)vid : 0;
             var account = rec is not null && accountKey is long ak && rec.GetValueOrDefault(ak) is long acc ? acc : 0;
             var clan = rec is not null && clanKey is long ck && rec.GetValueOrDefault(ck) is string c && c.Length > 0 ? c : null;
-            return new ReplayPlayer(a.Name, a.ShipId, a.Relation, vehicle, account, clan);
+            var avatar = rec is not null && avatarKey is long avk && rec.GetValueOrDefault(avk) is long av ? av : 0;
+            return new ReplayPlayer(a.Name, a.ShipId, a.Relation, vehicle, account, clan) { AvatarId = avatar };
         }).ToList();
     }
 

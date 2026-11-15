@@ -9,7 +9,24 @@ namespace Foretop.App.Views;
 
 public partial class ReplaysView : UserControl
 {
-    public ReplaysView() => InitializeComponent();
+    public ReplaysView()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, e) =>
+        {
+            if (e.OldValue is ReplaysViewModel old) old.Chat.CollectionChanged -= OnChatChanged;
+            if (e.NewValue is ReplaysViewModel vm) vm.Chat.CollectionChanged += OnChatChanged;
+        };
+    }
+
+    // Keep the newest chat line in view.
+    private void OnChatChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        Dispatcher.BeginInvoke(() => ChatScroll.ScrollToEnd(), System.Windows.Threading.DispatcherPriority.Background);
+
+    private void OnChatClick(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is ChatRow row) Vm?.JumpTo(row.T);
+    }
 
     private ReplaysViewModel? Vm => DataContext as ReplaysViewModel;
 

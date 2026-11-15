@@ -28,6 +28,7 @@
     <SolidColorBrush x:Key="StatusRed" Color="#E8615A" />
     <SolidColorBrush x:Key="NoticeBg" Color="#2B2618" />
     <SolidColorBrush x:Key="Friendly" Color="#3FB6A8" />
+    <SolidColorBrush x:Key="ChatOverlay" Color="#D8191F29" />
     <SolidColorBrush x:Key="Enemy" Color="#E8615A" />
     <SolidColorBrush x:Key="RateRed" Color="#E8615A" />
     <SolidColorBrush x:Key="RateYellow" Color="#E5B85C" />
