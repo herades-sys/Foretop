@@ -1,11 +1,11 @@
-# Broadside — technical architecture
+# Foretop — technical architecture
 
-Broadside is a standalone Windows app that shows statistics for every player in
+Foretop is a standalone Windows app that shows statistics for every player in
 the user's current World of Warships battle. It reads one file the game writes
 on its own, calls the official Wargaming API, and never touches the game
 process.
 
-Status (2026-11-14): Phases 1–5 done (Phase 3's national flags excluded:
+Status (2026-11-14): Phases 1–6 done, apart from a test on a real game client (Phase 3's national flags excluded:
 the API has no flag images). Tested against the live EU API with a real
 application ID and a roster of real players; values match the raw API. Not yet
 tested against a running game — see "Open items" at the end.
@@ -70,7 +70,7 @@ clan tags. Consequences:
 
 - **Account IDs** are resolved by nickname with `account/list?type=exact`
   (up to 100 names in one call) on the configured region.
-- **Battle ID** is not available. Broadside uses a synthetic key: hash of
+- **Battle ID** is not available. Foretop uses a synthetic key: hash of
   `dateTime` + sorted roster. It is labelled as such.
 - **Battle status** (alive/sunk) is not in the file and not exposed anywhere
   legitimately readable while the battle runs. Not implemented.
@@ -109,7 +109,7 @@ cannot ship a working default ID and must not ship a hardcoded one.
 
 **Rate limit:** about 10 requests/second per IP for standalone applications,
 20/s for server applications. Exceeding it returns error `407
-REQUEST_LIMIT_EXCEEDED`. Broadside defaults to 8/s and backs off on 407.
+REQUEST_LIMIT_EXCEEDED`. Foretop defaults to 8/s and backs off on 407.
 
 **Hidden profiles:** `account/info` returns `hidden_profile: true` and no
 statistics; `ships/stats` omits them and lists them in `meta.hidden`.
@@ -155,23 +155,36 @@ Ship-level PR uses the same formula for one ship. Colour bands: < 750 bad,
 ### Recent performance
 
 The API has **no recent-stats endpoint**: `account/statsbydate` was removed
-(`404 METHOD_NOT_FOUND`, verified 2026-11-14). Broadside therefore stores a
+(`404 METHOD_NOT_FOUND`, verified 2026-11-14). Foretop therefore stores a
 snapshot of each player's totals whenever they change and computes "last 7 days"
 and "last 28 days" from the difference. A player's recent stats appear only once
-Broadside has seen them at least 7 days earlier, and the label shows the real
+Foretop has seen them at least 7 days earlier, and the label shows the real
 span covered.
 
 ### Not supported
 
-- **Battle results** (win/loss) are not in `tempArenaInfo.json`. They exist only
-  inside the replay's packet stream, which Broadside does not decode, so the
-  history and statistics pages cover who you met, not whether you won.
+- **Other players' battle results** are not available: `tempArenaInfo.json` has none,
+  and the replay's results block (block 1) was empty in a real Random battle on
+  2026-11-15 (block 2 only holds the recording player's account ID). Your **own**
+  results come from the API instead (below).
+
+### Own battle results (`BattleResultTracker`, Dashboard)
+
+At battle start Foretop fetches the account's totals for the battle's mode
+(`account/info`, `statistics.pvp` / `rank_solo` / `pve`, never from the cache) and
+stores them as the baseline in `battle_results`. After the battle ends it polls
+(20 s, 40 s, 60 s, 90 s, then every 2 min for 30 min) until the totals grow; the
+difference is the result. `ResultMath.Apply` handles the edge cases: a battle not
+yet ended is never resolved; later open battles take the new totals as their
+baseline; several battles counted at once become one combined row plus merged rows,
+so session totals stay exact. Verified 2026-11-15: the API counted a Random battle
+30 s after it ended (one battle, one win, 120,348 damage).
 
 - **WTR** (warships.today): the formula and its expected values are not public
   and the site is gone. Not implemented; PR is the community standard.
 - **Per-battle history of other players**: the API exposes totals only.
-- **Win-rate progression** before Broadside started watching a player: only
-  available from Broadside's own snapshots, so it grows over time.
+- **Win-rate progression** before Foretop started watching a player: only
+  available from Foretop's own snapshots, so it grows over time.
 
 ## 4. Technology
 
@@ -189,19 +202,22 @@ span covered.
 ## 5. Solution layout
 
 ```
-broadside/
+foretop/
   docs/ARCHITECTURE.md
-  src/Broadside.Core/          net10.0, no UI
+  src/Foretop.Core/          net10.0, no UI
     Game/      GameLocator, ArenaInfo(+Parser), BattleWatcher, BattleTypes
     Api/       WgApiClient, RequestScheduler (priority + rate limit + retry), DTOs, Region
     Stats/     PersonalRating, ExpectedValuesProvider, ShipCatalog, PlayerStatsService
     Data/      Database (schema/migrations), ApiCache, SnapshotStore, BattleHistoryStore
     Settings/  AppSettings, SettingsStore, ISecretProtector
-  src/Broadside.App/           net10.0-windows, WPF
+    GameData/  GameFileSystem (idx/pkg), Unpickler, GameParamsReader, GameTexts, ShipExtractor,
+               ShipDataStore (per-build cache, helper process), ArmourGeometry, Ballistics, ArmourMaterials
+  src/Foretop.App/           net10.0-windows, WPF
     ViewModels/  Shell, LiveBattle, PlayerRow, Settings, …
-    Views/       XAML per screen; Themes/Dark.xaml
+    Views/       XAML per screen (Ship Intelligence: ShipIntelligenceView hosts ShipDatabase/Profile,
+                 ShipArmour (+ ArmourCanvas), ShipStatistics, ShipComparison, ShipEquipment); Themes/
     Services/    DpapiSecretProtector, file logger
-  tests/Broadside.Tests/
+  tests/Foretop.Tests/
 ```
 
 ### Data flow for one battle
@@ -234,7 +250,7 @@ tempArenaInfo.json ──► BattleWatcher ──► ArenaInfo (roster, ship IDs
   invalid-application-ID or other client errors.
 - A new battle cancels Low-priority work left over from the previous one.
 
-### SQLite (`%LOCALAPPDATA%\Broadside\broadside.db`)
+### SQLite (`%LOCALAPPDATA%\Foretop\foretop.db`)
 
 | Table | Content | Default expiry |
 |---|---|---|
@@ -244,6 +260,7 @@ tempArenaInfo.json ──► BattleWatcher ──► ArenaInfo (roster, ship IDs
 | `expected_values` | PR expected values | 24 h |
 | `player_snapshots` | totals per player per fetch | kept; basis for trends |
 | `battles` | history: time, type, map, source (live / replay), arena JSON, every player's stats at the time (`BattleSummaryCodec`) | kept |
+| `battle_results` | your own result per battle: mode, ship, baseline totals, difference, status (Pending / Ok / Combined / Merged / Unavailable / Expired) | kept |
 
 All expiries are user-configurable.
 
@@ -265,7 +282,7 @@ All expiries are user-configurable.
 | 3 | Live Battle screen: two teams, sorting, filtering, loading states, colours | done; national flags left out (the API has no flag images) |
 | 4 | Team comparison + charts, player profile, recent stats, battle history | done 2026-11-14: comparison view, profile page, history (revisit + compare two), statistics page; 50 unit tests |
 | 5 | Performance pass, error handling polish, logging review | done 2026-11-14 (see "Phase 5 results"); 53 unit tests |
-| 6 | Tests against real battles, verification vs. official API, installer, user docs | |
+| 6 | Tests against real battles, verification vs. official API, installer, user docs | done 2026-11-14 except the real-client test (no game on the dev PC; checklist in docs/TESTING.md); 58 unit tests |
 
 ### Phase 5 results (Release build, this PC, 2026-11-14)
 
@@ -293,7 +310,43 @@ Changes:
 - Software rendering (`--software`) saves about 20 MB but costs smoothness, so it
   stays a diagnostic switch rather than the default.
 
+### Phase 6 results
+
+- **Release:** self-contained single-file exe (win-x64, ReadyToRun, uncompressed:
+  starts in about 0.57 s vs 0.82 s compressed); per-user MSI (WiX 5, 49 MB) and
+  portable zip (61 MB) from `builduild.ps1`.
+- **Installer test (Windows 11):** install, launch, uninstall (user data kept),
+  reinstall. One uninstall right after running the exe left the file behind (sharing
+  violation, most likely a virus scan); a repeat was clean. Documented in the user
+  guide.
+- **Detection without the game:** a stand-in process named `WorldOfWarships64.exe` in a
+  fake install folder plus a written arena file: battle detected about 1 s after the
+  write, automatic switch to Live Battle, battle end detected when the process exited.
+  This found and fixed a sorting bug (the DataGrid cleared the view's sort when the
+  Live page was created after a battle had loaded).
+- **Detection check** in Settings (`GameDiagnostics`): game process, folder, replays,
+  arena file, API, watcher.
+
 ### Open items needing the user
 
 - **A PC with the game installed** to test against real battles. The game is
   not installed on the development PC.
+
+## 8. Ship Intelligence (game-client data)
+
+Read-only, from the installed client; details and verified values in [GAME_DATA.md](GAME_DATA.md).
+
+1. **Extraction, once per game build.** `ShipDataStore.EnsureAsync` finds the newest build. When no cache of that build
+   and format exists, it starts `Foretop.exe --extract-ship-data <game> <out>` as a child process at below-normal
+   priority (GameParams needs about 950 MB for a few seconds; a separate process gives that memory back). The helper
+   reports `progress d t` lines; the UI shows the design's "Reading ship data" state. The result is
+   `%LOCALAPPDATA%\Foretop\shipdata\<build>.json.br` plus `<build>-images\preview|icon\<index>.png`. During an update
+   the previous build's data stays in use with a banner.
+2. **Ship records** (`ShipExtractor`): stock and fully upgraded configuration from the module tree, shells, AA,
+   torpedoes, consumables, applicable upgrades, armour plates and the hull model path.
+3. **Armour model on demand** (`ShipDataStore.LoadArmourAsync` → `ArmourGeometry.LoadHull`): opens the file index once
+   (0.5 s), then reads the hull's main `.geometry` (Yamato 6,978 triangles in about 80 ms); the last 24 hulls stay in
+   memory. `ArmourCanvas` draws them with an orthographic projection and the painter's algorithm, one colour per
+   thickness class with simple shading; click selection is a point-in-triangle test from the nearest triangle back.
+4. **Own results** (Ship Statistics): `PlayerStatsService` for the account in Settings, joined to the game records by
+   `ship_id` (the GameParams `id`).

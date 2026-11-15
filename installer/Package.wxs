@@ -1,0 +1,46 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <!--
+    Per-user install: %LOCALAPPDATA%\Programs\Foretop, no administrator prompt.
+    User data (%LOCALAPPDATA%\Foretop: settings, cache, history, logs) is never touched by install or uninstall.
+    UpgradeCode must stay the same for every version so newer MSIs replace older ones.
+  -->
+  <Package Name="Foretop"
+           Manufacturer="Foretop"
+           Version="$(var.Version)"
+           UpgradeCode="0DD6A071-E116-4705-BE9C-0CDFD907059B"
+           Scope="perUser"
+           Compressed="yes"
+           Language="1033">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Foretop is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="ForetopIcon" SourceFile="$(var.AssetsDir)foretop.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ForetopIcon" />
+    <Property Id="ARPCOMMENTS" Value="World of Warships battle monitor" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Foretop" />
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="Foretop">
+      <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="225F1EB1-B743-4802-B72A-1746BBA64B23">
+        <File Id="ForetopExe" Source="$(var.PublishDir)Foretop.exe" />
+        <!-- Per-user components need a registry key path (ICE38). -->
+        <RegistryValue Root="HKCU" Key="Software\Foretop\Installer" Name="Executable" Type="string" Value="[INSTALLFOLDER]Foretop.exe" KeyPath="yes" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+      </Component>
+
+      <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder">
+        <Shortcut Id="ForetopStartMenu" Name="Foretop" Description="World of Warships battle monitor"
+                  Target="[INSTALLFOLDER]Foretop.exe" WorkingDirectory="INSTALLFOLDER" Icon="ForetopIcon" />
+        <RegistryValue Root="HKCU" Key="Software\Foretop\Installer" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </Feature>
+  </Package>
+</Wix>

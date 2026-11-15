@@ -1,87 +1,88 @@
-# Broadside
+# Foretop
 
 A Windows battle monitor for World of Warships. When a battle loads, it shows both
-teams with each player's statistics from the official Wargaming API.
+teams with each player's statistics from the official Wargaming API: win rate,
+battles, damage, XP, Personal Rating, ship statistics and recent activity, plus team
+comparison, player profiles, battle history and statistics.
 
-It reads one file the game writes on its own (`replays\tempArenaInfo.json`). It
-does not touch the game process, memory or network traffic. Design and research:
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+It reads one file the game writes on its own (`replays\tempArenaInfo.json`). It does
+not touch the game process, memory or network traffic.
 
-## Requirements
+- **Using it:** [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
+- **Design and research:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Real-game test checklist:** [docs/TESTING.md](docs/TESTING.md)
+- **Changes:** [CHANGELOG.md](CHANGELOG.md)
 
-- Windows 10/11, .NET 10 Desktop Runtime (the SDK to build)
-- World of Warships with **replays enabled** (the default)
-- A free **Wargaming application ID**: sign in at
+## Install
+
+Build a release (below), then run `dist\Foretop-<version>-x64.msi` (per-user, no
+administrator prompt) or unzip `dist\Foretop-<version>-portable-x64.zip`. Both are
+self-contained: no .NET install needed on the target PC.
+
+You also need:
+
+- World of Warships with **replays enabled** (the default);
+- a free **Wargaming application ID**: sign in at
   <https://developers.wargaming.net/applications/>, add an application of type
   *Mobile / Standalone*, paste the ID into Settings → Wargaming API.
 
-## Build and run
+## Develop
+
+Requires the .NET 10 SDK on Windows.
 
 ```bash
 dotnet build
 ```
 
 ```bash
-dotnet run --project src/Broadside.App
-```
-
-```bash
 dotnet test
 ```
 
-Data lives in `%LOCALAPPDATA%\Broadside`: `broadside.db` (cache and battle
-history), `settings.json`, `logs\`, `icons\` (ship icon cache) and `archive\`
-(a damaged database is moved there, never deleted).
-
-If the Wargaming API cannot be reached, Broadside shows the last cached statistics
-and marks them "offline data". Only one copy runs at a time; starting it again brings
-the open window to the front. Theme: Settings → Interface (System, Dark or Light).
-
-## Using it
-
-- **Live Battle** fills in automatically when a battle loads. Rows fill in as
-  data arrives: win rate and battles first, then PR and ship stats, then recent
-  activity.
-- **Open replay…** shows the teams of any `.wowsreplay` or `tempArenaInfo.json`,
-  handy when the game is not running.
-- Hover a row for the full breakdown, with the source of each number. Double-click
-  opens the player's profile in Broadside; right-click for the official profile
-  or wows-numbers.
-- **Comparison** (switch above the tables) puts the two teams side by side: averages,
-  composition and the strength estimate.
-- **Player Profiles**: search any player. Overall and recent stats, most played and
-  best ships, battles by class and tier, all ships, win-rate history (from
-  Broadside's own snapshots) and the recorded battles you shared.
-- **Battle History**: every detected battle and opened replay, with team averages at
-  the time. Double-click to see the full rosters again; select two to compare.
-- **Statistics**: across recorded battles: your ships, maps, battle types, enemy
-  classes, team strength per battle and the players you meet most often. Battle
-  results are not in the file the game writes, so there are no win/loss figures.
-
-### Colours
-
-| Metric | Red | Yellow | Green | Purple |
-|---|---|---|---|---|
-| Win rate | < 47 % | 47–53 % | 53–60 % | ≥ 60 % |
-| Personal Rating | < 1100 | 1100–1550 | 1550–2100 | ≥ 2100 |
-| Damage (vs. expected for the ships played) | < 85 % | 85–115 % | 115–150 % | ≥ 150 % |
-
-### Where the numbers come from
-
-- **Official**: battles, wins, damage, XP, frags, survival, planes, per-ship stats.
-- **Derived**: every average and rate (arithmetic on official values).
-- **Third-party**: Personal Rating and the damage ratio, using the
-  [wows-numbers](https://wows-numbers.com) expected values.
-- **Recent (7 / 28 days)**: Broadside's own snapshots of players it has seen
-  before. Wargaming removed its recent-stats endpoint, so a player's recent
-  stats appear once Broadside saw them at least 7 days earlier.
-
-## Developer switches
-
 ```bash
-Broadside.App.exe --open path\to\file.wowsreplay --page Live --snapshot out.png --wait 3
+dotnet run --project src/Foretop.App
 ```
 
-`--snapshot` renders the window to a PNG and exits (used for UI checks without the game).
-Also: `--profile <name>`, `--compare`, `--open-latest-history`, `--scroll <px>`, `--light`,
-`--switch-theme <Dark|Light>`, `--diag` (logs memory every 30 s), `--software` (software rendering).
+Release build (tests, self-contained publish, MSI via WiX 5 from NuGet, portable zip,
+SHA-256 list) into `dist\`; the previous `dist\` is moved to `build\archive\`:
+
+```bash
+powershell -ExecutionPolicy Bypass -File build\build.ps1
+```
+
+The icon is generated by `build\make-icon.ps1`. Version: `Directory.Build.props`.
+
+### Layout
+
+```
+src/Foretop.Core     game detection, API client, cache, statistics (no UI)
+src/Foretop.App      WPF app (MVVM), themes, charts
+tests/Foretop.Tests  xUnit tests
+installer/             WiX 5 MSI
+build/                 release and icon scripts
+docs/                  architecture, user guide, test checklist
+archive/               replaced files, kept by project rule
+```
+
+### Data at runtime
+
+`%LOCALAPPDATA%\Foretop`: `foretop.db` (cache and battle history),
+`settings.json` (application ID DPAPI-encrypted), `logs\`, `icons\` (ship icon cache)
+and `archive\` (a damaged database is moved there, never deleted).
+
+### Developer switches
+
+```bash
+Foretop.exe --open path\to\file.wowsreplay --page Live --snapshot out.png --wait 3
+```
+
+`--snapshot` renders the window to a PNG and exits (UI checks without the game; also
+skips the single-instance guard). Also: `--profile <name>`, `--compare`,
+`--open-latest-history`, `--scroll <px>`, `--light`, `--switch-theme <Dark|Light>`,
+`--diag` (logs memory every 30 s), `--software` (software rendering).
+Ship Intelligence (applied once the ship data is loaded): `--ship <name>`,
+`--compare-ships "A;B;C"`, `--ships-section <Database|Armour|Statistics|Comparison|Equipment>`,
+`--armour-view <Profile + plan|Side|Top|Bow|3D>`, `--plate <key>`, `--citadel-only`,
+`--account <name>` (session only, not saved).
+
+Foretop is not affiliated with or endorsed by Wargaming. World of Warships is a
+trademark of Wargaming. Personal Rating expected values: wows-numbers.com.

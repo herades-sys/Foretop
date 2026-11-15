@@ -1,0 +1,47 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Foretop Dark palette. Every key must exist in both colour files. -->
+    <SolidColorBrush x:Key="Bg" Color="#11151C" />
+    <SolidColorBrush x:Key="Sidebar" Color="#191F29" />
+    <SolidColorBrush x:Key="Input" Color="#191F29" />
+    <SolidColorBrush x:Key="Panel" Color="#202936" />
+    <SolidColorBrush x:Key="Panel2" Color="#191F29" />
+    <SolidColorBrush x:Key="Selected" Color="#2E3A4C" />
+    <SolidColorBrush x:Key="Border" Color="#283241" />
+    <SolidColorBrush x:Key="Border2" Color="#303B49" />
+    <SolidColorBrush x:Key="RowHover" Color="#273242" />
+    <SolidColorBrush x:Key="RowSelected" Color="#2E3A4C" />
+    <SolidColorBrush x:Key="SelfRow" Color="#1D2E2A" />
+    <SolidColorBrush x:Key="AltRow" Color="#1D2531" />
+    <SolidColorBrush x:Key="NavActive" Color="#244C9BE8" />
+    <SolidColorBrush x:Key="Text" Color="#E8EDF4" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#B4BECC" />
+    <SolidColorBrush x:Key="TextDim" Color="#929EAE" />
+    <SolidColorBrush x:Key="TextFaint" Color="#5E6A7B" />
+    <SolidColorBrush x:Key="Accent" Color="#4C9BE8" />
+    <SolidColorBrush x:Key="AccentLight" Color="#7DB8F0" />
+    <SolidColorBrush x:Key="AccentButtonBg" Color="#4C9BE8" />
+    <SolidColorBrush x:Key="AccentButtonFg" Color="#0B1522" />
+    <SolidColorBrush x:Key="StatusGreen" Color="#45B881" />
+    <SolidColorBrush x:Key="StatusAmber" Color="#E5B85C" />
+    <SolidColorBrush x:Key="StatusRed" Color="#E8615A" />
+    <SolidColorBrush x:Key="NoticeBg" Color="#2B2618" />
+    <SolidColorBrush x:Key="Friendly" Color="#3FB6A8" />
+    <SolidColorBrush x:Key="Enemy" Color="#E8615A" />
+    <SolidColorBrush x:Key="RateRed" Color="#E8615A" />
+    <SolidColorBrush x:Key="RateYellow" Color="#E5B85C" />
+    <SolidColorBrush x:Key="RateGreen" Color="#45B881" />
+    <SolidColorBrush x:Key="RatePurple" Color="#B47CFF" />
+    <SolidColorBrush x:Key="ClassDD" Color="#7DB8F0" />
+    <SolidColorBrush x:Key="ClassCA" Color="#9FD78A" />
+    <SolidColorBrush x:Key="ClassBB" Color="#F0BD5C" />
+    <SolidColorBrush x:Key="ClassCV" Color="#C99BF5" />
+    <SolidColorBrush x:Key="ClassSS" Color="#6BD8CB" />
+    <SolidColorBrush x:Key="Armour1" Color="#8A5A1C" />
+    <SolidColorBrush x:Key="Armour2" Color="#B47A22" />
+    <SolidColorBrush x:Key="Armour3" Color="#D99A2E" />
+    <SolidColorBrush x:Key="Armour4" Color="#F0BD5C" />
+    <SolidColorBrush x:Key="Armour5" Color="#FBE2A8" />
+    <SolidColorBrush x:Key="ArmourNone" Color="#55606F" />
+</ResourceDictionary>

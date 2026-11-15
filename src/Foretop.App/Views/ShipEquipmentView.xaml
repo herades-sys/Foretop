@@ -1,0 +1,157 @@
+<UserControl x:Class="Foretop.App.Views.ShipEquipmentView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foretop.App.Views">
+    <Grid Margin="22,18,22,12">
+        <Border Style="{StaticResource Card}" MaxWidth="560" HorizontalAlignment="Left" VerticalAlignment="Top"
+                Visibility="{Binding Current, Converter={StaticResource InvNullVis}}">
+            <TextBlock Style="{StaticResource Dim}" TextWrapping="Wrap"
+                       Text="Open a ship in the Ship Database to see its modules, upgrades and consumables." />
+        </Border>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding Current, Converter={StaticResource NullVis}}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Dim}" FontSize="12" Text="{Binding ShipTags}" />
+                <DockPanel Margin="0,0,0,14">
+                    <Button DockPanel.Dock="Right" Content="Open ship profile" Command="{Binding ShowProfileSectionCommand}" VerticalAlignment="Center" />
+                    <TextBlock Style="{StaticResource H1}" Text="{Binding Current.DisplayName}" />
+                </DockPanel>
+
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Stock against fully upgraded -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Stock against fully upgraded" Style="{StaticResource H2}" Margin="0,0,0,8" />
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" /><ColumnDefinition Width="1.3*" /><ColumnDefinition Width="1.3*" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="CHARACTERISTIC" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Grid.Column="1" Text="STOCK" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Grid.Column="2" Text="UPGRADED" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Grid.Column="3" Text="CHANGE" Style="{StaticResource SectionLabel}" />
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Differences}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*" /><ColumnDefinition Width="1.3*" /><ColumnDefinition Width="1.3*" /><ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Dim}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Stock}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Stock}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Top}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Top}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Change}" Style="{StaticResource Dim}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Stock and fully upgraded are identical." Style="{StaticResource Dim}"
+                                       Visibility="{Binding Differences.Count, Converter={x:Static views:ZeroToVisible.Instance}}" />
+                        </StackPanel>
+                    </Border>
+                    <!-- Modules -->
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Modules" Style="{StaticResource H2}" Margin="0,0,0,8" />
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.2*" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="TYPE" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Grid.Column="1" Text="MODULE" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Grid.Column="2" Text="RESEARCH" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Grid.Column="3" Text="CREDITS" Style="{StaticResource SectionLabel}" />
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Modules}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="1.2*" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Type}" Style="{StaticResource Dim}" />
+                                            <DockPanel Grid.Column="1" Margin="0,0,10,0">
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource Tag}" Margin="6,0,0,0" Visibility="{Binding Top, Converter={StaticResource BoolVis}}">
+                                                    <TextBlock Text="top" FontSize="10" Foreground="{DynamicResource AccentLight}" />
+                                                </Border>
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource Tag}" Margin="6,0,0,0" Visibility="{Binding Stock, Converter={StaticResource BoolVis}}">
+                                                    <TextBlock Text="stock" FontSize="10" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                            </DockPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding Research}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Credits}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Upgrades -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="Upgrades" Style="{StaticResource H2}" />
+                        <TextBlock Text="{Binding UpgradesTitle}" Style="{StaticResource Dim}" FontSize="12" Margin="0,2,0,10" TextWrapping="Wrap" />
+                        <ItemsControl ItemsSource="{Binding UpgradeColumns}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,10,0">
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource SectionLabel}" Margin="0,0,0,6" TextWrapping="Wrap" />
+                                        <ItemsControl ItemsSource="{Binding Options}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{DynamicResource Input}" BorderBrush="{DynamicResource Border}" BorderThickness="1"
+                                                            CornerRadius="6" Padding="9,7" Margin="0,0,0,6">
+                                                        <StackPanel>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" MaxWidth="170" />
+                                                                <Border Style="{StaticResource Tag}" Margin="6,0,0,0" VerticalAlignment="Top"
+                                                                        Visibility="{Binding ShipSpecific, Converter={StaticResource BoolVis}}">
+                                                                    <TextBlock Text="unique" FontSize="10" Foreground="{DynamicResource StatusAmber}" />
+                                                                </Border>
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Effects}" Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Consumables -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                    <StackPanel>
+                        <TextBlock Text="Consumables" Style="{StaticResource H2}" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding Consumables}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Dim}" Width="70" />
+                                        <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <TextBlock Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap"
+                           Text="Modules, upgrades and consumables are read from the game client. Effects are the modifiers the game data gives each upgrade." />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

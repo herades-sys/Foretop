@@ -1,0 +1,103 @@
+<UserControl x:Class="Foretop.App.Views.HistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="Num" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="22,18,22,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="380" />
+        </Grid.ColumnDefinitions>
+
+        <DockPanel Grid.ColumnSpan="3" Margin="0,0,0,12">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="Open selected" Command="{Binding OpenCommand}" Style="{StaticResource AccentButton}" Margin="0,0,6,0" />
+                <Button Content="Reload" Command="{Binding ReloadCommand}" />
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="Battle History" Style="{StaticResource H1}" />
+                <TextBlock Text="{Binding Summary}" Style="{StaticResource Dim}" Margin="0,3,0,0" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="6">
+            <DataGrid x:Name="Grid" ItemsSource="{Binding Battles}" SelectedItem="{Binding Selected}" SelectionMode="Extended"
+                      SelectionChanged="OnSelectionChanged" MouseDoubleClick="OnDoubleClick">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="DATE" Binding="{Binding WhenText}" SortMemberPath="When" Width="130" />
+                    <DataGridTextColumn Header="TYPE" Binding="{Binding Type}" Width="120" />
+                    <DataGridTextColumn Header="MAP" Binding="{Binding Map}" Width="*" MinWidth="110" />
+                    <DataGridTextColumn Header="YOUR SHIP" Binding="{Binding OwnShip}" Width="130" />
+                    <DataGridTemplateColumn Header="FRIENDLY WR" SortMemberPath="FriendlyWr" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding FriendlyWrText}" Style="{StaticResource Num}"
+                                                     Foreground="{Binding FriendlyWr, Converter={StaticResource Rating}, ConverterParameter=wr}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="ENEMY WR" SortMemberPath="EnemyWr" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding EnemyWrText}" Style="{StaticResource Num}"
+                                                     Foreground="{Binding EnemyWr, Converter={StaticResource Rating}, ConverterParameter=wr}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="FRIENDLY PR" SortMemberPath="FriendlyPr" Width="88">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding FriendlyPrText}" Style="{StaticResource Num}"
+                                                     Foreground="{Binding FriendlyPr, Converter={StaticResource Rating}, ConverterParameter=pr}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="ENEMY PR" SortMemberPath="EnemyPr" Width="78">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding EnemyPrText}" Style="{StaticResource Num}"
+                                                     Foreground="{Binding EnemyPr, Converter={StaticResource Rating}, ConverterParameter=pr}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="STRENGTH" SortMemberPath="Share" Width="76">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding ShareText}" Style="{StaticResource Num}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="64" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Compare panel -->
+        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+            <StackPanel>
+                <TextBlock Text="Compare two battles" Style="{StaticResource H2}" />
+                <TextBlock Text="{Binding CompareHint}" Style="{StaticResource Dim}" Margin="0,4,0,10" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding CompareLines}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource Dim}" FontSize="11.5" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{Binding A}" TextWrapping="Wrap" Margin="6,0" />
+                                <TextBlock Grid.Column="2" Text="{Binding B}" TextWrapping="Wrap" Margin="6,0" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap" Margin="0,12,0,0">
+                    Statistics are those saved when the battle was recorded. Double-click a battle to see both full rosters again.
+                    Battle results are not part of the file the game writes, so wins and losses are not recorded.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

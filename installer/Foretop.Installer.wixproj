@@ -1,0 +1,13 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!-- Built by build\build.ps1 after `dotnet publish`; not part of the solution build. -->
+  <PropertyGroup>
+    <OutputName>Foretop-$(Version)-x64</OutputName>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <DebugType>none</DebugType>
+    <!-- ICE91: expected for a per-user-only package. -->
+    <SuppressIces>ICE91</SuppressIces>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\build\out\publish\</PublishDir>
+    <DefineConstants>Version=$(Version);PublishDir=$(PublishDir);AssetsDir=$(MSBuildThisFileDirectory)..\src\Foretop.App\Assets\</DefineConstants>
+  </PropertyGroup>
+</Project>

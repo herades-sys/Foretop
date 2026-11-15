@@ -1,0 +1,141 @@
+<UserControl x:Class="Foretop.App.Views.ShipDatabaseView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foretop.App.Views">
+    <UserControl.Resources>
+        <Style x:Key="Num" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <!-- List -->
+        <Grid Margin="22,18,22,12" Visibility="{Binding ShowProfile, Converter={StaticResource InvBoolVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,14">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource Dim}" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Run Text="{Binding SelectedCount, Mode=OneWay}" /> selected
+                    </TextBlock>
+                    <Button Content="Clear" Command="{Binding ClearSelectionCommand}" Margin="0,0,6,0" />
+                    <Button Content="Compare ships" Style="{StaticResource AccentButton}" Command="{Binding CompareSelectedCommand}" />
+                </StackPanel>
+                <TextBlock Text="Ship Database" Style="{StaticResource H1}" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="12,12,12,8">
+                        <WrapPanel>
+                            <TextBox Width="260" Style="{StaticResource FilterBox}" Tag="Search by name, nation, class or tier"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,6" />
+                            <ComboBox ItemsSource="{Binding NationOptions}" SelectedItem="{Binding Nation}" Width="150" Margin="0,0,8,6" />
+                            <Border Style="{StaticResource SegmentedHost}" Margin="0,0,8,6">
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton Style="{StaticResource Chip}" Content="Destroyers" IsChecked="{Binding ShowDD}" />
+                                    <ToggleButton Style="{StaticResource Chip}" Content="Cruisers" IsChecked="{Binding ShowCA}" />
+                                    <ToggleButton Style="{StaticResource Chip}" Content="Battleships" IsChecked="{Binding ShowBB}" />
+                                    <ToggleButton Style="{StaticResource Chip}" Content="Carriers" IsChecked="{Binding ShowCV}" />
+                                    <ToggleButton Style="{StaticResource Chip}" Content="Submarines" IsChecked="{Binding ShowSS}" />
+                                </StackPanel>
+                            </Border>
+                            <ComboBox ItemsSource="{Binding TierOptions}" SelectedItem="{Binding Tier}" Width="100" MinWidth="90" Margin="0,0,8,6" />
+                            <ComboBox ItemsSource="{Binding AvailabilityOptions}" SelectedItem="{Binding Availability}" Width="160" Margin="0,0,8,6" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding CountText}" Style="{StaticResource Dim}" FontSize="12" />
+                    </StackPanel>
+                    <DataGrid x:Name="Grid" ItemsSource="{Binding View}" MouseDoubleClick="OnRowOpen" RowHeight="30" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="34" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Margin="0" HorizontalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="SHIP" SortMemberPath="Name" Width="*" MinWidth="150">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="NATION" Binding="{Binding Nation}" Width="110" />
+                            <DataGridTextColumn Header="CLASS" Binding="{Binding Class}" Width="120" />
+                            <DataGridTemplateColumn Header="TIER" SortMemberPath="Tier" Width="54">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding TierText}" HorizontalAlignment="Center" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="AVAILABILITY" SortMemberPath="Availability" Width="110">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource Tag}" HorizontalAlignment="Left" x:Name="tag">
+                                            <TextBlock Text="{Binding Availability}" FontSize="11" FontWeight="SemiBold" x:Name="text" />
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Availability}" Value="Premium">
+                                                <Setter TargetName="text" Property="Foreground" Value="{DynamicResource StatusAmber}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Availability}" Value="Special">
+                                                <Setter TargetName="text" Property="Foreground" Value="{DynamicResource StatusAmber}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Availability}" Value="Supership">
+                                                <Setter TargetName="text" Property="Foreground" Value="{DynamicResource AccentLight}" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="HIT POINTS" SortMemberPath="HitPoints" Width="86">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding HitPointsText}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="MAIN BATTERY" Width="110">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding MainBattery}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="RANGE" SortMemberPath="Range" Width="76">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding RangeText}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="RELOAD" SortMemberPath="Reload" Width="64">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding ReloadText}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="SPEED" SortMemberPath="Speed" Width="64">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding SpeedText}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="DETECTABILITY" SortMemberPath="Detect" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding DetectText}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="ARMOUR, MM" SortMemberPath="ArmourMax" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding ArmourText}" Style="{StaticResource Num}" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+            <DockPanel Grid.Row="2" Margin="2,8,2,0">
+                <TextBlock DockPanel.Dock="Right" Text="Values are for the fully upgraded ship, before upgrades and commander skills."
+                           Style="{StaticResource Dim}" FontSize="12" />
+                <TextBlock Text="Double-click a row to open the ship. Tick ships to compare them." Style="{StaticResource Dim}" FontSize="12" />
+            </DockPanel>
+        </Grid>
+
+        <!-- Profile -->
+        <views:ShipProfileView Visibility="{Binding ShowProfile, Converter={StaticResource BoolVis}}" />
+    </Grid>
+</UserControl>
