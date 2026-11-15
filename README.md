@@ -3,21 +3,43 @@
 A Windows battle monitor for World of Warships. When a battle loads, it shows both
 teams with each player's statistics from the official Wargaming API: win rate,
 battles, damage, XP, Personal Rating, ship statistics and recent activity, plus team
-comparison, player profiles, battle history and statistics.
+comparison, player profiles, battle history, your own results and statistics. Ship
+Intelligence reads every ship's characteristics and armour model from the installed
+game, and the Replays page plays back your replays on the minimap, chat included.
 
-It reads one file the game writes on its own (`replays\tempArenaInfo.json`). It does
-not touch the game process, memory or network traffic.
+It only reads files the game writes on its own (the battle roster, replays and the
+game data). It does not touch the game process, memory or network traffic.
 
 - **Using it:** [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
 - **Design and research:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Real-game test checklist:** [docs/TESTING.md](docs/TESTING.md)
 - **Changes:** [CHANGELOG.md](CHANGELOG.md)
 
+## Download
+
+**[Latest release](https://github.com/herades-sys/Foretop/releases/latest)**: Windows 10/11, 64-bit.
+
+| File | Size | |
+|---|---|---|
+| [Foretop-1.2.1-x64.msi](https://github.com/herades-sys/Foretop/releases/download/v1.2.1/Foretop-1.2.1-x64.msi) | 56 MB | Installer, for your Windows account only (no administrator prompt), adds a Start menu entry |
+| [Foretop-1.2.1-portable-x64.zip](https://github.com/herades-sys/Foretop/releases/download/v1.2.1/Foretop-1.2.1-portable-x64.zip) | 69 MB | Portable: unzip anywhere and run `Foretop.exe` |
+
+Both are self-contained: no .NET install needed. Installing a newer MSI replaces the
+old version and keeps your settings and history.
+
+The files are not code-signed, so Windows SmartScreen may say "Windows protected your
+PC": click *More info* → *Run anyway*. To check a download, compare its SHA-256
+(`Get-FileHash <file>` in PowerShell) with the release:
+
+```
+Foretop-1.2.1-x64.msi             D2340C4EEEAFA41289BD2B3351CCC229B9DA441618C864CF725A0FC4497A8357
+Foretop-1.2.1-portable-x64.zip    18DD580A811113B513FA501148E5A4F171AD040FAD4EE6DEAD90B975B70CE250
+```
+
 ## Install
 
-Build a release (below), then run `dist\Foretop-<version>-x64.msi` (per-user, no
-administrator prompt) or unzip `dist\Foretop-<version>-portable-x64.zip`. Both are
-self-contained: no .NET install needed on the target PC.
+Run the MSI, or unzip the portable version. To build the files yourself, see
+*Develop* below; they land in `dist\`.
 
 You also need:
 
