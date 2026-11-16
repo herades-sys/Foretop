@@ -154,7 +154,7 @@
             </StackPanel>
         </DockPanel>
             <!-- ANALYTICS FILTERS: stays at the top; every panel below follows it -->
-            <Border DockPanel.Dock="Top" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6"
+            <Border DockPanel.Dock="Top" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}"
                     Padding="12,8" Margin="22,0,22,8" DataContext="{Binding Filters}">
                 <StackPanel>
                     <WrapPanel>
@@ -216,7 +216,7 @@
                                           ToolTip="Pick one or more ships" />
                             <Popup IsOpen="{Binding IsShipPickerOpen}" PlacementTarget="{Binding ElementName=ShipPickerButton}" Placement="Bottom" StaysOpen="False"
                                    AllowsTransparency="True">
-                                <Border Background="{DynamicResource Panel2}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="4" Padding="8" Width="280">
+                                <Border Background="{DynamicResource Panel2}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="8" Width="280">
                                     <StackPanel>
                                         <DockPanel Margin="0,0,0,6">
                                             <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearShipsCommand}" Padding="8,1" Margin="6,0,0,0" />
@@ -247,7 +247,7 @@
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="{DynamicResource Panel2}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="10"
+                                    <Border Background="{DynamicResource Panel2}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="{DynamicResource RadiusChip}"
                                             Padding="8,1,2,1" Margin="0,0,4,2">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{Binding Text}" FontSize="11.5" VerticalAlignment="Center" />
@@ -284,7 +284,7 @@
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="200" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="0,0,10,8" Padding="10,6" CornerRadius="4" Background="{DynamicResource Panel2}" ToolTip="{Binding Tip}">
+                                    <Border Margin="0,0,10,8" Padding="10,6" CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource Panel2}" ToolTip="{Binding Tip}">
                                         <StackPanel>
                                             <DockPanel>
                                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Origin}" Style="{StaticResource Origin}" Margin="6,0,0,0" />
@@ -521,7 +521,7 @@
                                     <Button Content="Select all shown" Command="{Binding SelectAllCommand}" Padding="8,1" Margin="0,0,4,0" />
                                     <Button Content="None" Command="{Binding SelectNoneCommand}" Padding="8,1" />
                                 </StackPanel>
-                                <Border BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="4" Padding="6,4">
+                                <Border BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="6,4">
                                     <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto">
                                         <ItemsControl ItemsSource="{Binding Picks}">
                                             <ItemsControl.ItemTemplate>

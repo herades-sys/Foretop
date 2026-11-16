@@ -220,17 +220,21 @@ public sealed class BattleResultTracker
     /// <summary>Fetches totals for every account with open battles that have ended. False when nothing is left to wait for.</summary>
     private async Task<bool> CheckOpenAsync(CancellationToken ct)
     {
+        // The API calls run before taking the lock: with the API slow or down they can take a minute, and a battle
+        // starting meanwhile must not wait for them to record its baseline. The lock only covers reading the open rows
+        // again and applying the totals.
+        var waiting = _store.AllOpen().Where(r => r.EndedAt is not null).Select(r => (r.Region, r.AccountId)).Distinct().ToList();
+        if (waiting.Count == 0) return false;
+        var fetched = new List<(Region Region, long AccountId, AccountStatisticsDto Stats)>();
+        foreach (var (region, account) in waiting)
+            if (await FetchAsync(region, account, retries: 0).ConfigureAwait(false) is { } stats) fetched.Add((region, account, stats));
+
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         var changed = false;
         try
         {
-            var waiting = _store.AllOpen().Where(r => r.EndedAt is not null).GroupBy(r => (r.Region, r.AccountId)).ToList();
-            if (waiting.Count == 0) return false;
-            foreach (var g in waiting)
-            {
-                var stats = await FetchAsync(g.Key.Region, g.Key.AccountId, retries: 0).ConfigureAwait(false);
-                if (stats is not null) changed |= await ApplyTotalsAsync(g.Key.Region, g.Key.AccountId, stats).ConfigureAwait(false);
-            }
+            foreach (var (region, account, stats) in fetched)
+                changed |= await ApplyTotalsAsync(region, account, stats).ConfigureAwait(false);
             return _store.AllOpen().Any(r => r.EndedAt is not null);
         }
         finally
@@ -248,6 +252,7 @@ public sealed class BattleResultTracker
         if (StatTotals.From(stats.Pvp) is { } pvp) _snapshots.AddIfChanged(region, accountId, pvp);
         var now = DateTimeOffset.UtcNow;
         var changed = false;
+        var rows = new List<BattleResult>();
         foreach (var mode in _store.Open(region, accountId).GroupBy(r => r.Mode))
         {
             if (ResultModes.Pick(stats, mode.Key) is not { } totals) continue;
@@ -258,12 +263,13 @@ public sealed class BattleResultTracker
                 var r = applied.Status is ResultStatus.Ok or ResultStatus.Combined && applied.ResolvedAt == now
                     ? await CompleteAsync(applied).ConfigureAwait(false)
                     : applied;
-                _store.Upsert(r);
+                rows.Add(r);
                 if (r.Status is ResultStatus.Ok or ResultStatus.Combined)
                     _log.LogInformation("Battle result: {Key} {Status}: {Battles} battle(s), {Damage} damage, {Wins} win(s)",
                         r.BattleKey, r.Status, r.Result!.Battles, r.Result.Damage, r.Result.Wins);
             }
         }
+        _store.UpsertMany(rows); // the counted, merged and re-based rows together, or none
         return changed;
     }
 

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **Replays from an older game version** are read with that version's definitions when the game still has its files
+  (it keeps the previous version after an update): player names, teams and events are no longer lost. Otherwise the
+  replay opens with a note that some details may be missing. Repeated replay warnings are shown once.
+- Test ships in Live Battle: account values only, a TEST tag before the ship name, and "—" instead of 0 battles.
+- **Three new themes** in Settings → Theme, besides Dark and Light: **Steel** (today's dark look with higher contrast and
+  team colours that differ in lightness), **Chart Room** (light, paper and navy ink with brass, serif headings) and
+  **Combat Information Center** (near-black, sharp corners, Bahnschrift, blue vs orange teams that colour-blind players
+  tell apart). Themes now set corner radii, interface and heading fonts and table row height, not only colours; the
+  font chosen in Settings still overrides the theme's. The replay map keeps readable team colours on light themes.
+- Filter chips keep their height in taller rows, show the checked state clearly and react to the mouse.
+- Player Search finds a player by account id (digits, as in profile links).
+- Profiles opened from a battle use that battle's server.
+- A game update while Foretop runs: the previous complete game version is used until the new one is fully written, and
+  Ship Intelligence reads the new version when shown.
+- Battle results of one check are stored together (all or nothing), and the API calls no longer hold back the start of
+  the next battle.
+- Logs older than 30 days are packed into one zip per month under the data folder's archive (nothing is lost).
+- Ship profile: other torpedo modules of the ship are named next to the torpedoes.
+- Replays keep the images of at most six maps in memory.
 - **Analytics → My performance: filter toolbar and tier analysis.** Source (whole account or recorded battles), tiers
   (several, Shift+click ranges, VI+ / VIII+ / X+ shortcuts), minimum battles per ship, period, class, nation, ships
   and battle type, shown as removable labels; every section follows. New: best and worst performing ships (PR, win

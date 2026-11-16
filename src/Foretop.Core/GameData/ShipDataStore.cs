@@ -49,6 +49,10 @@ public sealed class ShipDataStore
     /// <summary>The newest build in the game folder, when known.</summary>
     public string? GameBuild { get; private set; }
 
+    /// <summary>True when the installed game is now a different build than the one the ship data was loaded for
+    /// (the game updated while Foretop runs).</summary>
+    public bool GameBuildChanged => _gameRoot() is { } root && GameFileSystem.NewestBuild(root) is { } b && b != GameBuild;
+
     /// <summary>True while data from an older build is shown and the new build is being read.</summary>
     public bool ShowingOlderBuild => Data is not null && GameBuild is not null && Data.Build != GameBuild;
 
@@ -224,7 +228,7 @@ public sealed class ShipDataStore
             {
                 var root = _gameRoot();
                 if (root is null) return null;
-                if (_fs is null || _fs.Root != root || _fs.Build != GameFileSystem.NewestBuild(root))
+                if (_fs is null || _fs.IsOutdated(root))
                 {
                     _fs = GameFileSystem.Open(root); // first use, or the game was updated / moved
                     _meshes.Clear();
@@ -259,7 +263,7 @@ public sealed class ShipDataStore
             {
                 var root = _gameRoot();
                 if (root is null || GameFileSystem.NewestBuild(root) is null) return default;
-                if (_fs is null || _fs.Root != root || _fs.Build != GameFileSystem.NewestBuild(root))
+                if (_fs is null || _fs.IsOutdated(root))
                 {
                     _fs = GameFileSystem.Open(root);
                     _meshes.Clear();

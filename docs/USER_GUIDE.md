@@ -94,6 +94,9 @@ battle. You get overall and ranked statistics, recent activity, most played and
 best ships, battles by class and tier, every ship, a win-rate chart and the battles
 you recorded with that player.
 
+**Player Search** finds names by their first letters on the server chosen in Settings, or a player by account id
+(type the digits, as in a profile link). A player opened from a recorded battle is looked up on that battle's server.
+
 Above the ship list, the **Tier** (I–X, ★) and **Class** (DD, CA, BB, CV, SS) buttons filter it, like the
 ship carousel filters in the game: nothing selected shows every ship; select one or more tiers and/or classes
 to narrow the list, and the line above the table adds up battles, win rate and average damage for the ships
@@ -297,7 +300,7 @@ and sends nothing about you; it needs the GitHub repository to be public.
 | Detect battles automatically | Turn the watcher off without closing the app. |
 | Switch to Live Battle | Jump to the battle when one starts. |
 | Show bots | Show AI ships in co-op and operations. |
-| Theme | System (follows Windows), Dark or Light. |
+| Theme | System (follows Windows), Dark, Light, Steel (refined dark, higher contrast), Chart Room (light, paper and navy ink) or Combat Information Center (near-black, dense, blue vs orange teams). A theme sets colours, corners, fonts and row height; a font chosen below overrides its fonts. |
 | Font | Any font installed on Windows (the list shows each in its own style); Default is Segoe UI. |
 | Text size | 90–150 %. Scales the whole interface, so tables and charts keep their proportions. |
 | Check for updates | Look for a new version on GitHub after start and once a day (About → Updates). |

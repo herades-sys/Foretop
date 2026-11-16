@@ -21,7 +21,7 @@
 
             <!-- A labelled statistic: value, explanation, and where the number comes from. -->
             <DataTemplate x:Key="StatCardTemplate">
-                <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="6"
+                <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}"
                         Padding="12,10" Margin="0,0,10,10">
                     <StackPanel>
                         <DockPanel>

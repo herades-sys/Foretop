@@ -343,9 +343,11 @@ public sealed partial class ProfileViewModel : ObservableObject
     private Task PickSuggestion(string? name) => name is null ? Task.CompletedTask : OpenAsync(name);
 
     [RelayCommand]
-    private Task Refresh() => Player is null ? Task.CompletedTask : OpenAsync(Player.Name, force: true);
+    private Task Refresh() => Player is null ? Task.CompletedTask : OpenAsync(Player.Name, force: true, region: _region);
 
-    public async Task OpenAsync(string name, bool force = false)
+    /// <param name="region">The server to look the name up on; null = the one chosen in Settings. A player opened from a
+    /// battle recorded on another server must be looked up there (the same name is another player elsewhere).</param>
+    public async Task OpenAsync(string name, bool force = false, Region? region = null)
     {
         if (string.IsNullOrWhiteSpace(name)) return;
         _suppressSearch = true;
@@ -368,12 +370,12 @@ public sealed partial class ProfileViewModel : ObservableObject
         Message = null;
         try
         {
-            var region = _host.Region;
-            var result = await _host.Stats.LoadAsync("profile:" + name, region, [new PlayerRequest(name, 1, 0, false)],
+            var server = region ?? _host.Region;
+            var result = await _host.Stats.LoadAsync("profile:" + name, server, [new PlayerRequest(name, 1, 0, false)],
                 RequestPriority.Normal, ct, force);
             if (ct.IsCancellationRequested) return;
             var p = result[0];
-            Show(p, region);
+            Show(p, server);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
         catch (Exception ex)

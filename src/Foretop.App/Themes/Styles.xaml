@@ -4,6 +4,7 @@
     <!-- Shared styles. Brushes are DynamicResource so the colour dictionary (Colors.Dark / Colors.Light) can be swapped. -->
 
     <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="HeadingFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="NumFont">Cascadia Mono, Consolas</FontFamily>
 
     <Style TargetType="TextBlock">
@@ -16,11 +17,13 @@
     </Style>
 
     <Style x:Key="H1" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily" Value="{DynamicResource HeadingFont}" />
         <Setter Property="FontSize" Value="21" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style x:Key="H2" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily" Value="{DynamicResource HeadingFont}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
@@ -47,7 +50,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource RadiusControl}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -94,7 +97,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="b" Background="Transparent" CornerRadius="5">
+                    <Border x:Name="b" Background="Transparent" CornerRadius="{DynamicResource RadiusControl}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -121,7 +124,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Grid Height="35">
-                        <Border x:Name="b" Background="Transparent" CornerRadius="6" />
+                        <Border x:Name="b" Background="Transparent" CornerRadius="{DynamicResource RadiusControl}" />
                         <Border x:Name="bar" Width="3" HorizontalAlignment="Left" Background="{DynamicResource Accent}" CornerRadius="6,0,0,6"
                                 Visibility="Collapsed" />
                         <StackPanel Orientation="Horizontal" Margin="11,0" VerticalAlignment="Center">
@@ -161,7 +164,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Expander">
-                    <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6">
+                    <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSection}">
                         <DockPanel>
                             <ToggleButton DockPanel.Dock="Top" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                           Cursor="Hand" Focusable="False">
@@ -207,7 +210,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid Height="33">
-                        <Border x:Name="b" Background="Transparent" CornerRadius="6" />
+                        <Border x:Name="b" Background="Transparent" CornerRadius="{DynamicResource RadiusControl}" />
                         <StackPanel Orientation="Horizontal" Margin="11,0" VerticalAlignment="Center">
                             <Path Data="{TemplateBinding Tag}" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.6"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
@@ -246,7 +249,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="b" Height="30" Padding="13,0" CornerRadius="4" Background="Transparent">
+                    <Border x:Name="b" Height="30" Padding="13,0" CornerRadius="{DynamicResource RadiusSmall}" Background="Transparent">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -271,7 +274,7 @@
     <Style x:Key="Pill" TargetType="Border">
         <Setter Property="Height" Value="26" />
         <Setter Property="Padding" Value="10,0" />
-        <Setter Property="CornerRadius" Value="13" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusChip}" />
         <Setter Property="Background" Value="{DynamicResource Panel}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -301,7 +304,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="5">
+                            BorderThickness="1" CornerRadius="{DynamicResource RadiusControl}">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -320,7 +323,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="6" Height="30">
+                            BorderThickness="1" CornerRadius="{DynamicResource RadiusControl}" Height="30">
                         <Grid Margin="10,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -332,7 +335,7 @@
                             <TextBlock x:Name="ph" Grid.Column="1" Margin="10,0,0,0" Text="{TemplateBinding Tag}" Foreground="{DynamicResource TextDim}"
                                        VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed" />
                             <ScrollViewer x:Name="PART_ContentHost" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" />
-                            <Border Grid.Column="2" BorderBrush="{DynamicResource Border2}" BorderThickness="1" CornerRadius="4" Padding="5,0"
+                            <Border Grid.Column="2" BorderBrush="{DynamicResource Border2}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="5,0"
                                     VerticalAlignment="Center">
                                 <TextBlock Text="Ctrl K" FontSize="11" Foreground="{DynamicResource TextDim}" />
                             </Border>
@@ -357,7 +360,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="6" Height="30">
+                            BorderThickness="1" CornerRadius="{DynamicResource RadiusControl}" Height="30">
                         <Grid Margin="10,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -476,7 +479,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="PasswordBox">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="5">
+                            BorderThickness="1" CornerRadius="{DynamicResource RadiusControl}">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -586,7 +589,7 @@
         <Setter Property="IsReadOnly" Value="True" />
         <Setter Property="SelectionMode" Value="Single" />
         <Setter Property="SelectionUnit" Value="FullRow" />
-        <Setter Property="RowHeight" Value="28" />
+        <Setter Property="RowHeight" Value="{DynamicResource RowHeight}" />
         <Setter Property="FontSize" Value="12.5" />
         <Setter Property="EnableRowVirtualization" Value="True" />
         <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
@@ -647,16 +650,22 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Margin" Value="2,0" />
         <Setter Property="Cursor" Value="Hand" />
+        <!-- Chips keep their own height in taller rows (they stretched to the row and put the text at the top). -->
+        <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="b" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1"
-                            CornerRadius="10" Padding="9,3">
-                        <ContentPresenter HorizontalAlignment="Center" />
+                    <Border x:Name="b" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border2}" BorderThickness="1"
+                            CornerRadius="{DynamicResource RadiusChip}" Padding="9,3" MinHeight="24">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource TextDim}" />
+                        </Trigger>
+                        <!-- Checked must read at a glance: accent tint, accent border, full-strength text. -->
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource Panel2}" />
+                            <Setter TargetName="b" Property="Background" Value="{DynamicResource NavActive}" />
                             <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource Accent}" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
                         </Trigger>
@@ -671,7 +680,7 @@
 
     <!-- ComboBox -->
     <ControlTemplate x:Key="ComboToggle" TargetType="ToggleButton">
-        <Border x:Name="b" Background="{DynamicResource Input}" BorderBrush="{DynamicResource Border2}" BorderThickness="1" CornerRadius="5">
+        <Border x:Name="b" Background="{DynamicResource Input}" BorderBrush="{DynamicResource Border2}" BorderThickness="1" CornerRadius="{DynamicResource RadiusControl}">
             <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0" Data="M0,0 L4,4 L8,0" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5" />
         </Border>
         <ControlTemplate.Triggers>
@@ -695,7 +704,7 @@
                                           Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False"
                                PopupAnimation="Fade">
-                            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border2}" BorderThickness="1" CornerRadius="5"
+                            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border2}" BorderThickness="1" CornerRadius="{DynamicResource RadiusControl}"
                                     MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="320" Margin="0,2,0,0">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <ItemsPresenter />
@@ -731,7 +740,7 @@
         <Setter Property="Background" Value="{DynamicResource Panel}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
         <Setter Property="Padding" Value="16" />
     </Style>
 </ResourceDictionary>

@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using System.Xml.Linq;
+using Foretop.Core.GameData;
 using Foretop.Core.Replays;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -232,5 +233,52 @@ public class ReplayTests
         Assert.Equal((4.5f, "Eve", false, "gl hf"), (data.Chat[0].T, data.Chat[0].Sender?.Name, data.Chat[0].IsTeam, data.Chat[0].Text));
         Assert.Equal(("Bob", true, "wp"), (data.Chat[1].Sender?.Name, data.Chat[1].IsTeam, data.Chat[1].Text));
         Assert.Equal(900002, eve.AvatarId);
+    }
+
+    [Theory]
+    [InlineData("{\"clientVersionFromExe\":\"15,10,0,13533378\"}", "13533378")]
+    [InlineData("{\"clientVersionFromExe\":\"15, 9, 0, 13357625\"}", "13357625")]
+    [InlineData("{\"clientVersionFromExe\":\"\"}", null)]
+    [InlineData("{\"clientVersionFromExe\":\"15,10,0,beta\"}", null)]
+    [InlineData("{\"x\":1}", null)]
+    [InlineData("[1,2]", null)]
+    [InlineData("not json", null)]
+    public void Client_build_comes_from_the_header(string arena, string? build) =>
+        Assert.Equal(build, ReplayFile.Parse(BuildReplay(arena, [1, 2, 3])).ClientBuild);
+
+    [Fact]
+    public void A_version_note_comes_first_and_repeated_warnings_are_reported_once()
+    {
+        // Two cut-off packets cannot happen (parsing stops at the first), so repeat a player-list failure instead:
+        // two arena-state calls whose blobs are not pickles.
+        var defs = Defs();
+        var avatar = defs.Entity("Avatar")!;
+        const int avatarId = 900001;
+        var p = new Packets()
+            .Add(0x00, 0, w => { w.Write(avatarId); w.Write((short)0); })
+            .Add(0x08, 1, w => ArenaState(w, avatar, avatarId))
+            .Add(0x08, 2, w => ArenaState(w, avatar, avatarId));
+        var data = ReplayParser.Parse(ReplayFile.Parse(BuildReplay("{\"mapName\":\"spaces/x\"}", p.Bytes)), defs, "older version");
+        Assert.Equal("older version", data.Warnings[0]);
+        Assert.Single(data.Warnings, w => w.Contains("player list"));   // raised twice, reported once
+        Assert.Equal(data.Warnings.Count, data.Warnings.Distinct().Count());
+    }
+
+    private static void ArenaState(BinaryWriter w, EntityDef avatar, int avatarId)
+    {
+        var garbage = new byte[] { 0xFF, 0xFE, 0x00, 0x13 };
+        var args = new MemoryStream();
+        var a = new BinaryWriter(args);
+        a.Write(42L); a.Write((byte)0); a.Write((byte)0); a.Write((byte)garbage.Length); a.Write(garbage);
+        w.Write(avatarId); w.Write(avatar.MethodIndex("onArenaStateReceived")); w.Write((int)args.Length); w.Write(args.ToArray());
+    }
+
+    [Fact]
+    public void Opening_a_build_that_is_not_installed_fails_cleanly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "foretop-nobuild-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "bin"));
+        try { Assert.ThrowsAny<IOException>(() => GameFileSystem.OpenBuild(root, "123")); }
+        finally { Directory.Delete(root, true); }
     }
 }

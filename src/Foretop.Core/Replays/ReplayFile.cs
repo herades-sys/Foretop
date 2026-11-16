@@ -23,6 +23,24 @@ public sealed class ReplayFile
 
     public static ReplayFile Read(string path) => Parse(File.ReadAllBytes(path));
 
+    /// <summary>The client build the replay was recorded with (last part of clientVersionFromExe, "15,10,0,13533378"
+    /// → "13533378"); null when the header does not say.</summary>
+    public string? ClientBuild
+    {
+        get
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(ArenaJson);
+                if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object
+                    || !doc.RootElement.TryGetProperty("clientVersionFromExe", out var v) || v.ValueKind != System.Text.Json.JsonValueKind.String) return null;
+                var last = v.GetString()!.Split(',').Last().Trim();
+                return last.Length > 0 && last.All(char.IsDigit) ? last : null;
+            }
+            catch (System.Text.Json.JsonException) { return null; }
+        }
+    }
+
     public static ReplayFile Parse(byte[] bytes)
     {
         if (bytes.Length < 12 || BitConverter.ToUInt32(bytes, 0) != Magic) throw new InvalidDataException("Not a World of Warships replay.");

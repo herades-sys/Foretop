@@ -109,7 +109,7 @@
                     <TextBlock Text="Interface and startup" Style="{StaticResource H2}" Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                         <TextBlock Text="Theme" Style="{StaticResource Dim}" VerticalAlignment="Center" Width="60" />
-                        <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding Theme}" Width="140" />
+                        <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding Theme}" Width="230" />
                         <TextBlock Text="System follows the Windows app theme" Style="{StaticResource Dim}" FontSize="11"
                                    VerticalAlignment="Center" Margin="10,0,0,0" />
                     </StackPanel>

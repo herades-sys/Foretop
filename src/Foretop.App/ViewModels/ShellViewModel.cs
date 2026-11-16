@@ -50,7 +50,7 @@ public sealed partial class ShellViewModel : ObservableObject
             UiScale = Services.FontManager.ClampScale(s.TextScale);
             Services.FontManager.Apply(s.FontFamily);
         });
-        Live.ProfileRequested += OpenProfile;
+        Live.ProfileRequested += (name, region) => OpenProfile(name, region);
         Statistics.ProfileRequested += OpenProfile;
         PlayerSearch.ProfileRequested += OpenProfile;
         Dashboard.ProfileRequested += OpenProfile;
@@ -76,6 +76,7 @@ public sealed partial class ShellViewModel : ObservableObject
             if (SelectedPage == Page.Dashboard) _ = Dashboard.EnsureLoadedAsync();
             if (SelectedPage == Page.History) _ = History.EnsureLoadedAsync();
             Replays.RefreshNames();
+            Live.RefreshNames();
         });
         History.OpenRequested += OpenRecorded;
         Dashboard.BattleRequested += OpenRecorded;
@@ -167,10 +168,13 @@ public sealed partial class ShellViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(GoForwardCommand))]
     private bool _canGoForward;
 
-    public void OpenProfile(string name)
+    public void OpenProfile(string name) => OpenProfile(name, null);
+
+    /// <summary>Opens a profile on a given server (a recorded battle's), or the Settings server when null.</summary>
+    public void OpenProfile(string name, Region? region)
     {
         SelectedPage = Page.Profiles;
-        _ = Profiles.OpenAsync(name);
+        _ = Profiles.OpenAsync(name, region: region);
     }
 
     private void OpenRecorded(Core.Data.BattleRecord record)

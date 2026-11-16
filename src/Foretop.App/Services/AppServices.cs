@@ -135,7 +135,9 @@ public sealed class FileLoggerProvider : ILoggerProvider
         _minLevel = minLevel;
         Directory.CreateDirectory(dir);
         _writer = Task.Run(WriteLoopAsync);
+        _ = Task.Run(() => Foretop.Core.Data.LogArchive.PackOldLogs(dir, Path.Combine(AppPaths.ArchiveDir, "logs"), TimeSpan.FromDays(30)));
     }
+
 
     public ILogger CreateLogger(string categoryName) => new FileLogger(this, categoryName);
 

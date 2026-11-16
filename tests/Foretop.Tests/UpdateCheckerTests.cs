@@ -66,4 +66,22 @@ public class UpdateCheckerTests
         var hidden = new UpdateChecker(new HttpClient(new Stub(HttpStatusCode.NotFound, "{}")));
         Assert.Equal(UpdateCheckOutcome.NotReachable, (await hidden.CheckAsync("1.3.0")).Outcome);
     }
+
+    [Theory]
+    [InlineData("https://github.com/herades-sys/Foretop/releases/download/v1.6.0/Foretop-1.6.0-x64.msi", "abc", false, null)]
+    [InlineData("https://objects.githubusercontent.com/github-production-release-asset/1/2", "abc", false, null)]
+    [InlineData("https://github.com/x/y.msi", null, false, "no checksum")]
+    [InlineData("https://github.com/x/y.msi", "", false, "no checksum")]
+    [InlineData("http://github.com/x/y.msi", "abc", false, "not on GitHub")]
+    [InlineData("https://github.com.evil.example/x.msi", "abc", false, "not on GitHub")]
+    [InlineData("https://example.com/Foretop.msi", "abc", false, "not on GitHub")]
+    [InlineData("file:///C:/temp/Foretop.msi", "abc", false, "local file")]
+    [InlineData("file:///C:/temp/Foretop.msi", "abc", true, null)]
+    [InlineData("not a url", "abc", false, "not valid")]
+    public void Update_downloads_need_a_checksum_and_github(string url, string? sha, bool feed, string? refusal)
+    {
+        var asset = new ReleaseAsset("Foretop-9.9.9-x64.msi", url, 1, sha);
+        if (refusal is null) Assert.NotNull(UpdateChecker.CheckDownload(asset, feed));
+        else Assert.Contains(refusal, Assert.Throws<InvalidDataException>(() => UpdateChecker.CheckDownload(asset, feed)).Message);
+    }
 }

@@ -16,7 +16,7 @@
             </DockPanel>
         </DataTemplate>
         <DataTemplate x:Key="KeyFigure">
-            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,10,0">
+            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}" Padding="14,10" Margin="0,0,10,0">
                 <StackPanel>
                     <TextBlock Text="{Binding Label}" Style="{StaticResource Dim}" FontSize="12" />
                     <TextBlock Text="{Binding Value}" FontSize="21" FontWeight="SemiBold" Margin="0,4,0,0" />
@@ -33,7 +33,7 @@
             <!-- Header -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <DockPanel>
-                    <Border DockPanel.Dock="Left" Width="300" Height="176" CornerRadius="6" Background="{DynamicResource Input}" Margin="0,0,20,0">
+                    <Border DockPanel.Dock="Left" Width="300" Height="176" CornerRadius="{DynamicResource RadiusCard}" Background="{DynamicResource Input}" Margin="0,0,20,0">
                         <Grid>
                             <Image Source="{Binding Preview}" Stretch="Uniform" Margin="6" RenderOptions.BitmapScalingMode="HighQuality" />
                             <TextBlock Text="No artwork in the game files" Style="{StaticResource Dim}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"

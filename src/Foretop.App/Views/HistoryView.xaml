@@ -30,7 +30,7 @@
             </StackPanel>
         </DockPanel>
 
-        <Border Grid.Row="1" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="6">
+        <Border Grid.Row="1" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}">
             <DataGrid x:Name="Grid" ItemsSource="{Binding Battles}" SelectedItem="{Binding Selected}" SelectionMode="Extended"
                       SelectionChanged="OnSelectionChanged" MouseDoubleClick="OnDoubleClick">
                 <DataGrid.Columns>

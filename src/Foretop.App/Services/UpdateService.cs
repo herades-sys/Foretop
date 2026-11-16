@@ -198,17 +198,10 @@ public sealed partial class UpdateService : ObservableObject
         var target = Path.Combine(dir, asset.Name);
         var partial = target + ".part";
 
-        var source = Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri) ? uri : null;
-        if (asset.Sha256 is null)
-            throw new InvalidDataException("GitHub gives no checksum for this file, so it is not installed automatically. Download it from the release page instead.");
-        if (source is { IsFile: true } && _checker.FeedFile is not null)
+        var source = UpdateChecker.CheckDownload(asset, allowLocalFile: _checker.FeedFile is not null); // throws when not allowed
+        if (source.IsFile)
         {
             File.Copy(source.LocalPath, partial, overwrite: true); // development feed (--update-feed)
-        }
-        else if (source is null || source.Scheme != Uri.UriSchemeHttps
-                 || !(source.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) || source.Host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new InvalidDataException("the download address is not on GitHub, so it was not used.");
         }
         else
         {

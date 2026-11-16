@@ -49,7 +49,7 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Height="44" Margin="16,0">
                     <Grid Width="22" Height="22" VerticalAlignment="Center">
-                        <Border Background="{DynamicResource Accent}" CornerRadius="6" />
+                        <Border Background="{DynamicResource Accent}" CornerRadius="{DynamicResource RadiusCard}" />
                         <Path Data="{StaticResource LogoMark}" Stroke="#0B1522" StrokeThickness="1.7" StrokeStartLineCap="Round"
                               StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="15" Height="15" Stretch="Uniform" />
                     </Grid>
@@ -177,7 +177,7 @@
                                 Visibility="{Binding Updates.ShowNotice, Converter={StaticResource BoolVis}}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border Background="{DynamicResource AccentButtonBg}" CornerRadius="11" Padding="10,3">
+                                    <Border Background="{DynamicResource AccentButtonBg}" CornerRadius="{DynamicResource RadiusChip}" Padding="10,3">
                                         <StackPanel Orientation="Horizontal">
                                             <Path Data="M12 4v11 M7 10l5 5l5 -5 M5 19h14" Stroke="{DynamicResource AccentButtonFg}" StrokeThickness="2"
                                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="11" Height="11"
@@ -207,7 +207,7 @@
 
             <!-- Update panel (opened from the top-bar notice) -->
             <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,14,0" Width="460" Padding="16,14"
-                    Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="8"
+                    Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}"
                     Visibility="{Binding Updates.IsPanelOpen, Converter={StaticResource BoolVis}}">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.35" />

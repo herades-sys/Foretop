@@ -130,6 +130,9 @@ public static class ShipFacts
             new("Secondary armament", c.Secondary is { } s ? $"{s.Summary} · {Km(s.Range)}" : "No secondary battery"),
             new("Torpedoes", c.Torpedoes is { } t
                 ? $"{string.Join(" + ", t.Launchers.Select(l => $"{l.Count} × {l.Barrels}"))} · {t.TorpedoName} · {N0(t.Damage)} dmg · {Kn(t.Speed)} · {Km(t.Range)}"
+                  + (ship.Modules.Where(m => m.Type == "_Torpedoes" && m.DisplayName != t.TorpedoName).Select(m => m.DisplayName).ToList() is { Count: > 0 } other
+                      ? " · other torpedo modules: " + string.Join(", ", other)
+                      : "")
                 : "This ship carries no torpedoes"),
             new("Anti-aircraft", c.AntiAir is { } aa
                 ? string.Join(" · ", new[]

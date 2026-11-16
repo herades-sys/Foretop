@@ -82,6 +82,25 @@ public class InfrastructureTests
     }
 
     [Fact]
+    public void Old_logs_are_zipped_by_month_without_losing_content()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "foretop-tests", Guid.NewGuid().ToString("N"));
+        var logs = Path.Combine(root, "logs");
+        Directory.CreateDirectory(logs);
+        var old = Path.Combine(logs, "foretop-20260901.log");
+        var recent = Path.Combine(logs, $"foretop-{DateTime.Now:yyyyMMdd}.log");
+        File.WriteAllText(old, string.Concat(Enumerable.Repeat("{\"msg\":\"old line\"}\n", 500)));
+        File.WriteAllText(recent, "{}\n");
+        var packed = Foretop.Core.Data.LogArchive.PackOldLogs(logs, Path.Combine(root, "archive", "logs"), TimeSpan.FromDays(30));
+        Assert.Equal(1, packed);
+        Assert.False(File.Exists(old));
+        Assert.True(File.Exists(recent));
+        using var zip = System.IO.Compression.ZipFile.OpenRead(Path.Combine(root, "archive", "logs", "logs-2026-09.zip"));
+        using var reader = new StreamReader(zip.GetEntry("foretop-20260901.log")!.Open());
+        Assert.Equal(500, reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+    }
+
+    [Fact]
     public async Task Scheduler_keeps_running_when_cancelled_items_race_with_new_ones()
     {
         // Many threads enqueue items whose tokens are cancelled at random moments (as when battles are switched

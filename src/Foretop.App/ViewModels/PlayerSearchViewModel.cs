@@ -49,11 +49,47 @@ public sealed partial class PlayerSearchViewModel : ObservableObject
         _ = LoadRecentAsync();
     }
 
+    /// <summary>An account id: the player with that id on the selected server (a name search would find nothing).</summary>
+    private async Task FindByIdAsync(long id, string text)
+    {
+        _cts?.Cancel();
+        var mine = _cts = new CancellationTokenSource();
+        IsSearching = true;
+        try
+        {
+            var raw = await _host.Api.GetAccountInfoRawAsync(_host.Region, [id], RequestPriority.Normal, mine.Token);
+            if (text != Query.Trim()) return;
+            Results.Clear();
+            var name = raw.TryGetValue(id, out var el) && el is { } e && e.ValueKind == System.Text.Json.JsonValueKind.Object
+                       && e.TryGetProperty("nickname", out var n) && n.ValueKind == System.Text.Json.JsonValueKind.String ? n.GetString() : null;
+            if (name is not null) Results.Add(new PlayerSearchResult(name, id));
+            Message = name is null
+                ? $"No account {id} on {Regions.Label(_host.Region)}."
+                : $"Account {id} on {Regions.Label(_host.Region)}: {name}";
+        }
+        catch (OperationCanceledException) { }
+        catch (WgApiException ex)
+        {
+            Message = ex.Message;
+            _host.Log.LogInformation("Account id lookup failed: {Error}", ex.Message);
+        }
+        finally
+        {
+            if (_cts == mine) IsSearching = false;
+        }
+    }
+
     private async Task RunSearchAsync()
     {
         _debounce.Stop();
         var text = Query.Trim();
         if (text.Length < 3) return;
+        // Digits only (from 6): an account id, as in profile links (worldofwarships.eu/…/549692505-Name).
+        if (System.Text.RegularExpressions.Regex.IsMatch(text, "^[0-9]{6,12}$") && long.TryParse(text, out var accountId) && _host.Api.HasApplicationId)
+        {
+            await FindByIdAsync(accountId, text);
+            return;
+        }
         // Game names are 3–24 letters, digits and underscores: anything else would only return an API error.
         if (!System.Text.RegularExpressions.Regex.IsMatch(text, "^[A-Za-z0-9_]{3,24}$"))
         {

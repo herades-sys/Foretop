@@ -169,6 +169,9 @@ public sealed partial class ReplaysViewModel : ObservableObject
         Selected = Replays.FirstOrDefault(r => r.Entry.Path == selected);
     }
 
+    /// <summary>A replay outside the game's replay folder (the --replay switch with a path), or null if it is not one.</summary>
+    public ReplayRow? RowForFile(string path) => ReplayLibrary.ReadEntry(path) is { } e ? Row(e) : null;
+
     private ReplayRow Row(ReplayEntry e)
     {
         var ship = ShipName(e.PlayerVehicle);

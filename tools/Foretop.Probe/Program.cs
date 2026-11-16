@@ -13,6 +13,15 @@ var sw = Stopwatch.StartNew();
 var fs = GameFileSystem.Open(root);
 Console.WriteLine($"build {fs.Build}: {fs.Count:N0} files indexed in {sw.ElapsedMilliseconds} ms");
 
+// The entity definitions of the build a replay was recorded with, when that build is still on disk (as Foretop does).
+Foretop.Core.Replays.EntityDefs DefsFor(string replayPath)
+{
+    var b = Foretop.Core.Replays.ReplayFile.Read(replayPath).ClientBuild;
+    if (b is null || b == fs.Build || !GameFileSystem.Builds(root).Contains(b)) return Foretop.Core.Replays.EntityDefs.Load(fs);
+    Console.WriteLine($"  (definitions of build {b}, the replay's own)");
+    return Foretop.Core.Replays.EntityDefs.Load(GameFileSystem.OpenBuild(root, b));
+}
+
 switch (cmd)
 {
     case "vfs":
@@ -146,7 +155,7 @@ switch (cmd)
     case "replay":
     {
         // replay <file.wowsreplay>: decode and summarise
-        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        var defs = DefsFor(args[2]);
         sw.Restart();
         var file = Foretop.Core.Replays.ReplayFile.Read(args[2]);
         var data = Foretop.Core.Replays.ReplayParser.Parse(file, defs);
@@ -179,6 +188,42 @@ switch (cmd)
         Console.WriteLine($"  clock {data.TimeLeft.Count} samples: {string.Join(" ", data.TimeLeft.Take(6).Select(v => $"{v.Value}@{v.T:0}"))} … {string.Join(" ", data.TimeLeft.TakeLast(3).Select(v => $"{v.Value}@{v.T:0}"))}");
         break;
     }
+    case "battle-export":
+    {
+        // battle-export <foretop.db> <out.json> [anonymize]: newest recorded battle's roster with the statistics saved then
+        using var con = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={args[2]};Mode=ReadOnly");
+        con.Open();
+        using var q = con.CreateCommand();
+        q.CommandText = "SELECT arena_json, summary_z FROM battles ORDER BY COALESCE(started_at, detected_at) DESC LIMIT 1";
+        using var rd = q.ExecuteReader();
+        if (!rd.Read()) { Console.WriteLine("no battle"); break; }
+        var arenaJson = rd.GetString(0);
+        var z = (byte[])rd[1];
+        using var br = new System.IO.Compression.BrotliStream(new MemoryStream(z), System.IO.Compression.CompressionMode.Decompress);
+        var summary = new StreamReader(br).ReadToEnd();
+        var players = Foretop.Core.Stats.BattleSummaryCodec.Deserialize(summary);
+        Foretop.Core.Game.ArenaInfoParser.TryParse(arenaJson, out var info, out _);
+        var anon = args.Length > 4 && args[4] == "anonymize";
+        var seq = 0;
+        var names = new Dictionary<string, string>();
+        string Name(string real, bool self) => !anon ? real : self ? "You" : names.TryGetValue(real, out var a) ? a : names[real] = $"Player {++seq}";
+        var rows = info!.Vehicles.Select(v =>
+        {
+            var p = players.FirstOrDefault(x => string.Equals(x.Name, v.Name, StringComparison.OrdinalIgnoreCase));
+            var o = p?.Overall;
+            return new
+            {
+                name = Name(v.Name, v.IsSelf), team = v.IsSelf ? "self" : v.IsFriendly ? "ally" : "enemy", shipId = v.ShipId,
+                battles = o?.Battles, winRate = o?.WinRate is double w ? Math.Round(w, 1) : (double?)null,
+                avgDamage = o?.AvgDamage is double d ? Math.Round(d) : (double?)null, pr = p?.Pr is double pr ? Math.Round(pr) : (double?)null,
+                hidden = p?.Hidden,
+            };
+        }).ToList();
+        File.WriteAllText(args[3], System.Text.Json.JsonSerializer.Serialize(new { map = info.MapName, type = info.MatchGroup, players = rows },
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine($"{rows.Count} players written");
+        break;
+    }
     case "spaces":
     {
         // spaces: chunk bounds of every map and the size of its minimap images
@@ -198,7 +243,7 @@ switch (cmd)
     case "mapfit":
     {
         // mapfit <file.wowsreplay>: share of ship positions on island pixels of minimap.png for candidate transforms
-        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        var defs = DefsFor(args[2]);
         var data = Foretop.Core.Replays.ReplayParser.Parse(Foretop.Core.Replays.ReplayFile.Read(args[2]), defs);
         var space = data.MapSpace.Trim('/');
         if (!space.StartsWith("spaces/")) space = "spaces/" + space;
@@ -246,6 +291,28 @@ switch (cmd)
         diffs.Sort();
         if (diffs.Count > 0)
             Console.WriteLine($"  heading vs travel ({diffs.Count:N0} moving samples): median {diffs[diffs.Count / 2]:0.0}°, 90th percentile {diffs[(int)(diffs.Count * 0.9)]:0.0}°");
+        if (args.Contains("--per-ship"))
+            foreach (var (vid, tr) in data.Tracks.OrderBy(kv => kv.Key))
+            {
+                // Per ship: share of positions on islands, and of moving samples within 30° of straight backwards (reversing).
+                var onLand = tr.Count(p => Land((p.X + half) / (2 * half), (half - p.Z) / (2 * half)));
+                int moving = 0, back = 0, side = 0;
+                for (var i = 1; i < tr.Count; i++)
+                {
+                    var (a, b2) = (tr[i - 1], tr[i]);
+                    if (b2.T - a.T is <= 0 or > 3) continue;
+                    double ddx = b2.X - a.X, ddz = b2.Z - a.Z;
+                    if (Math.Sqrt(ddx * ddx + ddz * ddz) < 1.5) continue;
+                    var d = Math.Atan2(ddx, ddz) - b2.Yaw;
+                    while (d > Math.PI) d -= 2 * Math.PI;
+                    while (d < -Math.PI) d += 2 * Math.PI;
+                    var deg = Math.Abs(d) * 180 / Math.PI;
+                    moving++;
+                    if (deg > 150) back++; else if (deg > 30) side++;
+                }
+                var pl = data.ByVehicle(vid);
+                Console.WriteLine($"    {vid,9} {pl?.Name ?? "?",-24} ship {pl?.ShipId,-11} pts {tr.Count,5} island {(tr.Count > 0 ? onLand / (double)tr.Count : 0),7:P2}  moving {moving,5} reversing {(moving > 0 ? back / (double)moving : 0),6:P1} sideways {(moving > 0 ? side / (double)moving : 0),6:P1}");
+            }
         break;
     }
     case "api":
@@ -275,7 +342,7 @@ switch (cmd)
     case "facts":
     {
         // facts <file.wowsreplay> [apiDamage apiXp]: the personal battle facts Foretop reads from a replay
-        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        var defs = DefsFor(args[2]);
         var data = Foretop.Core.Replays.ReplayParser.Parse(Foretop.Core.Replays.ReplayFile.Read(args[2]), defs);
         var self = data.Self!;
         Foretop.Core.Stats.StatTotals? api = args.Length > 4

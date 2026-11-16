@@ -83,7 +83,7 @@
                 </DockPanel>
                 <TextBlock Text="{Binding Summary}" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,3,0,0" TextWrapping="Wrap" />
             </StackPanel>
-            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6">
+            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}">
                 <ListBox x:Name="List" ItemsSource="{Binding Replays}" SelectedItem="{Binding Selected}" BorderThickness="0" Background="Transparent"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" MouseDoubleClick="OnListDoubleClick" KeyDown="OnListKeyDown">
                     <ListBox.ItemTemplate>
@@ -186,13 +186,13 @@
                 </StackPanel>
             </Border>
 
-            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="6">
+            <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}">
                 <Grid>
                     <views:ReplayCanvas x:Name="Minimap" Scene="{Binding Scene}" Time="{Binding Time}" ShowTrails="{Binding ShowTrails}"
                                         ShowNames="{Binding ShowNames}" ShowDebug="{Binding ShowDebug}" Margin="6"
                                         ToolTip="Mouse wheel: zoom at the pointer · drag: move · double-click: whole map" ToolTipService.InitialShowDelay="1500" />
                     <!-- Latest chat over the map, as in the game -->
-                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" MaxWidth="360" Padding="8,5" CornerRadius="4"
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" MaxWidth="360" Padding="8,5" CornerRadius="{DynamicResource RadiusSmall}"
                             Background="{DynamicResource ChatOverlay}" IsHitTestVisible="False">
                         <Border.Style>
                             <Style TargetType="Border">

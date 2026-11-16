@@ -20,7 +20,7 @@
         </ContextMenu>
     </UserControl.Resources>
 
-    <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="6">
+    <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusCard}">
         <DockPanel>
             <!-- Team header -->
             <Border DockPanel.Dock="Top" BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="0,3,0,0" CornerRadius="6,6,0,0"
@@ -28,7 +28,7 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="{Binding Header, ElementName=Root}" Style="{StaticResource H2}"
                                Foreground="{Binding Accent, ElementName=Root}" VerticalAlignment="Center" />
-                    <Border DockPanel.Dock="Left" Margin="10,0,0,0" Padding="7,1" CornerRadius="9" VerticalAlignment="Center"
+                    <Border DockPanel.Dock="Left" Margin="10,0,0,0" Padding="7,1" CornerRadius="{DynamicResource RadiusChip}" VerticalAlignment="Center"
                             BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="1" ToolTip="{Binding BadgeTip, ElementName=Root}"
                             Visibility="{Binding Badge, ElementName=Root, Converter={StaticResource NullVis}}">
                         <TextBlock Text="{Binding Badge, ElementName=Root}" FontSize="10.5" FontWeight="SemiBold"
@@ -88,7 +88,13 @@
                                                FontWeight="SemiBold" FontSize="11" Width="20" VerticalAlignment="Center" />
                                     <TextBlock DockPanel.Dock="Left" Text="{Binding TierText}" Style="{StaticResource Dim}" FontSize="11" Width="26"
                                                VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding ShipName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <!-- A ship in testing: marked before the name, where it cannot be cut off -->
+                                    <Border DockPanel.Dock="Left" BorderBrush="{DynamicResource StatusAmber}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}"
+                                            Padding="3,0" Margin="0,0,5,0" VerticalAlignment="Center" ToolTip="Ship in testing: no ship statistics are shown, only the player's account"
+                                            Visibility="{Binding IsTestShip, Converter={StaticResource BoolVis}}">
+                                        <TextBlock Text="TEST" FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource StatusAmber}" />
+                                    </Border>
+                                    <TextBlock Text="{Binding ShipNameShown}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,4,0" />
                                 </DockPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

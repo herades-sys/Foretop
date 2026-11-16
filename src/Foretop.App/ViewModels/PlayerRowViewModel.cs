@@ -29,7 +29,15 @@ public sealed class PlayerRowViewModel : ObservableObject
     }
 
     /// <summary>The ship as read from the game files (names ships the API does not list, marks test ships).</summary>
-    public Core.GameData.ShipData? GameShip { get; }
+    public Core.GameData.ShipData? GameShip { get; private set; }
+
+    /// <summary>The game-file ship once the ship data has loaded (it loads in the background, often after the battle opens).</summary>
+    public void SetGameShip(Core.GameData.ShipData? gameShip)
+    {
+        if (gameShip is null || ReferenceEquals(gameShip, GameShip)) return;
+        GameShip = gameShip;
+        OnPropertyChanged(string.Empty); // test-ship marking, name, class and tier may all change
+    }
 
     /// <summary>A ship in testing: no ship statistics are shown for it (the stats service drops them too).</summary>
     public bool IsTestShip => GameShip?.IsTestShip == true;
@@ -89,6 +97,9 @@ public sealed class PlayerRowViewModel : ObservableObject
 
     // ---- ship
     public string ShipName => (Ship?.Name ?? GameShip?.DisplayName ?? $"Unknown ship ({Summary.ShipId})") + (IsTestShip ? " (test ship)" : "");
+
+    /// <summary>The name in the table, where a TEST tag marks ships in testing instead of the suffix.</summary>
+    public string ShipNameShown => Ship?.Name ?? GameShip?.DisplayName ?? $"Unknown ship ({Summary.ShipId})";
     public int Tier => Ship?.Tier ?? GameShip?.Tier ?? 0;
     public string TierText => Ship?.TierRoman ?? (GameShip is { Tier: > 0 } g ? ShipFacts.TierRoman(g.Tier) : "?");
     public ShipClass ShipClass => Ship?.Class ?? GameShip?.Species switch

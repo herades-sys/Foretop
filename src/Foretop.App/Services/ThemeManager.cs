@@ -11,21 +11,26 @@ namespace Foretop.App.Services;
 /// </summary>
 public static class ThemeManager
 {
-    public static readonly IReadOnlyList<string> Options = ["System", "Dark", "Light"];
+    /// <summary>Theme names as shown in Settings → the palette file Themes/Colors.&lt;file&gt;.xaml.</summary>
+    private static readonly (string Name, string File)[] Themes =
+    [
+        ("Dark", "Dark"), ("Light", "Light"),
+        ("Steel", "Steel"), ("Chart Room", "ChartRoom"), ("Combat Information Center", "CIC"),
+    ];
+
+    public static readonly IReadOnlyList<string> Options = ["System", .. Themes.Select(t => t.Name)];
 
     public static string Current { get; private set; } = "Dark";
 
-    public static string Resolve(string? setting) => setting switch
-    {
-        "Light" => "Light",
-        "Dark" => "Dark",
-        _ => WindowsUsesLightTheme() ? "Light" : "Dark",
-    };
+    /// <summary>The theme to use for a setting: a known name, else the Windows app theme (light or dark).</summary>
+    public static string Resolve(string? setting) =>
+        Themes.Any(t => t.Name == setting) ? setting! : WindowsUsesLightTheme() ? "Light" : "Dark";
 
     public static void Apply(string theme)
     {
         var dicts = Application.Current.Resources.MergedDictionaries;
-        var palette = new ResourceDictionary { Source = new Uri($"/Themes/Colors.{theme}.xaml", UriKind.Relative) };
+        var file = Themes.FirstOrDefault(t => t.Name == theme).File ?? "Dark";
+        var palette = new ResourceDictionary { Source = new Uri($"/Themes/Colors.{file}.xaml", UriKind.Relative) };
         if (dicts.Count > 0) dicts[0] = palette;
         else dicts.Insert(0, palette);
         Current = theme;
@@ -52,7 +57,7 @@ public static class ThemeManager
     {
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd == IntPtr.Zero) return;
-        var dark = Current == "Dark" ? 1 : 0;
+        var dark = Application.Current.Resources["IsDarkTheme"] is false ? 0 : 1;
         _ = DwmSetWindowAttribute(hwnd, 20, ref dark, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
     }
 }

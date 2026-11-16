@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Foretop theme "Chart Room": generated from its design tokens (design canvas "Foretop design themes").
+         Every key of Colors.Dark.xaml is here; keep them in step. -->
+    <SolidColorBrush x:Key="Bg" Color="#F3EDDD" />
+    <SolidColorBrush x:Key="Sidebar" Color="#EAE2CD" />
+    <SolidColorBrush x:Key="Input" Color="#FCF9F0" />
+    <SolidColorBrush x:Key="Panel" Color="#FBF7EC" />
+    <SolidColorBrush x:Key="Panel2" Color="#EEE6D0" />
+    <SolidColorBrush x:Key="Selected" Color="#E4D6AE" />
+    <SolidColorBrush x:Key="Border" Color="#D8CDB2" />
+    <SolidColorBrush x:Key="Border2" Color="#B9AB89" />
+    <SolidColorBrush x:Key="RowHover" Color="#F2EAD3" />
+    <SolidColorBrush x:Key="RowSelected" Color="#E9DCB6" />
+    <SolidColorBrush x:Key="SelfRow" Color="#DCE7DA" />
+    <SolidColorBrush x:Key="AltRow" Color="#F7F2E3" />
+    <SolidColorBrush x:Key="NavActive" Color="#40B8862B" />
+    <SolidColorBrush x:Key="Text" Color="#12213A" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#2B3A54" />
+    <SolidColorBrush x:Key="TextDim" Color="#3E4B60" />
+    <SolidColorBrush x:Key="TextFaint" Color="#566071" />
+    <SolidColorBrush x:Key="Accent" Color="#84560A" />
+    <SolidColorBrush x:Key="AccentLight" Color="#6B4505" />
+    <SolidColorBrush x:Key="AccentButtonBg" Color="#C99A3A" />
+    <SolidColorBrush x:Key="AccentButtonFg" Color="#12213A" />
+    <SolidColorBrush x:Key="StatusGreen" Color="#1C6D3E" />
+    <SolidColorBrush x:Key="StatusAmber" Color="#835700" />
+    <SolidColorBrush x:Key="StatusRed" Color="#B3261E" />
+    <SolidColorBrush x:Key="NoticeBg" Color="#F5E6B5" />
+    <SolidColorBrush x:Key="Friendly" Color="#0A3350" />
+    <SolidColorBrush x:Key="ChatOverlay" Color="#EBFBF7EC" />
+    <SolidColorBrush x:Key="Enemy" Color="#B93825" />
+    <SolidColorBrush x:Key="RateRed" Color="#B3261E" />
+    <SolidColorBrush x:Key="RateYellow" Color="#835700" />
+    <SolidColorBrush x:Key="RateGreen" Color="#1C6D3E" />
+    <SolidColorBrush x:Key="RatePurple" Color="#6B35B8" />
+    <SolidColorBrush x:Key="ClassDD" Color="#1A5C9E" />
+    <SolidColorBrush x:Key="ClassCA" Color="#2F6D27" />
+    <SolidColorBrush x:Key="ClassBB" Color="#8B5209" />
+    <SolidColorBrush x:Key="ClassCV" Color="#7E3DB3" />
+    <SolidColorBrush x:Key="ClassSS" Color="#0E6B66" />
+    <SolidColorBrush x:Key="Armour1" Color="#7350B0" />
+    <SolidColorBrush x:Key="Armour2" Color="#16897C" />
+    <SolidColorBrush x:Key="Armour3" Color="#5E9A20" />
+    <SolidColorBrush x:Key="Armour4" Color="#C98310" />
+    <SolidColorBrush x:Key="Armour5" Color="#C03822" />
+    <SolidColorBrush x:Key="ArmourNone" Color="#A9A08A" />
+
+    <!-- Shape, type and density -->
+    <CornerRadius x:Key="RadiusCard">3</CornerRadius>
+    <CornerRadius x:Key="RadiusSection">2</CornerRadius>
+    <CornerRadius x:Key="RadiusControl">2</CornerRadius>
+    <CornerRadius x:Key="RadiusChip">3</CornerRadius>
+    <CornerRadius x:Key="RadiusSmall">2</CornerRadius>
+    <FontFamily x:Key="ThemeFontUi">Segoe UI</FontFamily>
+    <FontFamily x:Key="ThemeFontHeading">Georgia</FontFamily>
+    <sys:Double x:Key="RowHeight">28</sys:Double>
+    <sys:Boolean x:Key="IsDarkTheme">False</sys:Boolean>
+</ResourceDictionary>

@@ -116,6 +116,21 @@ public class BattleResultTests
         Assert.Equal(mode, ResultModes.FromMatchGroup(matchGroup));
 
     [Fact]
+    public void Several_results_are_written_together()
+    {
+        var db = new Database(Path.Combine(Path.GetTempPath(), "foretop-tests", Guid.NewGuid() + ".db"));
+        var store = new BattleResultStore(db);
+        var a = Open("a", Totals(100), 0);
+        var b = Open("b", Totals(100), 20);
+        store.UpsertMany([a, b]);
+        Assert.Equal(2, store.Open(Region.Eu, 42).Count);
+        // A row that cannot be written (null key violates NOT NULL) rolls back the whole set: nothing half-applied.
+        var bad = Open(null!, Totals(1), 40);
+        Assert.ThrowsAny<Exception>(() => store.UpsertMany([a with { Status = ResultStatus.Ok, Result = Totals(1), ResolvedAt = T0 }, bad]));
+        Assert.Equal(ResultStatus.Pending, store.Get("a")!.Status);
+    }
+
+    [Fact]
     public void Store_keeps_baseline_and_result()
     {
         var db = new Database(Path.Combine(Path.GetTempPath(), "foretop-tests", Guid.NewGuid() + ".db"));

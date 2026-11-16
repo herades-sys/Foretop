@@ -31,7 +31,7 @@
             </StackPanel>
             <Popup IsOpen="{Binding ShowSuggestions}" PlacementTarget="{Binding ElementName=SearchBox}" Placement="Bottom" StaysOpen="False"
                    AllowsTransparency="True">
-                <Border Background="{StaticResource Panel2}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="4"
+                <Border Background="{StaticResource Panel2}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}"
                         Width="300" Margin="0,2,0,0">
                     <ItemsControl ItemsSource="{Binding Suggestions}">
                         <ItemsControl.ItemTemplate>
@@ -48,7 +48,7 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <Border Background="{DynamicResource NoticeBg}" BorderBrush="{StaticResource RateYellow}" BorderThickness="1" CornerRadius="4" Padding="12,8"
+                <Border Background="{DynamicResource NoticeBg}" BorderBrush="{StaticResource RateYellow}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="12,8"
                         Margin="0,0,0,12" Visibility="{Binding Message, Converter={StaticResource NullVis}}">
                     <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
                 </Border>

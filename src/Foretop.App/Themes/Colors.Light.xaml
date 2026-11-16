@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <!-- Foretop Light palette. Every key must exist in both colour files. -->
     <SolidColorBrush x:Key="Bg" Color="#F3F5F8" />
@@ -46,4 +47,15 @@
     <SolidColorBrush x:Key="Armour4" Color="#C98310" />
     <SolidColorBrush x:Key="Armour5" Color="#C03822" />
     <SolidColorBrush x:Key="ArmourNone" Color="#B8C0CC" />
+
+    <!-- Shape, type and density: themes may change these too (not only colours). -->
+    <CornerRadius x:Key="RadiusCard">8</CornerRadius>
+    <CornerRadius x:Key="RadiusSection">6</CornerRadius>
+    <CornerRadius x:Key="RadiusControl">5</CornerRadius>
+    <CornerRadius x:Key="RadiusChip">12</CornerRadius>
+    <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+    <FontFamily x:Key="ThemeFontUi">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="ThemeFontHeading">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <sys:Double x:Key="RowHeight">28</sys:Double>
+    <sys:Boolean x:Key="IsDarkTheme">False</sys:Boolean>
 </ResourceDictionary>

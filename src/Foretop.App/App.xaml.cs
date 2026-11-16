@@ -26,8 +26,9 @@ public partial class App : Application
         var dataAt = Array.IndexOf(e.Args, "--data-dir");
         if (dataAt >= 0 && dataAt + 1 < e.Args.Length) Services.AppPaths.UseDataDir(e.Args[dataAt + 1]);
 
-        // Development runs (--snapshot) may run beside a normal instance; everything else is single-instance.
-        if (!e.Args.Contains("--snapshot"))
+        // Development runs (--snapshot, --soak with its own --data-dir) may run beside a normal instance; everything else
+        // is single-instance.
+        if (!e.Args.Contains("--snapshot") && !(e.Args.Contains("--soak") && e.Args.Contains("--data-dir")))
         {
             _single = Services.SingleInstance.TryAcquire(() => Dispatcher.BeginInvoke(BringToFront));
             if (_single is null)
@@ -63,8 +64,11 @@ public partial class App : Application
         }
         _host.Log.LogInformation("Foretop {Version} starting", Services.AppInfo.Version);
 
+        // --theme "<name>": this session only (not saved), for snapshots of each theme
+        var themeAt = Array.IndexOf(e.Args, "--theme");
         Services.ThemeManager.Apply(Services.ThemeManager.Resolve(
-            e.Args.Contains("--light") ? "Light" : _host.Settings.Current.Theme));
+            themeAt >= 0 && themeAt + 1 < e.Args.Length ? e.Args[themeAt + 1]
+            : e.Args.Contains("--light") ? "Light" : _host.Settings.Current.Theme));
 
         Services.FontManager.Apply(_host.Settings.Current.FontFamily);
         Services.Anonymizer.Self = _host.Settings.Current.PlayerName;
@@ -191,6 +195,12 @@ public partial class App : Application
             shell.Personal.Filters.MinBattles = mo;
         if (Arg("--analytics-class") is { } acls)
             foreach (var chip in shell.Personal.Filters.ClassChips.Where(c => c.Tip.StartsWith(acls, StringComparison.OrdinalIgnoreCase))) chip.IsChecked = true;
+        // --player-search <text>: types the text into Player Search (name prefix or account id)
+        if (Arg("--player-search") is { } q) { shell.SelectedPage = Page.PlayerSearch; shell.PlayerSearch.Query = q; }
+        // --soak <minutes>: long-session test. Cycles through the real workload (recorded battle roster shown as live and
+        // refreshed against the API, page switches, Analytics filters, replay playback) and logs memory, handles and
+        // threads every minute; quits at the end. Only for a separate --data-dir.
+        if (int.TryParse(Arg("--soak"), out var soakMinutes) && args.Contains("--data-dir")) StartSoak(shell, soakMinutes);
         // --best-tiers 8,9 / --best-min 50: Best performing ships filter on the profile (a number not in the list = custom)
         if (Arg("--best-tiers") is { } bestTiers)
             foreach (var part in bestTiers.Split(',', StringSplitOptions.TrimEntries))
@@ -231,7 +241,8 @@ public partial class App : Application
             {
                 await shell.Replays.EnsureLoadedAsync();
                 var row = replay == "latest" ? shell.Replays.Replays.FirstOrDefault()
-                    : shell.Replays.Replays.FirstOrDefault(r => r.Entry.Path.Equals(System.IO.Path.GetFullPath(replay), StringComparison.OrdinalIgnoreCase));
+                    : shell.Replays.Replays.FirstOrDefault(r => r.Entry.Path.Equals(System.IO.Path.GetFullPath(replay), StringComparison.OrdinalIgnoreCase))
+                      ?? shell.Replays.RowForFile(System.IO.Path.GetFullPath(replay)); // a file outside the replay folder
                 if (row is null) return;
                 await shell.Replays.OpenCommand.ExecuteAsync(row);
                 if (double.TryParse(Arg("--replay-time"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var at))
@@ -343,6 +354,63 @@ public partial class App : Application
         }
     }
 
+    private static void StartSoak(ShellViewModel shell, int minutes)
+    {
+        var host = ((App)Current)._host!;
+        var log = host.Log;
+        var started = DateTime.UtcNow;
+        var step = 0;
+        var arena = host.History.List(1).FirstOrDefault() is { } rec && Core.Game.ArenaInfoParser.TryParse(rec.ArenaJson, out var info, out _) ? info : null;
+        var pages = new[] { Page.Live, Page.Dashboard, Page.History, Page.Analytics, Page.Profiles, Page.Replays, Page.Ships, Page.Analytics };
+        var rnd = new Random(42);
+        var proc = System.Diagnostics.Process.GetCurrentProcess();
+        log.LogInformation("Soak: {Minutes} min, roster {HasRoster}", minutes, arena is not null);
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+        timer.Tick += (_, _) =>
+        {
+            try
+            {
+                step++;
+                if (DateTime.UtcNow - started > TimeSpan.FromMinutes(minutes))
+                {
+                    timer.Stop();
+                    log.LogInformation("Soak: finished after {Steps} steps", step);
+                    Current.Shutdown();
+                    return;
+                }
+                shell.SelectedPage = pages[step % pages.Length];
+                if (arena is not null && step % 15 == 1) shell.Live.ShowBattle(arena, live: true);   // every 5 min: roster + API
+                if (arena is not null && step % 15 == 8) shell.Live.RefreshCommand.Execute(null);      // forced refresh
+                if (shell.SelectedPage == Page.Analytics)
+                {
+                    var f = shell.Personal.Filters;
+                    f.Source = rnd.Next(2) == 0 ? Core.Personal.AnalyticsSource.Account : Core.Personal.AnalyticsSource.Recorded;
+                    f.SetTiers(rnd.Next(3) == 0 ? [] : Enumerable.Range(rnd.Next(1, 9), rnd.Next(1, 4)));
+                }
+                if (shell.SelectedPage == Page.Profiles && step % 24 == 4 && host.Settings.Current.PlayerName is { } me) shell.OpenProfile(me);
+                if (shell.SelectedPage == Page.Replays && shell.Replays.Scene is null && shell.Replays.Replays.Count > 0)
+                    shell.Replays.OpenCommand.Execute(shell.Replays.Replays[0]);
+                if (shell.SelectedPage == Page.Replays && shell.Replays.Scene is not null && !shell.Replays.IsPlaying)
+                {
+                    shell.Replays.Speed = 40;
+                    shell.Replays.PlayPauseCommand.Execute(null);
+                }
+                if (step % 3 == 0)
+                {
+                    proc.Refresh();
+                    log.LogInformation("Soak {Step}: managed {Managed} MB, working set {Ws} MB, private {Priv} MB, handles {Handles}, threads {Threads}, gen2 {Gen2}, cpu {Cpu} s",
+                        step, GC.GetTotalMemory(false) / 1048576, proc.WorkingSet64 / 1048576, proc.PrivateMemorySize64 / 1048576, proc.HandleCount,
+                        proc.Threads.Count, GC.CollectionCount(2), (int)proc.TotalProcessorTime.TotalSeconds);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Soak step {Step} failed", step);
+            }
+        };
+        timer.Start();
+    }
+
     private static IEnumerable<T> FindAll<T>(System.Windows.DependencyObject root) where T : System.Windows.DependencyObject
     {
         for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
@@ -362,6 +430,7 @@ public partial class App : Application
     {
         if (_host is null || MainWindow is not MainWindow old) return;
         Services.ThemeManager.Apply(theme);
+        Services.FontManager.Apply(_host.Settings.Current.FontFamily); // a theme may bring its own fonts
         var w = new MainWindow(_host)
         {
             DataContext = old.DataContext,

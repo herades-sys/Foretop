@@ -65,7 +65,7 @@
         </DockPanel>
 
         <!-- Notice -->
-        <Border Grid.Row="1" Margin="0,10,0,0" Padding="12,8" CornerRadius="4" Background="{DynamicResource NoticeBg}" BorderBrush="{StaticResource RateYellow}"
+        <Border Grid.Row="1" Margin="0,10,0,0" Padding="12,8" CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource NoticeBg}" BorderBrush="{StaticResource RateYellow}"
                 BorderThickness="1" Visibility="{Binding Notice, Converter={StaticResource NullVis}}">
             <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
         </Border>
@@ -73,7 +73,7 @@
         <!-- Filters + comparison -->
         <StackPanel Grid.Row="2" Margin="0,12,0,10" Visibility="{Binding HasBattle, Converter={StaticResource BoolVis}}">
         <!-- Statistics filter: which of each player's battles the statistics count -->
-        <Border HorizontalAlignment="Left" Margin="0,0,0,10" Padding="12,6" CornerRadius="6" BorderThickness="1"
+        <Border HorizontalAlignment="Left" Margin="0,0,0,10" Padding="12,6" CornerRadius="{DynamicResource RadiusCard}" BorderThickness="1"
                 Background="{DynamicResource Panel}">
             <Border.Style>
                 <Style TargetType="Border">
@@ -102,7 +102,7 @@
                 </Border>
                 <CheckBox Content="Remember" IsChecked="{Binding RememberStatsFilter}" VerticalAlignment="Center"
                           ToolTip="Keep this filter for the next start (otherwise Foretop starts with all tiers)" />
-                <Border Margin="12,0,0,0" Padding="8,2" CornerRadius="9" Background="{DynamicResource AccentButtonBg}" VerticalAlignment="Center"
+                <Border Margin="12,0,0,0" Padding="8,2" CornerRadius="{DynamicResource RadiusChip}" Background="{DynamicResource AccentButtonBg}" VerticalAlignment="Center"
                         Visibility="{Binding IsStatsFilterActive, Converter={StaticResource BoolVis}}" ToolTip="{Binding TableBadgeTip}">
                     <TextBlock Text="{Binding SelectedStatsFilter.Label}" Foreground="{DynamicResource AccentButtonFg}" FontSize="11.5" FontWeight="SemiBold" />
                 </Border>

@@ -19,7 +19,8 @@ public sealed record MapAssets(byte[]? Water, byte[]? Land, MapBounds Bounds, st
 public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData)
 {
     private readonly Dictionary<string, MapAssets> _maps = new(StringComparer.OrdinalIgnoreCase);
-    private (string Build, EntityDefs Defs)? _defs;
+    // Entity definitions per client build: the installed one plus older builds still on disk for older replays.
+    private readonly Dictionary<string, EntityDefs> _defs = new(StringComparer.Ordinal);
 
     public string? Folder => gameRoot() is { } root ? System.IO.Path.Combine(root, "replays") : null;
 
@@ -78,8 +79,8 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
         var file = await Task.Run(() => ReplayFile.Read(path), ct).ConfigureAwait(false);
         var result = await shipData.WithFileSystemAsync(fs =>
         {
-            if (_defs is not { } d || d.Build != fs.Build) _defs = d = (fs.Build, EntityDefs.Load(fs));
-            var data = ReplayParser.Parse(file, d.Defs);
+            var (defs, note) = DefsFor(fs, file);
+            var data = ReplayParser.Parse(file, defs, note);
             return (data, Map(fs, data.MapSpace));
         }, ct).ConfigureAwait(false);
         if (result.data is null) throw new InvalidDataException("Replays need the game installation (for its map images and message definitions).");
@@ -98,9 +99,38 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
         var file = await Task.Run(() => ReplayFile.Read(path), ct).ConfigureAwait(false);
         return await shipData.WithFileSystemAsync(fs =>
         {
-            if (_defs is not { } d || d.Build != fs.Build) _defs = d = (fs.Build, EntityDefs.Load(fs));
-            return ReplayParser.Parse(file, d.Defs);
+            var (defs, note) = DefsFor(fs, file);
+            return ReplayParser.Parse(file, defs, note);
         }, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The entity definitions of the build the replay was recorded with. Method and property numbers change between
+    /// game versions, so an older replay read with the current definitions loses its player list and events. The game
+    /// keeps the previous build folder after an update; its definitions are read once (the index is not kept). When the
+    /// replay's build is gone, the current definitions are used and the note says so.
+    /// </summary>
+    private (EntityDefs Defs, string? Note) DefsFor(GameFileSystem fs, ReplayFile file)
+    {
+        EntityDefs Cached(string build, Func<EntityDefs> load)
+        {
+            if (_defs.TryGetValue(build, out var d)) return d;
+            d = load();
+            if (_defs.Count >= 4) _defs.Remove(_defs.Keys.First(k => k != fs.Build));
+            _defs[build] = d;
+            return d;
+        }
+        var current = Cached(fs.Build, () => EntityDefs.Load(fs));
+        var build = file.ClientBuild;
+        if (build is null || build == fs.Build) return (current, null);
+        if (_defs.TryGetValue(build, out var known)) return (known, null);
+        if (GameFileSystem.Builds(fs.Root).Contains(build))
+        {
+            try { return (Cached(build, () => EntityDefs.Load(GameFileSystem.OpenBuild(fs.Root, build))), null); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { }
+        }
+        return (current, $"This replay was recorded with another game version (build {build}); its files are no longer installed, "
+            + $"so it is read with the current version's (build {fs.Build}). Player names, events or positions may be missing.");
     }
 
     private MapAssets Map(GameFileSystem fs, string space)
@@ -109,6 +139,8 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
         if (!space.StartsWith("spaces/", StringComparison.OrdinalIgnoreCase)) space = "spaces/" + space;
         var key = fs.Build + "|" + space;
         if (_maps.TryGetValue(key, out var cached)) return cached;
+        // Keep the images of a few maps only: each holds two 760 px PNGs, and a long session opens many replays.
+        if (_maps.Count >= 6) _maps.Remove(_maps.Keys.First());
         byte[]? Read(string name) => fs.Find($"{space}/{name}") is { } f ? fs.Read(f) : null;
         var settings = Read("space.settings");
         var bounds = MapBounds.FromSpaceSettings(settings is null ? null : Encoding.UTF8.GetString(settings));

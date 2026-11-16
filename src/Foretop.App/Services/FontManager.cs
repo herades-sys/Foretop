@@ -29,7 +29,18 @@ public static class FontManager
     public static void Apply(string? family)
     {
         if (Application.Current is null) return;
-        Application.Current.Resources["UiFont"] = new FontFamily(string.IsNullOrWhiteSpace(family) ? DefaultFamily : family);
+        // "Default" = the theme's fonts (a theme may set a heading font of its own); a font chosen in Settings is used everywhere.
+        var res = Application.Current.Resources;
+        if (string.IsNullOrWhiteSpace(family))
+        {
+            res["UiFont"] = res["ThemeFontUi"] as FontFamily ?? new FontFamily(DefaultFamily);
+            res["HeadingFont"] = res["ThemeFontHeading"] as FontFamily ?? res["UiFont"];
+        }
+        else
+        {
+            res["UiFont"] = new FontFamily(family);
+            res["HeadingFont"] = res["UiFont"];
+        }
     }
 
     public static double ClampScale(double scale) => scale is >= 0.8 and <= 2.0 ? scale : 1.0;

@@ -57,6 +57,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         host.Watcher.BattleStarted += info => _ui.BeginInvoke(() => ShowBattle(info, live: true));
         host.Watcher.BattleEnded += () => _ui.BeginInvoke(() => { if (_isLive) IsInBattle = false; });
         host.Ships.Updated += () => _ui.BeginInvoke(RefreshShipInfo);
+        host.ShipData.Changed += () => _ui.BeginInvoke(RefreshShipInfo); // test ships and ships the API omits
         host.Settings.Changed += _ => _ui.BeginInvoke(() => { UpdateNotice(); OnPropertyChanged(nameof(CompactMode)); FriendlyView.Refresh(); EnemyView.Refresh(); });
         UpdateNotice();
     }
@@ -68,7 +69,8 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     public event Action? HistoryChanged;
 
     /// <summary>Raised when the user wants a player's in-app profile.</summary>
-    public event Action<string>? ProfileRequested;
+    /// <summary>A player's profile, on the server of the battle shown.</summary>
+    public event Action<string, Region>? ProfileRequested;
 
     public ObservableCollection<ComparisonRow> ComparisonRows { get; } = [];
     public ObservableCollection<ComparisonRow> CompositionRows { get; } = [];
@@ -201,6 +203,12 @@ public sealed partial class LiveBattleViewModel : ObservableObject
 
     /// <param name="save">False for "Refresh" on a recorded battle: show current statistics without replacing the
     /// statistics recorded at the time.</param>
+    /// <summary>The title again once the game's map names are known (they load in the background after start).</summary>
+    public void RefreshNames()
+    {
+        if (_arena is { } info) Title = $"{BattleTypes.Label(info.BattleType, info.MatchGroup)} · {info.MapName}";
+    }
+
     /// <summary>The recorded battle shown with current statistics after Refresh (Refresh again must not save either).</summary>
     private Core.Data.BattleRecord? _viewingRecorded;
 
@@ -339,7 +347,10 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     private void RefreshShipInfo()
     {
         foreach (var row in _rowsByName.Values)
+        {
             if (row.Ship is null) row.SetShip(_host.Ships.Get(row.Summary.ShipId));
+            if (row.GameShip is null) row.SetGameShip(_host.ShipData.FindById(row.Summary.ShipId));
+        }
         FriendlyView.Refresh();
         EnemyView.Refresh();
     }
@@ -556,7 +567,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     [RelayCommand]
     private void OpenProfile(PlayerRowViewModel? row)
     {
-        if (row is { IsBot: false }) ProfileRequested?.Invoke(row.Summary.Name); // the real name, also with --anonymize
+        if (row is { IsBot: false }) ProfileRequested?.Invoke(row.Summary.Name, row.Region); // real name (also with --anonymize), battle's server
     }
 
     [RelayCommand]

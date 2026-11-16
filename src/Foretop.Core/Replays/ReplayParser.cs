@@ -21,7 +21,8 @@ public static class ReplayParser
     private const uint PlayerPosition = 0x2C;
     private const uint BattleResults = 0x22;
 
-    public static ReplayData Parse(ReplayFile file, EntityDefs defs)
+    /// <param name="note">Shown first among the warnings (e.g. that the replay comes from another game version).</param>
+    public static ReplayData Parse(ReplayFile file, EntityDefs defs, string? note = null)
     {
         JsonDocument arena;
         try { arena = JsonDocument.Parse(file.ArenaJson); }
@@ -276,7 +277,8 @@ public static class ReplayParser
             ResultsJson = resultsJson,
             SelfAccountId = selfAccount,
             Chat = chat.Select(c => new ReplayChat(c.T, c.Sender, c.Sender == 0 ? null : players.FirstOrDefault(pl => pl.AvatarId == c.Sender) ?? players.FirstOrDefault(pl => pl.AccountId == c.Sender), c.Channel, c.Text)).ToList(),
-            Warnings = warnings,
+            // The same failure can repeat once per player blob: report each message once.
+            Warnings = (note is null ? warnings : warnings.Prepend(note)).Distinct().ToList(),
         };
     }
 

@@ -16,12 +16,25 @@ public sealed class GameFileSystem
     private const ulong RootParent = 0xDBB1A1D1B108B927;
     private readonly Dictionary<string, PackedFile> _files;
 
-    private GameFileSystem(string root, string build, Dictionary<string, PackedFile> files)
+    private GameFileSystem(string root, string build, string newestOnDisk, Dictionary<string, PackedFile> files)
     {
         Root = root;
         Build = build;
+        NewestOnDisk = newestOnDisk;
         _files = files;
     }
+
+    /// <summary>The newest build folder when this was opened; differs from <see cref="Build"/> while it could not be read.</summary>
+    public string NewestOnDisk { get; }
+
+    /// <summary>True while an older build is used because the newest one is incomplete (the game is updating).</summary>
+    public bool IsFallback => Build != NewestOnDisk;
+
+    public DateTime OpenedAtUtc { get; } = DateTime.UtcNow;
+
+    /// <summary>Should a cached instance be opened again: the game was moved or updated, or a fallback is due a retry.</summary>
+    public bool IsOutdated(string root) =>
+        Root != root || NewestBuild(root) != NewestOnDisk || (IsFallback && DateTime.UtcNow - OpenedAtUtc > TimeSpan.FromMinutes(1));
 
     public string Root { get; }
 
@@ -44,14 +57,54 @@ public sealed class GameFileSystem
     }
 
     /// <summary>Loads every index of the newest build. Throws <see cref="InvalidDataException"/> for unknown formats.</summary>
+    /// <remarks>
+    /// While the game updates, the newest build folder exists before its index files are complete. Then the newest
+    /// build that reads cleanly is used (the previous one) and <see cref="IsFallback"/> is set; the first error is
+    /// thrown only when no build can be read.
+    /// </remarks>
     public static GameFileSystem Open(string gameRoot)
     {
-        var build = NewestBuild(gameRoot) ?? throw new DirectoryNotFoundException($"No bin\\<build>\\idx folder under {gameRoot}");
+        var builds = Builds(gameRoot);
+        if (builds.Count == 0) throw new DirectoryNotFoundException($"No bin\\<build>\\idx folder under {gameRoot}");
+        Exception? first = null;
+        foreach (var build in builds)
+        {
+            try
+            {
+                return OpenBuild(gameRoot, build, builds[0]);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or IOException)
+            {
+                first ??= ex;
+            }
+        }
+        throw first!;
+    }
+
+    /// <summary>Loads the indexes of one particular build (an older replay needs the definitions it was recorded with).
+    /// Throws <see cref="InvalidDataException"/> or <see cref="IOException"/> when that build cannot be read.</summary>
+    public static GameFileSystem OpenBuild(string gameRoot, string build, string? newestOnDisk = null)
+    {
         var idxDir = Path.Combine(gameRoot, "bin", build, "idx");
+        if (!Directory.Exists(idxDir)) throw new DirectoryNotFoundException($"Build {build} is not installed.");
         var files = new Dictionary<string, PackedFile>(StringComparer.OrdinalIgnoreCase);
         foreach (var idx in Directory.EnumerateFiles(idxDir, "*.idx"))
             ReadIndex(idx, files);
-        return new GameFileSystem(gameRoot, build, files);
+        if (files.Count == 0) throw new InvalidDataException($"Build {build} has no readable index yet.");
+        return new GameFileSystem(gameRoot, build, newestOnDisk ?? NewestBuild(gameRoot) ?? build, files);
+    }
+
+    /// <summary>Build folders with an idx folder, newest first.</summary>
+    public static List<string> Builds(string gameRoot)
+    {
+        var bin = Path.Combine(gameRoot, "bin");
+        if (!Directory.Exists(bin)) return [];
+        return Directory.EnumerateDirectories(bin)
+            .Select(Path.GetFileName)
+            .Where(n => n is not null && n.All(char.IsDigit) && Directory.Exists(Path.Combine(bin, n, "idx")))
+            .OrderByDescending(n => long.Parse(n!))
+            .Select(n => n!)
+            .ToList();
     }
 
     public bool Exists(string path) => _files.ContainsKey(Normalize(path));

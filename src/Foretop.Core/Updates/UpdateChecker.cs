@@ -20,6 +20,26 @@ public sealed record UpdateCheckResult(UpdateCheckOutcome Outcome, ReleaseInfo? 
 /// </summary>
 public sealed class UpdateChecker(HttpClient http, string repository = UpdateChecker.DefaultRepository)
 {
+    /// <summary>
+    /// The rules for downloading an update: GitHub's checksum must be known (the file is checked against it), and the
+    /// file must come from GitHub over https; a local file only with a development feed. Throws InvalidDataException
+    /// with a readable reason otherwise.
+    /// </summary>
+    public static Uri CheckDownload(ReleaseAsset asset, bool allowLocalFile)
+    {
+        if (string.IsNullOrEmpty(asset.Sha256))
+            throw new InvalidDataException("GitHub gives no checksum for this file, so it is not installed automatically. Download it from the release page instead.");
+        if (!Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri))
+            throw new InvalidDataException("the download address is not valid.");
+        if (uri.IsFile)
+            return allowLocalFile ? uri : throw new InvalidDataException("the download address is a local file, so it was not used.");
+        var github = uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+                     || uri.Host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase);
+        if (uri.Scheme != Uri.UriSchemeHttps || !github)
+            throw new InvalidDataException("the download address is not on GitHub, so it was not used.");
+        return uri;
+    }
+
     public const string DefaultRepository = "herades-sys/Foretop";
 
     public string Repository { get; } = repository;

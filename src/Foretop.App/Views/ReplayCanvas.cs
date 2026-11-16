@@ -163,6 +163,13 @@ public sealed class ReplayCanvas : FrameworkElement
 
     private Brush Res(string key, Brush fallback) => TryFindResource(key) as Brush ?? fallback;
 
+    private static SolidColorBrush Frozen(byte r, byte g, byte b)
+    {
+        var br = new SolidColorBrush(Color.FromRgb(r, g, b));
+        br.Freeze();
+        return br;
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         _renderClock.Restart();
@@ -224,8 +231,12 @@ public sealed class ReplayCanvas : FrameworkElement
             dc.DrawLine(gridPen, P(b.MinX, b.MaxZ - i * b.Height / 10), P(b.MaxX, b.MaxZ - i * b.Height / 10));
         }
 
-        var ally = Res("Friendly", Brushes.SeaGreen);
-        var enemy = Res("Enemy", Brushes.IndianRed);
+        // Marks on the map sit on the game's dark sea, whatever the page theme: a light theme's ink colours would vanish
+        // there, so they keep the dark palette's team colours.
+        var darkTheme = TryFindResource("IsDarkTheme") is not false;
+        var ally = darkTheme ? Res("Friendly", Brushes.SeaGreen) : Frozen(0x3F, 0xB6, 0xA8);
+        var enemy = darkTheme ? Res("Enemy", Brushes.IndianRed) : Frozen(0xE8, 0x61, 0x5A);
+        var mapDim = darkTheme ? dim : Frozen(0x92, 0x9E, 0xAE);
         var self = new SolidColorBrush(Color.FromRgb(0xF4, 0xF1, 0xE6));
         self.Freeze();
         Brush Team(int relation) => relation == 0 ? self : relation == 1 ? ally : enemy;
@@ -323,7 +334,7 @@ public sealed class ReplayCanvas : FrameworkElement
             var below = len + 1;
             if (ShowNames)
             {
-                var name = Label(ship.ShipName, 10, visible ? new SolidColorBrush(Color.FromArgb(235, col.R, col.G, col.B)) : dim);
+                var name = Label(ship.ShipName, 10, visible ? new SolidColorBrush(Color.FromArgb(235, col.R, col.G, col.B)) : mapDim);
                 dc.DrawText(name, new Point(c.X - name.Width / 2, c.Y + below));
                 below += name.Height;
                 if (visible && ship.MaxHealth > 0 && !ship.IsTestShip)

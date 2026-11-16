@@ -138,7 +138,23 @@ public sealed class BattleResultStore(Database db)
     public void Upsert(BattleResult r)
     {
         using var c = db.Open();
+        Write(c, null, r);
+    }
+
+    /// <summary>Several rows in one transaction: all of them are stored, or none (a crash mid-way leaves no half-applied result).</summary>
+    public void UpsertMany(IReadOnlyCollection<BattleResult> rows)
+    {
+        if (rows.Count == 0) return;
+        using var c = db.Open();
+        using var tx = c.BeginTransaction();
+        foreach (var r in rows) Write(c, tx, r);
+        tx.Commit();
+    }
+
+    private static void Write(Microsoft.Data.Sqlite.SqliteConnection c, Microsoft.Data.Sqlite.SqliteTransaction? tx, BattleResult r)
+    {
         using var cmd = c.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = """
             INSERT INTO battle_results(battle_key, region, account_id, mode, ship_id, started_at, ended_at, status, baseline_json,
                                        battles, wins, losses, draws, damage, xp, frags, survived, planes, resolved_at, extra_json)

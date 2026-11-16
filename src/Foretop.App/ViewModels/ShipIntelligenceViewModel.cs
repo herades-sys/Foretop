@@ -181,7 +181,8 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
 
     public void OnShown()
     {
-        if (_host.ShipData.State is ShipDataState.Idle or ShipDataState.NoGame or ShipDataState.Failed) App.StartShipData(_host);
+        if (_host.ShipData.State is ShipDataState.Idle or ShipDataState.NoGame or ShipDataState.Failed || _host.ShipData.GameBuildChanged)
+            App.StartShipData(_host); // also after a game update while Foretop runs
         Refresh();
     }
 
