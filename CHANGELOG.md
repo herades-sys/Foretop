@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.1 — 2026-11-16
 
 - **Live Battle tables: full player and ship names.** Columns are sized to what they show (measured, not fixed
   widths), with the same widths in both team tables so they line up; spare width goes to the player and ship names.
