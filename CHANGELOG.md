@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.0 — 2026-11-16
 
 - **Replays from an older game version** are read with that version's definitions when the game still has its files
   (it keeps the previous version after an update): player names, teams and events are no longer lost. Otherwise the
