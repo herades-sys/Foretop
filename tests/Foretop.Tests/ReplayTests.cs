@@ -233,11 +233,4 @@ public class ReplayTests
         Assert.Equal(("Bob", true, "wp"), (data.Chat[1].Sender?.Name, data.Chat[1].IsTeam, data.Chat[1].Text));
         Assert.Equal(900002, eve.AvatarId);
     }
-
-    [Theory]
-    [InlineData("<space.settings><chunkSize>100.0</chunkSize><bounds><minX>-9</minX><maxX>8</maxX></bounds></space.settings>", 700)]
-    [InlineData("<space.settings><chunkSize>100.0</chunkSize><bounds><minX>-12</minX><maxX>11</maxX></bounds></space.settings>", 1000)]
-    [InlineData("not xml", 700)]
-    public void Playable_area_comes_from_the_chunk_bounds(string settings, float half) =>
-        Assert.Equal(half, ReplayLibrary.PlayableHalf(settings));
 }

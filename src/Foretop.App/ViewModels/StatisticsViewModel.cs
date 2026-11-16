@@ -120,7 +120,7 @@ public sealed partial class StatisticsViewModel : ObservableObject
         {
             var last = g.OrderByDescending(x => x.r.When).First();
             var then = last.r.Players.FirstOrDefault(p => string.Equals(p.Name, g.Key, StringComparison.OrdinalIgnoreCase));
-            var stats = then?.Overall is { } o ? $"{o.WinRate:0.0}% WR · PR {then.Pr?.ToString("0") ?? "—"}" : "—";
+            var stats = then?.Overall is { WinRate: double wr } ? $"{wr:0.0}% WR · PR {then.Pr?.ToString("0") ?? "—"}" : "—";
             TopPlayers.Add(new EncounteredPlayer(last.v.Name, g.Count(), g.Count(x => x.v.IsFriendly), g.Count(x => !x.v.IsFriendly),
                 last.r.When, stats));
         }

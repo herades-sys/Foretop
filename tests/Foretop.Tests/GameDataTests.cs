@@ -85,6 +85,8 @@ public class GameDataTests
     [Theory]
     [InlineData("superShip", "Supership", true)]
     [InlineData("specialUnsellable", "Premium", true)]
+    [InlineData("special", "Premium", true)]
+    [InlineData("ultimate", "Special", true)]
     [InlineData("event", "Event", false)]
     [InlineData("disabled", "Not obtainable", false)]
     [InlineData("demoWithoutStats", "Test ship", false)]

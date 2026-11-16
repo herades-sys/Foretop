@@ -28,7 +28,16 @@ public sealed partial class SettingsViewModel : ObservableObject
         _host = host;
         _draft = host.Settings.Clone();
         Load();
+        // The account name is also learned from live battles while this page exists: follow it unless it is being edited.
+        host.Settings.Changed += current => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (PlayerName.Trim() == (_loadedPlayerName ?? "")) PlayerName = current.PlayerName ?? "";
+            _loadedPlayerName = current.PlayerName;
+        });
     }
+
+    /// <summary>The account name as last loaded or learned; Save only replaces it when the field was edited.</summary>
+    private string? _loadedPlayerName;
 
     public IReadOnlyList<RegionOption> RegionOptions { get; } =
         [new(Region.Eu, "Europe"), new(Region.Na, "North America"), new(Region.Asia, "Asia")];
@@ -82,6 +91,18 @@ public sealed partial class SettingsViewModel : ObservableObject
     private async Task RunChecks()
     {
         IsChecking = true;
+        try
+        {
+            await RunChecksCore();
+        }
+        finally
+        {
+            IsChecking = false;
+        }
+    }
+
+    private async Task RunChecksCore()
+    {
         Checks.Clear();
         var root = string.IsNullOrWhiteSpace(GameRoot) ? null : GameRoot.Trim();
         var results = await Task.Run(() => GameDiagnostics.Run(root));
@@ -114,6 +135,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         IsEditingApplicationId = string.IsNullOrWhiteSpace(ApplicationId);
         GameRoot = _draft.GameRoot ?? "";
         PlayerName = _draft.PlayerName ?? "";
+        _loadedPlayerName = _draft.PlayerName;
         AutoDetectBattles = _draft.AutoDetectBattles;
         SwitchToLiveOnBattle = _draft.SwitchToLiveOnBattle;
         CompactMode = _draft.CompactMode;
@@ -137,7 +159,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.Region = Region;
         _host.Settings.SetApplicationId(s, ApplicationId);
         s.GameRoot = string.IsNullOrWhiteSpace(GameRoot) ? null : GameRoot.Trim();
-        s.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? null : PlayerName.Trim();
+        if (PlayerName.Trim() != (_loadedPlayerName ?? "")) // edited here; otherwise keep the current (maybe learned) name
+            s.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? null : PlayerName.Trim();
         s.AutoDetectBattles = AutoDetectBattles;
         s.SwitchToLiveOnBattle = SwitchToLiveOnBattle;
         s.CompactMode = CompactMode;

@@ -67,7 +67,12 @@ public sealed class ShipDataStore
     /// Loads cached data for the installed build, or runs <paramref name="extract"/> (gameRoot, outFile, progress, ct)
     /// to create it. Data from an older build stays available while the new one is read.
     /// </summary>
-    public async Task EnsureAsync(Func<string, string, IProgress<(int, int)>, CancellationToken, Task> extract, CancellationToken ct)
+    /// <remarks>Runs on the thread pool: finding the game, listing builds and decoding the cache (about 1 MB of
+    /// compressed JSON) must not hold up the window.</remarks>
+    public Task EnsureAsync(Func<string, string, IProgress<(int, int)>, CancellationToken, Task> extract, CancellationToken ct) =>
+        Task.Run(() => EnsureCoreAsync(extract, ct), ct);
+
+    private async Task EnsureCoreAsync(Func<string, string, IProgress<(int, int)>, CancellationToken, Task> extract, CancellationToken ct)
     {
         if (!await _gate.WaitAsync(0, ct).ConfigureAwait(false)) return; // already running
         try

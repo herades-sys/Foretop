@@ -21,6 +21,9 @@ public sealed class SceneShip
     /// <summary>A ship in testing: its position is shown, its health (hit points) is not.</summary>
     public bool IsTestShip { get; init; }
 
+    /// <summary>A gap between track points longer than this (seconds) means the ship was out of view: not interpolated.</summary>
+    public const float MaxGap = 6;
+
     public int Relation => Player.Relation;
     public bool IsSelf => Player.IsSelf;
 
@@ -54,7 +57,7 @@ public sealed class SceneShip
         var b = tr[i];
         var span = b.T - a.T;
         // A gap (ship out of view) is not interpolated across: hold the last point.
-        if (span > 6) { (x, z, yaw) = (a.X, a.Z, a.Yaw); return true; }
+        if (span > MaxGap) { (x, z, yaw) = (a.X, a.Z, a.Yaw); return true; }
         var f = span <= 0 ? 0 : (t - a.T) / span;
         x = a.X + (b.X - a.X) * f;
         z = a.Z + (b.Z - a.Z) * f;
@@ -91,7 +94,11 @@ public sealed record SceneKill(float T, string Victim, int VictimRelation, strin
 public sealed class ReplayScene
 {
     public required ReplayData Data { get; init; }
-    public required float Half { get; init; }
+    /// <summary>The playable area the minimap images cover; every position is placed through it.</summary>
+    public required MapBounds Bounds { get; init; }
+
+    /// <summary>The map's folder in the game files, e.g. "spaces/28_naval_mission".</summary>
+    public string Space { get; init; } = "";
     public ImageSource? Water { get; init; }
     public ImageSource? Land { get; init; }
     public required IReadOnlyList<SceneShip> Ships { get; init; }
@@ -131,7 +138,8 @@ public sealed class ReplayScene
         return new ReplayScene
         {
             Data = data,
-            Half = map.Half,
+            Bounds = map.Bounds,
+            Space = map.Space,
             Water = Image(map.Water),
             Land = Image(map.Land),
             Ships = ships,

@@ -62,6 +62,21 @@ public sealed partial class ShellViewModel : ObservableObject
             Statistics.MarkDirty();
             Dashboard.MarkDirty();
         };
+        // Map names come from the game texts, which load in the background with the ship data. Lists built before
+        // that show folder names ("naval mission"); rebuild them once the names are there.
+        var mapNames = Core.Game.BattleTypes.MapNames;
+        host.ShipData.Changed += () => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (ReferenceEquals(Core.Game.BattleTypes.MapNames, mapNames)) return;
+            mapNames = Core.Game.BattleTypes.MapNames;
+            HistoryViewModel.ClearRowCache();
+            History.MarkDirty();
+            Statistics.MarkDirty();
+            Dashboard.MarkDirty();
+            if (SelectedPage == Page.Dashboard) _ = Dashboard.EnsureLoadedAsync();
+            if (SelectedPage == Page.History) _ = History.EnsureLoadedAsync();
+            Replays.RefreshNames();
+        });
         History.OpenRequested += OpenRecorded;
         Dashboard.BattleRequested += OpenRecorded;
         Personal.BattleRequested += OpenRecorded;
@@ -177,6 +192,7 @@ public sealed partial class ShellViewModel : ObservableObject
         CurrentContent = PageContent(newValue);
         if (newValue == Page.History) _ = History.EnsureLoadedAsync();
         if (newValue == Page.Replays) _ = Replays.EnsureLoadedAsync();
+        if (oldValue == Page.Replays && newValue != Page.Replays) Replays.OnHidden();
         if (newValue == Page.Analytics) _ = Analytics.EnsureLoadedAsync();
         if (newValue == Page.Dashboard) _ = Dashboard.EnsureLoadedAsync();
         if (newValue == Page.PlayerSearch) PlayerSearch.OnShown();

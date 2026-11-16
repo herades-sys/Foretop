@@ -16,6 +16,23 @@ public class HistoryTests
           {"shipId":3,"relation":2,"id":3,"name":"Rival_X"}]}
         """;
 
+    [Theory]
+    [InlineData("SELECT id FROM battles b ORDER BY COALESCE(b.started_at, b.detected_at) DESC LIMIT 50", "ix_battles_when")]
+    [InlineData("SELECT battle_key FROM battle_results WHERE status = 'Pending' ORDER BY started_at", "ix_results_status")]
+    [InlineData("SELECT battle_key FROM battle_results WHERE region = 'Eu' AND account_id = 1 ORDER BY started_at DESC", "ix_results_account")]
+    public void Hot_queries_use_an_index(string sql, string index)
+    {
+        var db = new Database(NewPath());
+        using var c = db.Open();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = "EXPLAIN QUERY PLAN " + sql;
+        using var rd = cmd.ExecuteReader();
+        var plan = new List<string>();
+        while (rd.Read()) plan.Add(rd.GetString(3));
+        Assert.Contains(plan, line => line.Contains(index));
+        Assert.DoesNotContain(plan, line => line.Contains("USE TEMP B-TREE FOR ORDER BY"));
+    }
+
     [Fact]
     public void Finds_battles_by_player_name_case_insensitively()
     {

@@ -105,7 +105,7 @@ public sealed partial class DashboardViewModel : ObservableObject
             HasHistory = rows.Count > 0;
             HistorySummary = rows.Count == 0
                 ? "No battles recorded yet. They appear here as soon as Foretop sees one."
-                : $"{rows.Count} battles recorded since {rows.Min(r => r.When):d}";
+                : $"{rows.Count} battle{(rows.Count == 1 ? "" : "s")} recorded since {rows.Min(r => r.When):d}";
 
             FrequentPlayers.Clear();
             var frequent = rows.SelectMany(r => r.Arena.Vehicles.Where(v => !v.IsBot && !v.IsSelf).Select(v => (r, v)))

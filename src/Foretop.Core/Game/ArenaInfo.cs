@@ -94,6 +94,7 @@ public static class ArenaInfoParser
             var vehicles = new List<ArenaVehicle>(vehiclesEl.GetArrayLength());
             foreach (var v in vehiclesEl.EnumerateArray())
             {
+                if (v.ValueKind != JsonValueKind.Object) continue; // a damaged entry is skipped, not fatal
                 var name = GetString(v, "name");
                 if (string.IsNullOrEmpty(name)) continue;
                 vehicles.Add(new ArenaVehicle(
@@ -126,6 +127,12 @@ public static class ArenaInfoParser
         catch (JsonException ex)
         {
             error = "invalid JSON (" + ex.Message + ")";
+            return false;
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A value of an unexpected kind (e.g. a number where text belongs): not a usable roster.
+            error = "unexpected content (" + ex.Message + ")";
             return false;
         }
     }

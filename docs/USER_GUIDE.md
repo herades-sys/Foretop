@@ -140,29 +140,49 @@ battle's result.
 
 ### My performance (Analytics)
 
-**Analytics → My performance** analyses your own battles; **Recorded battles** is the earlier page about who you met.
-It covers the battles Foretop recorded while it ran (Wargaming offers no battle history), one row per battle that
-the API counted on its own; battles counted together after you left early are left out.
+**Analytics → My performance** analyses your own results; **Recorded battles** is the earlier page about who you met.
 
-- **Period**: last battle, last 5 / 10 / 20 / 50 / 100, all, or a date range; **Filter** by battle type, class and
-  minimum tier. Everything below follows, except Compare periods.
-- **Last battle**: date, map, type, ship, result; damage, kills, deaths, survival and time survived, XP and base XP,
-  spotting and potential damage, aircraft, main battery and torpedo hits, team position by damage and a battle rating.
-  A single battle has no win rate, so the win rate shown there is over the selected period.
-- **Performance**: battles, victories/defeats/draws, win rate, kills, deaths, kills/deaths, averages, survival, PR,
-  spotting, potential, accuracy, time survived. All rates and averages are totals ÷ battles; accuracy is hits ÷ shots
-  over all battles (not an average of percentages). Values that are not known for every battle say for how many
-  battles they are ("12 of 20 battles"); unknown is shown as "—", never as 0.
-- **Trends**: win rate, damage, battle rating, kills, deaths, kills/deaths, survival or base XP, per battle, as a rolling
-  average over 10 battles or as the overall average up to each battle. Hover a point for the battle. Below: victories
-  vs. defeats and how your damage is spread.
-- **Battle history**: sortable table with search and ship/result filters; **Export CSV** saves it; double-click opens
-  the battle.
-- **Compare periods**: e.g. last 10 vs last 50, this month vs last month, Tier VI+ vs all, with the differences in
-  green (better) or red.
-- **Tier analysis**: your recorded battles by tier, and your whole account by tier from the official per-ship totals,
-  with All tiers → VI+ → VIII+ → X+.
-- **Ship performance**: per ship in the selected period; **All your ships** opens Ship Statistics.
+**The filter toolbar** at the top stays in view and applies to everything on the page:
+
+- **Source**: **Whole account** = the official per-ship totals of all your Random battles (complete, but without dates
+  or battle types); **Recorded battles** = the battles Foretop recorded while it ran (Wargaming offers no battle
+  history), one per battle the API counted on its own, with dates, battle types and replay details.
+- **Tier**: All tiers, or click tiers (several at once); Shift+click selects a range (click VI, Shift+click VIII =
+  VI–VIII); shortcuts VI+, VIII+, X+, VI–VIII, IX–XI. The tier is the ship's real tier from the ship list (game files
+  for ships the API list omits); ships whose tier is unknown never match a tier filter.
+- **Min. battles** per ship (1+ … 100+, custom): ships with fewer battles in the selection are left out everywhere.
+- **Period** (last 7/30/90 days, this/last month, last N battles, date range) and **Type** (Random, Ranked, Co-op):
+  recorded battles only.
+- **Class**, **Nation**, **Ships** (pick any ships). Active filters show as labels; ✕ removes one, **Clear filters**
+  all of them. The line under them says how many battles match.
+
+All filters work together (for example Tier VIII + 20+ battles + battleships + last 90 days). Changing a filter
+recalculates from the data already loaded: no API call, no waiting.
+
+Sections (battle-by-battle ones need the recorded source):
+
+- **Last battle** (recorded): date, map, type, ship, result, damage, kills, survival and time survived, XP and base XP,
+  spotting and potential damage, hits, team position by damage and a battle rating.
+- **Performance in the selection**: battles, victories/defeats/draws, win rate, PR, averages, kills/deaths, survival
+  (plus replay and accuracy values for recorded battles).
+- **Trends**, **Battle history**, **Compare periods** (recorded): as before; Compare periods uses the toolbar filters
+  except the period.
+- **Best and worst performing ships**: top 10 by PR, win rate, average damage or battles (best), or lowest PR, win rate
+  or damage (worst), ranked from 20+ battles by default so a few unlucky battles do not count as poor.
+- **Average damage and win rate per ship**: per ship, tier or class, highest or lowest first, with battles, total
+  damage, victories, defeats and draws. Groups add up their battles (never an average of ship win rates).
+- **Ship comparison**: tick ships (or "Select all shown", e.g. all Tier VIII ships); a table with battles, win rate, PR,
+  average damage and base XP, kills and deaths per battle, K/D and survival, a totals row and a chart.
+- **Tier performance**: every tier in one table and chart (the toolbar's tier is highlighted, not applied). Click a
+  tier to filter the whole page by it.
+- **Compare tiers**: two or three tier groups (e.g. VIII vs X, VI–VIII vs IX–XI, VIII+ vs all), with B − A and the
+  relative difference. The groups choose the tiers; every other toolbar filter applies to all groups alike.
+- **PR over time** (recorded): PR of all recorded battles up to each point, or of the last 10/20, for several lines at
+  once (the selection, all tiers, VI+, VIII+, X+, single tiers). The dashed line is your account PR for the same ships
+  and tiers. Calculated by Foretop with the expected values stored with each battle; not an official rating.
+
+Every chart can have its own **chart filter** (class) on top of the toolbar. It can only narrow the selection, never
+widen it; when set, the chart says so and **Reset chart filter** clears just that chart.
 
 Every value carries its source:
 
@@ -185,6 +205,11 @@ Double-click one, or select it and press **Open selected**, to watch the battle 
 - Capture points carry their letter and turn the owner's colour; grey circles are smoke.
 - **Play / Pause** (or Space), ±30 s, 1–40× speed, and the slider to jump anywhere. The big
   clock is the battle clock (time left), the small one the replay time.
+- **Zoom**: mouse wheel over the map zooms at the pointer (up to 8×), drag to move, double-click (or **Whole map**,
+  or 0) shows the whole map; + and − zoom in and out. While zoomed, a small overview shows which part you see.
+- **Full view** (or F; Esc to leave) hides the replay list and the teams so the map gets the room.
+- **Debug** draws the map's bounds, the world origin, a grid every 100 units with coordinates and each ship's
+  position, plus scale, zoom and camera; for checking that everything is where it should be.
 - Right: both teams with health (faded = sunk, dimmer = not in view), the kill feed and the **chat** up to the
   current moment. Click a chat line to jump to it. The latest lines also show at the bottom left of the map, as in
   the game; **Chat** under the map switches that off.

@@ -199,8 +199,14 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         ShowBattle(info!, live: false, stored: record);
     }
 
-    private void ShowBattle(ArenaInfo info, bool live, Core.Data.BattleRecord? stored)
+    /// <param name="save">False for "Refresh" on a recorded battle: show current statistics without replacing the
+    /// statistics recorded at the time.</param>
+    /// <summary>The recorded battle shown with current statistics after Refresh (Refresh again must not save either).</summary>
+    private Core.Data.BattleRecord? _viewingRecorded;
+
+    private void ShowBattle(ArenaInfo info, bool live, Core.Data.BattleRecord? stored, bool save = true, Region? region = null)
     {
+        _viewingRecorded = null;
         _loadCts?.Cancel();
         _loadCts = new CancellationTokenSource();
         var ct = _loadCts.Token;
@@ -209,7 +215,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         _isLive = live;
         _stored = stored;
         _sessionKey = info.BattleKey + (live ? "" : stored is null ? ":file" : ":history");
-        var region = stored?.Region ?? _host.Region;
+        var battleRegion = stored?.Region ?? region ?? _host.Region;
         var saved = BattleSummaryCodec.Deserialize(stored?.SummaryJson)
             .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
@@ -225,7 +231,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
             var summary = saved.TryGetValue(v.Name, out var old)
                 ? old
                 : new PlayerSummary { Name = v.Name, Relation = v.Relation, ShipId = v.ShipId, IsBot = v.IsBot };
-            var row = new PlayerRowViewModel(summary, _host.Ships.Get(v.ShipId), region, _host.ShipData.FindById(v.ShipId));
+            var row = new PlayerRowViewModel(summary, _host.Ships.Get(v.ShipId), battleRegion, _host.ShipData.FindById(v.ShipId));
             row.SetStatsFilter(StatsMinTier, StatsViewMode);
             _rowsByName[v.Name] = row;
             (v.IsFriendly ? FriendlyRows : EnemyRows).Add(row);
@@ -240,7 +246,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
             live ? "Live" : stored is null ? "From file" : $"From history · stats as of {stored.DetectedAt.LocalDateTime:g}",
             info.StartedAt?.ToString("g"),
             info.PlayersPerTeam > 0 ? $"{info.PlayersPerTeam} vs {info.PlayersPerTeam}" : null,
-            Regions.Label(region),
+            Regions.Label(battleRegion),
             info.ClientVersion is null ? null : "client " + info.ClientVersion.Replace(", ", "."),
         }.Where(s => !string.IsNullOrEmpty(s)));
 
@@ -250,7 +256,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
 
         if (stored is null)
         {
-            _ = LoadAsync(info, region, live, forceRefresh: false, ct);
+            _ = LoadAsync(info, battleRegion, live, forceRefresh: false, ct, save);
             if (live && !string.IsNullOrEmpty(info.PlayerName) && info.PlayerName != _host.Settings.Current.PlayerName)
             {
                 var s = _host.Settings.Clone();
@@ -261,13 +267,13 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         else
         {
             ProgressText = "Recorded battle with the statistics from that time. Refresh loads current statistics.";
-            if (info.Vehicles.Any(v => _host.Ships.Get(v.ShipId) is null)) _ = _host.Ships.EnsureLoadedAsync(region, ct);
+            if (info.Vehicles.Any(v => _host.Ships.Get(v.ShipId) is null)) _ = _host.Ships.EnsureLoadedAsync(battleRegion, ct);
         }
     }
 
     private Core.Data.BattleRecord? _stored;
 
-    private async Task LoadAsync(ArenaInfo info, Region region, bool live, bool forceRefresh, CancellationToken ct)
+    private async Task LoadAsync(ArenaInfo info, Region region, bool live, bool forceRefresh, CancellationToken ct, bool save = true)
     {
         var key = _sessionKey!;
         try
@@ -275,19 +281,30 @@ public sealed partial class LiveBattleViewModel : ObservableObject
             if (info.Vehicles.Any(v => _host.Ships.Get(v.ShipId) is null))
                 _ = _host.Ships.EnsureLoadedAsync(region, ct);
 
-            if (!_host.Api.HasApplicationId) return;
+            if (!_host.Api.HasApplicationId)
+            {
+                // Without an application ID there are no statistics, but the battle itself is still recorded.
+                if (live && save && _stored is null) SaveHistory(info, region, null, "live");
+                return;
+            }
 
             ProgressText = "Loading statistics…";
             var sw = Stopwatch.StartNew();
             var requests = info.Vehicles.Select(v => new PlayerRequest(v.Name, v.Relation, v.ShipId, v.IsBot)).ToList();
             var result = await _host.Stats.LoadAsync(key, region, requests, RequestPriority.High, ct, forceRefresh);
-            if (ct.IsCancellationRequested) return;
+            if (ct.IsCancellationRequested)
+            {
+                if (live && save && _stored is null) SaveHistory(info, region, null, "live"); // roster at least
+                return;
+            }
 
             ProgressText = $"Loaded in {sw.Elapsed.TotalSeconds:0.0} s";
-            if (_stored is null) SaveHistory(info, region, result, live ? "live" : "file");
+            if (_stored is null && save) SaveHistory(info, region, result, live ? "live" : "file");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            // Another battle was opened during the load: keep the live battle's roster (statistics stay unknown).
+            if (live && save && _stored is null) SaveHistory(info, region, null, "live");
         }
         catch (Exception ex)
         {
@@ -333,7 +350,8 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         var project = StatsMinTier > 0 && StatsViewMode != StatsView.Overall;
         FriendlySummary = TeamSummary.From(FriendlyRows.Select(r => project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).ToList());
         EnemySummary = TeamSummary.From(EnemyRows.Select(r => project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).ToList());
-        HasRecentData = FriendlyRows.Concat(EnemyRows).Any(r => r.Summary.Recent7 is { Totals.Battles: > 0 });
+        HasRecentData = FriendlyRows.Concat(EnemyRows)
+            .Any(r => (project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).Recent7 is { Totals.Battles: > 0 });
         FriendlyShare = TeamComparison.FriendlyShare(FriendlySummary, EnemySummary);
         ComparisonText = FriendlyShare is double s
             ? $"Estimated strength (average PR): {s:P0} vs {1 - s:P0} — an indication from past stats, not a prediction"
@@ -412,12 +430,13 @@ public sealed partial class LiveBattleViewModel : ObservableObject
                 : null;
     }
 
-    private void SaveHistory(ArenaInfo info, Region region, IReadOnlyList<PlayerSummary> players, string source)
+    /// <param name="players">Null records the roster only (statistics unknown); an existing summary is kept.</param>
+    private void SaveHistory(ArenaInfo info, Region region, IReadOnlyList<PlayerSummary>? players, string source)
     {
         try
         {
             _host.History.Upsert(info.BattleKey, region, info.StartedAt, info.MatchGroup, info.MapName, info.PlayerName,
-                info.RawJson, BattleSummaryCodec.Serialize(players), source);
+                info.RawJson, players is null ? null : BattleSummaryCodec.Serialize(players), source);
             HistoryChanged?.Invoke();
         }
         catch (Exception ex)
@@ -437,7 +456,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
 
     private bool PassesFilter(PlayerRowViewModel r)
     {
-        if (r.Ship is null) return true;
+        if (r.Ship is null && r.GameShip is null) return true; // class and tier unknown: never hidden by a filter
         var classOk = r.ShipClass switch
         {
             ShipClass.Destroyer => ShowDD,
@@ -520,10 +539,13 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     private void Refresh()
     {
         if (_arena is null) return;
-        if (_stored is not null)
+        if (_stored is not null || _viewingRecorded is not null)
         {
-            // Keep the recorded snapshot as it is; show the same roster again with current statistics.
-            ShowBattle(_arena, live: false, stored: null);
+            // Keep the recorded snapshot as it is; show the same roster again with current statistics (never saved),
+            // on the server the battle was recorded on.
+            var recorded = _stored ?? _viewingRecorded!;
+            ShowBattle(_arena, live: false, stored: null, save: false, region: recorded.Region);
+            _viewingRecorded = recorded;
             return;
         }
         _loadCts?.Cancel();
@@ -534,19 +556,19 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     [RelayCommand]
     private void OpenProfile(PlayerRowViewModel? row)
     {
-        if (row is { IsBot: false }) ProfileRequested?.Invoke(row.Name);
+        if (row is { IsBot: false }) ProfileRequested?.Invoke(row.Summary.Name); // the real name, also with --anonymize
     }
 
     [RelayCommand]
     private void OpenOfficialProfile(PlayerRowViewModel? row)
     {
-        if (row?.AccountId is long id) OpenUrl(Regions.ProfileUrl(row.Region, id, row.Name));
+        if (row?.AccountId is long id) OpenUrl(Regions.ProfileUrl(row.Region, id, row.Summary.Name));
     }
 
     [RelayCommand]
     private void OpenWowsNumbers(PlayerRowViewModel? row)
     {
-        if (row?.AccountId is long id) OpenUrl(Regions.WowsNumbersUrl(row.Region, id, row.Name));
+        if (row?.AccountId is long id) OpenUrl(Regions.WowsNumbersUrl(row.Region, id, row.Summary.Name));
     }
 
     private static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });

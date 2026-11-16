@@ -109,6 +109,11 @@ public sealed class PlayerStatsService
             foreach (var h in known)
             {
                 var id = ids[h.Name];
+                if (infos.TryGetValue(id, out var unavailable) && unavailable is { Unavailable: true })
+                {
+                    Set(h.Name, s => s with { State = LoadState.Error, StatusText = "Statistics unavailable: the Wargaming API is not reachable and this player is not cached" });
+                    continue;
+                }
                 if (!infos.TryGetValue(id, out var info) || info is null)
                 {
                     Set(h.Name, s => s with { State = LoadState.NotFound, StatusText = "Account has no data" });
@@ -280,7 +285,8 @@ public sealed class PlayerStatsService
         return (result, false);
     }
 
-    private sealed record AccountEntry(AccountInfoDto Dto, DateTimeOffset FetchedAt, bool Stale = false);
+    /// <param name="Unavailable">The API could not be reached and nothing was cached: unknown, not "no data".</param>
+    private sealed record AccountEntry(AccountInfoDto Dto, DateTimeOffset FetchedAt, bool Stale = false, bool Unavailable = false);
 
     private async Task<Dictionary<long, AccountEntry?>> GetAccountInfosAsync(
         Region region, List<long> ids, RequestPriority priority, bool force, CancellationToken ct)
@@ -312,7 +318,8 @@ public sealed class PlayerStatsService
             {
                 _log.LogWarning("account/info failed ({Error}); showing {Count} cached profiles", ex.Message, stale.Count);
                 foreach (var id in missing)
-                    result[id] = stale.TryGetValue(id, out var c) ? new AccountEntry(Deserialize<AccountInfoDto>(c.Json!), c.FetchedAt, true) : null;
+                    result[id] = stale.TryGetValue(id, out var c) ? new AccountEntry(Deserialize<AccountInfoDto>(c.Json!), c.FetchedAt, true)
+                        : new AccountEntry(new AccountInfoDto(), DateTimeOffset.UtcNow, Unavailable: true);
                 return result;
             }
             var now = DateTimeOffset.UtcNow;
@@ -402,6 +409,10 @@ public sealed class PlayerStatsService
         var valid = snaps.Where(s => s.Totals.Battles <= overall.Battles).ToList();
         var b7 = valid.LastOrDefault(s => s.TakenAt <= now.AddDays(-7));
         var b28 = valid.LastOrDefault(s => s.TakenAt <= now.AddDays(-28)) ?? valid.FirstOrDefault(s => s.TakenAt <= now.AddDays(-8));
+        // A baseline far older than the column's span would show months of activity under "7 days" or "28 days":
+        // then there is no such value (shown as "—"), not a misleading one.
+        if (b7 is not null && b7.TakenAt < now.AddDays(-14)) b7 = null;
+        if (b28 is not null && b28.TakenAt < now.AddDays(-56)) b28 = null;
         return (Make(b7), Make(b28));
 
         RecentStats? Make(PlayerSnapshot? s) =>

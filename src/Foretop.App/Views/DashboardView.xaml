@@ -120,7 +120,7 @@
                             </Style>
                         </DataGrid.RowStyle>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="TIME" Binding="{Binding When}" Width="64" />
+                            <DataGridTextColumn Header="TIME" Binding="{Binding When}" SortMemberPath="Result.StartedAt" Width="64" />
                             <DataGridTextColumn Header="BATTLE" Binding="{Binding Type}" Width="120" />
                             <DataGridTextColumn Header="MAP" Binding="{Binding Map}" Width="*" />
                             <DataGridTextColumn Header="SHIP" Binding="{Binding Ship}" Width="150" />
@@ -215,7 +215,7 @@
                         <TextBlock Text="RECENT BATTLES" Style="{StaticResource SectionLabel}" Margin="16,14,16,8" />
                         <DataGrid ItemsSource="{Binding RecentBattles}" MouseDoubleClick="OnBattleDoubleClick" x:Name="Recent">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="DATE" Binding="{Binding WhenText}" Width="130" />
+                                <DataGridTextColumn Header="DATE" Binding="{Binding WhenText}" SortMemberPath="When" Width="130" />
                                 <DataGridTextColumn Header="BATTLE" Binding="{Binding Type}" Width="120" />
                                 <DataGridTextColumn Header="MAP" Binding="{Binding Map}" Width="*" />
                                 <DataGridTextColumn Header="YOUR SHIP" Binding="{Binding OwnShip}" Width="120" />

@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ServerGarbageCollection>false</ServerGarbageCollection>
+    <UseWPF>true</UseWPF> <!-- PNG decoding for the minimap checks -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Foretop.Core\Foretop.Core.csproj" />

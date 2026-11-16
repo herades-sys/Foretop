@@ -5,9 +5,11 @@ using Microsoft.Data.Sqlite;
 
 namespace Foretop.Core.Data;
 
-public sealed record CachedJson(string? Json, DateTimeOffset FetchedAt)
+/// <param name="FetchedAt">When the response was fetched (shown to the user).</param>
+/// <param name="MarkedStale">Marked stale by "Mark cache stale": treated as too old for any cache period.</param>
+public sealed record CachedJson(string? Json, DateTimeOffset FetchedAt, bool MarkedStale = false)
 {
-    public TimeSpan Age => DateTimeOffset.UtcNow - FetchedAt;
+    public TimeSpan Age => MarkedStale ? TimeSpan.MaxValue : DateTimeOffset.UtcNow - FetchedAt;
 }
 
 /// <summary>
@@ -27,7 +29,8 @@ public sealed class ApiCache(Database db)
         using var rd = cmd.ExecuteReader();
         if (!rd.Read()) return null;
         var json = !rd.IsDBNull(1) ? Compression.Unpack((byte[])rd.GetValue(1)) : rd.IsDBNull(0) ? null : rd.GetString(0);
-        return new CachedJson(json, DateTimeOffset.FromUnixTimeSeconds(rd.GetInt64(2)));
+        var t = rd.GetInt64(2); // negative = marked stale (Invalidate): due for a refetch, but the real time is kept
+        return new CachedJson(json, DateTimeOffset.FromUnixTimeSeconds(Math.Abs(t)), MarkedStale: t < 0);
     }
 
     public void Put(Region region, string kind, string key, string? json)
@@ -207,8 +210,11 @@ public sealed class BattleHistoryStore(Database db)
             INSERT INTO battles(battle_key, region, started_at, detected_at, match_group, map, player_name, arena_json, summary_json, summary_z, source)
             VALUES ($k, $r, $s, $d, $g, $m, $p, $a, NULL, $z, $src)
             ON CONFLICT(battle_key) DO UPDATE SET
-                summary_z = COALESCE(excluded.summary_z, battles.summary_z),
-                summary_json = CASE WHEN excluded.summary_z IS NULL THEN battles.summary_json ELSE NULL END,
+                -- The statistics recorded live are kept: opening the replay of that battle later must not replace them.
+                summary_z = CASE WHEN battles.source = 'live' AND excluded.source <> 'live' THEN battles.summary_z
+                                 ELSE COALESCE(excluded.summary_z, battles.summary_z) END,
+                summary_json = CASE WHEN battles.source = 'live' AND excluded.source <> 'live' THEN battles.summary_json
+                                    WHEN excluded.summary_z IS NULL THEN battles.summary_json ELSE NULL END,
                 source = CASE WHEN battles.source = 'live' THEN 'live' ELSE excluded.source END
             """;
         cmd.Parameters.AddWithValue("$k", battleKey);

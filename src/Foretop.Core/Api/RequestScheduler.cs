@@ -43,6 +43,8 @@ public sealed class RequestScheduler : IDisposable
     public Task<T> Enqueue<T>(Func<CancellationToken, Task<T>> work, RequestPriority priority, CancellationToken ct)
     {
         var item = new WorkItem<T>(work, ct);
+        // A caller that gives up gets its cancellation at once, not when the item reaches the front of the queue.
+        if (ct.CanBeCanceled) item.Registration = ct.Register(item.Cancel);
         lock (_gate) _queue.Enqueue(item, ((int)priority, _seq++));
         _available.Release();
         return item.Task;
@@ -61,9 +63,35 @@ public sealed class RequestScheduler : IDisposable
                 WorkItem item;
                 try
                 {
+                    // _available is a wake-up signal (one release per Enqueue, possibly after the item is already
+                    // queued), not an exact count: there may be more permits than items, never fewer. So every queue
+                    // access below copes with an empty queue instead of trusting the count.
                     await _available.WaitAsync(ct).ConfigureAwait(false);
+                    // Cancelled items (an abandoned battle, an old search) are dropped before the rate limiter, so they
+                    // do not use up request slots.
+                    bool any;
+                    lock (_gate)
+                    {
+                        while (_queue.TryPeek(out var head, out _) && head.Token.IsCancellationRequested)
+                        {
+                            _queue.Dequeue();
+                            head.Cancel();
+                        }
+                        any = _queue.Count > 0;
+                    }
+                    if (!any)
+                    {
+                        _inFlight.Release();
+                        continue;
+                    }
                     await Limiter.WaitAsync(ct).ConfigureAwait(false);
-                    lock (_gate) item = _queue.Dequeue();
+                    bool got;
+                    lock (_gate) got = _queue.TryDequeue(out item!, out _);
+                    if (!got)
+                    {
+                        _inFlight.Release();
+                        continue;
+                    }
                 }
                 catch
                 {
@@ -83,6 +111,10 @@ public sealed class RequestScheduler : IDisposable
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 break;
+            }
+            catch (Exception) when (!ct.IsCancellationRequested)
+            {
+                // Never stop dispatching: a stopped dispatcher leaves every API call waiting forever.
             }
         }
     }
@@ -108,6 +140,7 @@ public sealed class RequestScheduler : IDisposable
     {
         protected WorkItem(CancellationToken token) => Token = token;
         public CancellationToken Token { get; }
+        public CancellationTokenRegistration Registration { get; set; }
         public abstract Task RunAsync();
         public abstract void Cancel();
     }
@@ -123,11 +156,16 @@ public sealed class RequestScheduler : IDisposable
 
         public override async Task RunAsync()
         {
+            Registration.Dispose();
             try { _tcs.TrySetResult(await _work(Token).ConfigureAwait(false)); }
             catch (OperationCanceledException) when (Token.IsCancellationRequested) { _tcs.TrySetCanceled(Token); }
             catch (Exception ex) { _tcs.TrySetException(ex); }
         }
 
-        public override void Cancel() => _tcs.TrySetCanceled(Token);
+        public override void Cancel()
+        {
+            _tcs.TrySetCanceled(Token);
+            Registration.Dispose();
+        }
     }
 }

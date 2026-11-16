@@ -74,7 +74,7 @@ public sealed partial class HistoryViewModel : ObservableObject
             foreach (var r in rows) Battles.Add(r);
             Summary = rows.Count == 0
                 ? "No battles recorded yet. Battles are saved automatically when detected, and when you open a replay."
-                : $"{rows.Count} recorded battles · {rows.Count(r => r.Record.Source == "live")} live, {rows.Count(r => r.Record.Source != "live")} from replays";
+                : $"{rows.Count} recorded battle{(rows.Count == 1 ? "" : "s")} · {rows.Count(r => r.Record.Source == "live")} live, {rows.Count(r => r.Record.Source != "live")} from replays";
         }
         catch (Exception ex)
         {

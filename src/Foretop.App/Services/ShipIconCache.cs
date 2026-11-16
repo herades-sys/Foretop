@@ -21,6 +21,10 @@ public sealed class ShipIconCache(HttpClient http, string directory, ILogger log
 
     private readonly ConcurrentDictionary<string, ImageSource?> _memory = new();
     private readonly ConcurrentDictionary<string, Task<bool>> _downloads = new();
+    // Failed downloads wait before the next try: rows ask for their icon on every update, which would otherwise send a
+    // new request each time while offline or for a missing icon.
+    private readonly ConcurrentDictionary<string, DateTime> _retryAfter = new();
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(5);
     private readonly Dispatcher _ui = Dispatcher.CurrentDispatcher;
 
     public static ShipIconCache? Instance { get; set; }
@@ -39,6 +43,7 @@ public sealed class ShipIconCache(HttpClient http, string directory, ILogger log
             return img;
         }
 
+        if (_retryAfter.TryGetValue(url, out var after) && DateTime.UtcNow < after) return null;
         var task = _downloads.GetOrAdd(url, u => DownloadAsync(u, path));
         if (onReady is not null)
             task.ContinueWith(t =>
@@ -62,7 +67,8 @@ public sealed class ShipIconCache(HttpClient http, string directory, ILogger log
         catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
         {
             log.LogDebug("Ship icon {Url} not downloaded: {Error}", url, ex.Message);
-            _downloads.TryRemove(url, out _); // try again next time
+            _retryAfter[url] = DateTime.UtcNow + RetryDelay;
+            _downloads.TryRemove(url, out _); // try again after the delay
             return false;
         }
     }

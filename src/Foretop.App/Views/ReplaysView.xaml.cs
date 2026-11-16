@@ -12,6 +12,13 @@ public partial class ReplaysView : UserControl
     public ReplaysView()
     {
         InitializeComponent();
+        // Narrow windows: slimmer side panels, so the map keeps a usable size.
+        SizeChanged += (_, e) =>
+        {
+            var w = e.NewSize.Width;
+            ListPanel.Width = w < 1150 ? 200 : w < 1400 ? 240 : 290;
+            TeamsPanel.Width = w < 1150 ? 222 : w < 1400 ? 252 : 282;
+        };
         DataContextChanged += (_, e) =>
         {
             if (e.OldValue is ReplaysViewModel old) old.Chat.CollectionChanged -= OnChatChanged;
@@ -44,13 +51,27 @@ public partial class ReplaysView : UserControl
         }
     }
 
+    private void OnZoomIn(object sender, RoutedEventArgs e) => Minimap.ZoomIn();
+    private void OnZoomOut(object sender, RoutedEventArgs e) => Minimap.ZoomOut();
+    private void OnZoomReset(object sender, RoutedEventArgs e) => Minimap.ResetView();
+
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
-        // Space plays and pauses, unless a text box has the focus.
-        if (e.Key == Key.Space && Keyboard.FocusedElement is not TextBox && Vm is { HasScene: true } vm)
+        // Keys work unless a text box has the focus: Space plays and pauses, + / - / 0 zoom, F full view, Esc leaves it.
+        if (Keyboard.FocusedElement is not TextBox && Vm is { HasScene: true } vm)
         {
-            vm.PlayPauseCommand.Execute(null);
-            e.Handled = true;
+            var handled = true;
+            switch (e.Key)
+            {
+                case Key.Space: vm.PlayPauseCommand.Execute(null); break;
+                case Key.Add or Key.OemPlus: Minimap.ZoomIn(); break;
+                case Key.Subtract or Key.OemMinus: Minimap.ZoomOut(); break;
+                case Key.D0 or Key.NumPad0: Minimap.ResetView(); break;
+                case Key.F: vm.IsFullView = !vm.IsFullView; break;
+                case Key.Escape when vm.IsFullView: vm.IsFullView = false; break;
+                default: handled = false; break;
+            }
+            e.Handled = handled;
         }
         base.OnPreviewKeyDown(e);
     }

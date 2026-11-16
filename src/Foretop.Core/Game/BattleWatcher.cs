@@ -59,7 +59,12 @@ public sealed class BattleWatcher : IDisposable
 
     public void Start()
     {
-        if (_loop is not null) return;
+        if (_loop is { IsCompleted: false } running)
+        {
+            if (_cts is { IsCancellationRequested: false }) return; // already running
+            try { running.Wait(TimeSpan.FromSeconds(3)); } catch (AggregateException) { }
+            if (!running.IsCompleted) return; // still stopping: the next Start will try again
+        }
         _cts = new CancellationTokenSource();
         _loop = Task.Run(() => RunAsync(_cts.Token));
     }
@@ -67,8 +72,16 @@ public sealed class BattleWatcher : IDisposable
     public void Stop()
     {
         _cts?.Cancel();
-        try { _loop?.Wait(TimeSpan.FromSeconds(3)); } catch (AggregateException) { }
-        _loop = null;
+        var finished = true;
+        try { finished = _loop?.Wait(TimeSpan.FromSeconds(3)) ?? true; } catch (AggregateException) { }
+        // Only forget the loop once it has ended; otherwise Start would run a second one beside it. Its token is
+        // cancelled, so it ends on its own and Start waits for it.
+        if (finished)
+        {
+            _loop = null;
+            _cts?.Dispose();
+            _cts = null;
+        }
         DisposeWatcher();
         SetStatus(new WatcherStatus(WatcherState.Stopped, null, "Stopped"));
     }

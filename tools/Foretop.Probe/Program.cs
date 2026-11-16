@@ -1,3 +1,5 @@
+using System.IO;
+using System.Net.Http;
 using System.Diagnostics;
 using Foretop.Core.GameData;
 
@@ -165,7 +167,7 @@ switch (cmd)
             // replay <file> <land-check>: share of track points that fall on land in minimap.png, for the scale
             var space = data.MapSpace.Trim('/');
             var png = fs.Read(space + "/minimap.png");
-            var half = Foretop.Core.Replays.ReplayLibrary.PlayableHalf(System.Text.Encoding.UTF8.GetString(fs.Read(space + "/space.settings")));
+            var half = (float)(Foretop.Core.Replays.MapBounds.FromSpaceSettings(System.Text.Encoding.UTF8.GetString(fs.Read(space + "/space.settings"))).Width / 2);
             File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "minimap.png"), png);
             using var pts = new StreamWriter(Path.Combine(Path.GetTempPath(), "tracks.csv"));
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -175,6 +177,75 @@ switch (cmd)
         }
         foreach (var c in data.Chat) Console.WriteLine($"  chat t {c.T:0} [{c.Channel}] {c.SenderId} {c.Sender?.Name ?? "?"}: {c.Text}");
         Console.WriteLine($"  clock {data.TimeLeft.Count} samples: {string.Join(" ", data.TimeLeft.Take(6).Select(v => $"{v.Value}@{v.T:0}"))} … {string.Join(" ", data.TimeLeft.TakeLast(3).Select(v => $"{v.Value}@{v.T:0}"))}");
+        break;
+    }
+    case "spaces":
+    {
+        // spaces: chunk bounds of every map and the size of its minimap images
+        static string Png(byte[]? b) => b is { Length: > 24 } ? $"{System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(b.AsSpan(16))}x{System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(b.AsSpan(20))}" : "-";
+        foreach (var f in fs.Files.Where(f => f.Path.StartsWith("spaces/") && f.Path.EndsWith("/space.settings")).OrderBy(f => f.Path))
+        {
+            var dir = f.Path[..f.Path.LastIndexOf('/')];
+            var x = System.Xml.Linq.XDocument.Parse(System.Text.Encoding.UTF8.GetString(fs.Read(f))).Root!;
+            var b = x.Element("bounds");
+            string V(string n) => b?.Element(n)?.Value.Trim() ?? "?";
+            var land = fs.Find(dir + "/minimap.png") is { } lf ? fs.Read(lf) : null;
+            var water = fs.Find(dir + "/minimap_water.png") is { } wf ? fs.Read(wf) : null;
+            Console.WriteLine($"  {dir,-40} chunk {x.Element("chunkSize")?.Value.Trim(),-9} X {V("minX"),3}..{V("maxX"),-3} Y {V("minY"),3}..{V("maxY"),-3} bounds {Foretop.Core.Replays.MapBounds.FromSpaceSettings(x.ToString())}  land {Png(land),-9} water {Png(water)}");
+        }
+        break;
+    }
+    case "mapfit":
+    {
+        // mapfit <file.wowsreplay>: share of ship positions on island pixels of minimap.png for candidate transforms
+        var defs = Foretop.Core.Replays.EntityDefs.Load(fs);
+        var data = Foretop.Core.Replays.ReplayParser.Parse(Foretop.Core.Replays.ReplayFile.Read(args[2]), defs);
+        var space = data.MapSpace.Trim('/');
+        if (!space.StartsWith("spaces/")) space = "spaces/" + space;
+        var bnd = Foretop.Core.Replays.MapBounds.FromSpaceSettings(System.Text.Encoding.UTF8.GetString(fs.Read(fs.Find(space + "/space.settings")!)));
+        var half = bnd.Width / 2;
+        var dec = new System.Windows.Media.Imaging.PngBitmapDecoder(new MemoryStream(fs.Read(fs.Find(space + "/minimap.png")!)),
+            System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat, System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+        var bmp = new System.Windows.Media.Imaging.FormatConvertedBitmap(dec.Frames[0], System.Windows.Media.PixelFormats.Bgra32, null, 0);
+        int w = bmp.PixelWidth, h = bmp.PixelHeight;
+        var px = new byte[w * h * 4];
+        bmp.CopyPixels(px, w * 4, 0);
+        bool Land(double u, double v)
+        {
+            var ix = (int)(u * w); var iy = (int)(v * h);
+            return ix >= 0 && iy >= 0 && ix < w && iy < h && px[(iy * w + ix) * 4 + 3] > 128;
+        }
+        var points = data.Tracks.Values.SelectMany(t => t).Select(p => (p.X, p.Z)).ToList();
+        var landShare = Enumerable.Range(0, w * h).Count(i => px[i * 4 + 3] > 128) / (double)(w * h);
+        Console.WriteLine($"{space}: image {w}x{h}, island pixels {landShare:P1}, {points.Count:N0} track points, |x| max {points.Max(p => Math.Abs(p.X)):0}, |z| max {points.Max(p => Math.Abs(p.Z)):0}, playable half {half}");
+        double Hits(double hh, double dx, double dz, bool flipX, bool flipZ) =>
+            points.Count(p => Land(((flipX ? -p.X : p.X) - dx + hh) / (2 * hh), (hh - (flipZ ? -p.Z : p.Z) + dz) / (2 * hh))) / (double)points.Count;
+        Console.WriteLine($"  current transform (half {half}, north up): {Hits(half, 0, 0, false, false):P2} of positions on islands");
+        foreach (var (fx, fz, name) in new[] { (true, false, "X mirrored"), (false, true, "Z mirrored"), (true, true, "rotated 180°") })
+            Console.WriteLine($"  {name,-14}: {Hits(half, 0, 0, fx, fz):P2}");
+        var best = (from hh in Enumerable.Range(50, 70).Select(i => i * 10.0)
+                    from dx in new[] { -50.0, -25, 0, 25, 50 }
+                    from dz in new[] { -50.0, -25, 0, 25, 50 }
+                    select (hh, dx, dz, hits: Hits(hh, dx, dz, false, false))).OrderBy(r => r.hits).Take(8).ToList();
+        foreach (var r in best) Console.WriteLine($"  half {r.hh,4} offset {r.dx,4},{r.dz,4}: {r.hits:P2}");
+        foreach (var hh in new[] { half - 100, half - 50, half, half + 50, half + 100, half + 200 }) Console.WriteLine($"  half {hh,4}: {Hits(hh, 0, 0, false, false):P2}");
+        // Heading: yaw against the direction of travel (atan2(dx, dz): 0 = north, clockwise positive).
+        var diffs = new List<double>();
+        foreach (var tr in data.Tracks.Values)
+            for (var i = 1; i < tr.Count; i++)
+            {
+                var (a, b2) = (tr[i - 1], tr[i]);
+                if (b2.T - a.T is <= 0 or > 3) continue;
+                double ddx = b2.X - a.X, ddz = b2.Z - a.Z;
+                if (Math.Sqrt(ddx * ddx + ddz * ddz) < 1.5) continue;
+                var d = Math.Atan2(ddx, ddz) - b2.Yaw;
+                while (d > Math.PI) d -= 2 * Math.PI;
+                while (d < -Math.PI) d += 2 * Math.PI;
+                diffs.Add(Math.Abs(d) * 180 / Math.PI);
+            }
+        diffs.Sort();
+        if (diffs.Count > 0)
+            Console.WriteLine($"  heading vs travel ({diffs.Count:N0} moving samples): median {diffs[diffs.Count / 2]:0.0}°, 90th percentile {diffs[(int)(diffs.Count * 0.9)]:0.0}°");
         break;
     }
     case "api":

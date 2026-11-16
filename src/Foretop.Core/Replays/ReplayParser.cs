@@ -23,8 +23,12 @@ public static class ReplayParser
 
     public static ReplayData Parse(ReplayFile file, EntityDefs defs)
     {
-        using var arena = JsonDocument.Parse(file.ArenaJson);
+        JsonDocument arena;
+        try { arena = JsonDocument.Parse(file.ArenaJson); }
+        catch (JsonException ex) { throw new InvalidDataException("The replay's battle information is damaged: " + ex.Message, ex); }
+        using var _ = arena;
         var root = arena.RootElement;
+        if (root.ValueKind != JsonValueKind.Object) throw new InvalidDataException("The replay's battle information is not in the expected form.");
         string S(string name) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 
         var warnings = new List<string>();
@@ -224,7 +228,7 @@ public static class ReplayParser
                     }
                 }
             }
-            catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or ArgumentOutOfRangeException or InvalidCastException or NullReferenceException)
+            catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or ArgumentOutOfRangeException or IndexOutOfRangeException or InvalidCastException or NullReferenceException)
             {
                 var key = $"0x{type:X2}: {ex.Message}";
                 failures[key] = failures.GetValueOrDefault(key) + 1;
@@ -300,7 +304,7 @@ public static class ReplayParser
                 values[prop.Name] = r.Read(prop.Type);
             }
         }
-        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or ArgumentOutOfRangeException)
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or ArgumentOutOfRangeException or IndexOutOfRangeException)
         {
             // Keep what was read before the unknown type.
         }
@@ -319,9 +323,20 @@ public static class ReplayParser
         HashSet<long> chatSenders, List<string> warnings)
     {
         var arena = new List<(string Name, long ShipId, int Relation)>();
-        if (root.TryGetProperty("vehicles", out var vs))
+        if (root.TryGetProperty("vehicles", out var vs) && vs.ValueKind == JsonValueKind.Array)
             foreach (var v in vs.EnumerateArray())
-                arena.Add((v.GetProperty("name").GetString() ?? "", v.GetProperty("shipId").GetInt64(), v.GetProperty("relation").GetInt32()));
+            {
+                // A damaged or unexpected entry is skipped (and reported), not fatal.
+                if (v.ValueKind != JsonValueKind.Object
+                    || !v.TryGetProperty("name", out var n) || n.ValueKind != JsonValueKind.String
+                    || !v.TryGetProperty("shipId", out var sid) || sid.ValueKind != JsonValueKind.Number || !sid.TryGetInt64(out var shipId)
+                    || !v.TryGetProperty("relation", out var rel) || rel.ValueKind != JsonValueKind.Number || !rel.TryGetInt32(out var relation))
+                {
+                    warnings.Add("A player entry in the replay could not be read.");
+                    continue;
+                }
+                arena.Add((n.GetString() ?? "", shipId, relation));
+            }
         var names = arena.Select(a => a.Name).ToHashSet(StringComparer.Ordinal);
 
         var records = new List<Dictionary<long, object?>>();

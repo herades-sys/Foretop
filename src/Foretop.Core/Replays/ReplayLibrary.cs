@@ -10,10 +10,10 @@ namespace Foretop.Core.Replays;
 public sealed record ReplayEntry(string Path, DateTime When, string MapDisplayName, string PlayerVehicle, string MatchGroup, string PlayerName, long SizeBytes);
 
 /// <summary>
-/// The minimap of a space: water and land images (760 px, PNG) and the playable area. World coordinates run from
-/// −Half to +Half on both axes (X east, Z north); the images cover exactly that square.
+/// The minimap of a space: water and land images (760 px, PNG) and the playable area they cover exactly
+/// (<see cref="MapBounds"/>, world X east, Z north). Space is the map's folder, e.g. "spaces/28_naval_mission".
 /// </summary>
-public sealed record MapAssets(byte[]? Water, byte[]? Land, float Half);
+public sealed record MapAssets(byte[]? Water, byte[]? Land, MapBounds Bounds, string Space = "");
 
 /// <summary>Lists replays in the game's <c>replays</c> folder and opens them with the client's entity definitions.</summary>
 public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData)
@@ -50,12 +50,13 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
             f.ReadExactly(json);
             using var doc = JsonDocument.Parse(json);
             var r = doc.RootElement;
+            if (r.ValueKind != JsonValueKind.Object) return null;
             string S(string n) => r.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
             var when = DateTime.TryParseExact(S("dateTime"), "dd.MM.yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
                 ? dt : File.GetLastWriteTime(path);
             return new ReplayEntry(path, when, S("mapDisplayName"), S("playerVehicle"), S("matchGroup"), S("playerName"), f.Length);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or EndOfStreamException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or EndOfStreamException or InvalidOperationException)
         {
             return null;
         }
@@ -63,6 +64,16 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
 
     /// <summary>Decodes a replay and loads its map. Throws <see cref="InvalidDataException"/> with a readable message.</summary>
     public async Task<(ReplayData Data, MapAssets Map)> OpenAsync(string path, CancellationToken ct = default)
+    {
+        try { return await OpenCoreAsync(path, ct).ConfigureAwait(false); }
+        catch (Exception ex) when (IsDecodingFailure(ex)) { throw new InvalidDataException("The replay could not be decoded: " + ex.Message, ex); }
+    }
+
+    /// <summary>Failures of a damaged, unsupported or foreign-version file (not I/O, not cancellation).</summary>
+    private static bool IsDecodingFailure(Exception ex) =>
+        ex is not (IOException or UnauthorizedAccessException or OperationCanceledException or InvalidDataException or OutOfMemoryException);
+
+    private async Task<(ReplayData Data, MapAssets Map)> OpenCoreAsync(string path, CancellationToken ct)
     {
         var file = await Task.Run(() => ReplayFile.Read(path), ct).ConfigureAwait(false);
         var result = await shipData.WithFileSystemAsync(fs =>
@@ -77,6 +88,12 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
 
     /// <summary>Decodes a replay without loading map images (personal battle facts). Null without the game installation.</summary>
     public async Task<ReplayData?> ParseAsync(string path, CancellationToken ct = default)
+    {
+        try { return await ParseCoreAsync(path, ct).ConfigureAwait(false); }
+        catch (Exception ex) when (IsDecodingFailure(ex)) { throw new InvalidDataException("The replay could not be decoded: " + ex.Message, ex); }
+    }
+
+    private async Task<ReplayData?> ParseCoreAsync(string path, CancellationToken ct)
     {
         var file = await Task.Run(() => ReplayFile.Read(path), ct).ConfigureAwait(false);
         return await shipData.WithFileSystemAsync(fs =>
@@ -94,31 +111,9 @@ public sealed class ReplayLibrary(Func<string?> gameRoot, ShipDataStore shipData
         if (_maps.TryGetValue(key, out var cached)) return cached;
         byte[]? Read(string name) => fs.Find($"{space}/{name}") is { } f ? fs.Read(f) : null;
         var settings = Read("space.settings");
-        var half = settings is null ? 700f : PlayableHalf(Encoding.UTF8.GetString(settings));
-        var map = new MapAssets(Read("minimap_water.png"), Read("minimap.png"), half);
+        var bounds = MapBounds.FromSpaceSettings(settings is null ? null : Encoding.UTF8.GetString(settings));
+        var map = new MapAssets(Read("minimap_water.png"), Read("minimap.png"), bounds, space);
         _maps[key] = map;
         return map;
-    }
-
-    /// <summary>
-    /// Half the playable width from <c>space.settings</c>: the chunk bounds span (max − min + 1) chunks, of which
-    /// two on each side are outside the playable area (28_naval_mission: −9…8 × 100 → ±700, where every ship stays).
-    /// </summary>
-    public static float PlayableHalf(string spaceSettings)
-    {
-        try
-        {
-            var root = XDocument.Parse(spaceSettings).Root!;
-            float F(XElement? e, float d) => float.TryParse(e?.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : d;
-            var chunk = F(root.Element("chunkSize"), 100);
-            var b = root.Element("bounds");
-            var minX = F(b?.Element("minX"), -9);
-            var maxX = F(b?.Element("maxX"), 8);
-            return ((maxX - minX + 1) * chunk - 4 * chunk) / 2;
-        }
-        catch (System.Xml.XmlException)
-        {
-            return 700;
-        }
     }
 }

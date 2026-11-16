@@ -55,15 +55,25 @@ public sealed class ReplayFile
             if (i > 0) for (var k = 0; k < 8; k++) plain[i + k] ^= plain[i - 8 + k];
         }
         using var z = new ZLibStream(new MemoryStream(plain), CompressionMode.Decompress);
-        var ms = new MemoryStream(unpackedHint is > 0 and < 512 << 20 ? unpackedHint : 0);
+        // The size in the header is only a hint: never reserve more than the data could plausibly unpack to, and stop
+        // at a fixed limit (a real battle unpacks to a few MB; a damaged or crafted file must not exhaust memory).
+        const int limit = 256 << 20;
+        var ms = new MemoryStream(Math.Clamp(unpackedHint, 0, Math.Min(limit, Math.Max(1, n) * 16)));
+        var buffer = new byte[81920];
         try
         {
-            z.CopyTo(ms);
+            int read;
+            while ((read = z.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                if (ms.Length + read > limit) throw new InvalidDataException("The replay unpacks to more than 256 MB; it is not a normal replay.");
+                ms.Write(buffer, 0, read);
+            }
         }
-        catch (InvalidDataException) when (ms.Length > 0)
+        catch (InvalidDataException) when (ms.Length > 0 && ms.Length + buffer.Length <= limit)
         {
             // A replay cut off mid-battle (game crash) ends in a broken zlib stream; keep what decoded.
         }
+        if (ms.Length == 0) throw new InvalidDataException("The replay has no battle data (still recording, or cut off).");
         return ms.ToArray();
     }
 }

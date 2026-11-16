@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Foretop.Core.Game;
 using Foretop.Core.Replays;
+using Microsoft.Extensions.Logging;
 
 namespace Foretop.App.ViewModels;
 
@@ -92,10 +93,21 @@ public sealed partial class ReplaysViewModel : ObservableObject
     [ObservableProperty] private bool _showNames = true;
     [ObservableProperty] private bool _showChat = true;
     [ObservableProperty] private string _chatSummary = "";
+    [ObservableProperty] private bool _showDebug;
+    [ObservableProperty] private bool _isFullView;
 
     public bool HasScene => Scene is not null;
 
-    partial void OnSceneChanged(ReplayScene? value) => OnPropertyChanged(nameof(HasScene));
+    /// <summary>The team lists beside the map: with a replay open, outside full view.</summary>
+    public bool ShowTeams => HasScene && !IsFullView;
+
+    partial void OnSceneChanged(ReplayScene? value)
+    {
+        OnPropertyChanged(nameof(HasScene));
+        OnPropertyChanged(nameof(ShowTeams));
+    }
+
+    partial void OnIsFullViewChanged(bool value) => OnPropertyChanged(nameof(ShowTeams));
 
     partial void OnTimeChanged(double value)
     {
@@ -137,6 +149,26 @@ public sealed partial class ReplaysViewModel : ObservableObject
         }
     }
 
+    private ReplayRow? _openRow;
+
+    /// <summary>Rebuilds the list rows with the current map and ship names (game data loaded after the list).</summary>
+    public void RefreshNames()
+    {
+        if (_openRow is { } open && Scene is not null)
+        {
+            var fresh = Row(open.Entry);
+            Title = $"{fresh.Map} · {fresh.Type}";
+            Subtitle = Subtitle.Replace(open.Ship, fresh.Ship);
+            _openRow = fresh;
+        }
+        if (!_loaded) return;
+        var selected = Selected?.Entry.Path;
+        var rows = Replays.Select(r => Row(r.Entry)).ToList();
+        Replays.Clear();
+        foreach (var r in rows) Replays.Add(r);
+        Selected = Replays.FirstOrDefault(r => r.Entry.Path == selected);
+    }
+
     private ReplayRow Row(ReplayEntry e)
     {
         var ship = ShipName(e.PlayerVehicle);
@@ -175,6 +207,8 @@ public sealed partial class ReplaysViewModel : ObservableObject
             ChatSummary = _allChat.Count == 0 ? "No chat in this replay." : "No messages yet.";
             Chat.Clear();
             RecentChat.Clear();
+            row = Row(row.Entry); // map and ship names as known now (the list may have been built before the game data)
+            _openRow = row;
             Title = $"{row.Map} · {row.Type}";
             Subtitle = $"{Services.Anonymizer.Name(data.PlayerName)} in {row.Ship} · {row.WhenText} · {FormatTime(data.Duration)} recorded";
             Warning = data.Warnings.Count == 0 ? null : string.Join(" ", data.Warnings);
@@ -186,6 +220,12 @@ public sealed partial class ReplaysViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException or NotSupportedException)
         {
+            Message = "This replay could not be opened: " + ex.Message;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Anything else from a damaged or unusual file: a message on the page, not the crash dialog.
+            _host.Log.LogError(ex, "Replay {Path} could not be opened", row.Entry.Path);
             Message = "This replay could not be opened: " + ex.Message;
         }
         finally
@@ -224,6 +264,12 @@ public sealed partial class ReplaysViewModel : ObservableObject
         IsPlaying = true;
         _clock.Restart();
         _timer.Start();
+    }
+
+    /// <summary>Leaving the page (or a battle switching to Live Battle) pauses playback.</summary>
+    public void OnHidden()
+    {
+        if (IsPlaying) Pause();
     }
 
     private void Pause()

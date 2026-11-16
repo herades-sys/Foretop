@@ -61,6 +61,50 @@ public class InfrastructureTests
         Assert.False(ran);
     }
 
+    [Fact]
+    public async Task Cancelled_items_end_at_once_and_use_no_rate_limit_slots()
+    {
+        // 4 requests per second: 20 cancelled items would cost 5 s if each still took a slot.
+        using var scheduler = new RequestScheduler(new RateLimiter(4), maxConcurrency: 1);
+        var gate = new TaskCompletionSource();
+        var blocker = scheduler.Enqueue(async _ => { await gate.Task; return 0; }, RequestPriority.High, CancellationToken.None);
+        using var cts = new CancellationTokenSource();
+        var stale = Enumerable.Range(0, 20).Select(_ => scheduler.Enqueue(_ => Task.FromResult(1), RequestPriority.High, cts.Token)).ToList();
+        var fresh = scheduler.Enqueue(_ => Task.FromResult(42), RequestPriority.High, CancellationToken.None);
+        cts.Cancel();
+        // The callers' tasks end without waiting for the queue.
+        await Task.WhenAll(stale.Select(t => Assert.ThrowsAnyAsync<OperationCanceledException>(() => t))).WaitAsync(TimeSpan.FromSeconds(1));
+        var sw = Stopwatch.StartNew();
+        gate.SetResult();
+        await blocker;
+        Assert.Equal(42, await fresh.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.InRange(sw.ElapsedMilliseconds, 0, 1500);
+    }
+
+    [Fact]
+    public async Task Scheduler_keeps_running_when_cancelled_items_race_with_new_ones()
+    {
+        // Many threads enqueue items whose tokens are cancelled at random moments (as when battles are switched
+        // quickly). The dispatcher must never stop: a fresh request afterwards still completes.
+        using var scheduler = new RequestScheduler(new RateLimiter(1000), maxConcurrency: 4);
+        var tasks = new List<Task>();
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(t => Task.Run(() =>
+        {
+            for (var i = 0; i < 300; i++)
+            {
+                var cts = new CancellationTokenSource();
+                var task = scheduler.Enqueue(async ct => { await Task.Yield(); return i; }, (RequestPriority)(i % 3), cts.Token);
+                if (i % 2 == 0) cts.Cancel();
+                lock (tasks) tasks.Add(task);
+            }
+        })));
+        foreach (var task in tasks)
+            try { await task.WaitAsync(TimeSpan.FromSeconds(10)); }
+            catch (OperationCanceledException) { }
+        Assert.Equal(7, await scheduler.Enqueue(_ => Task.FromResult(7), RequestPriority.High, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal(0, scheduler.QueueLength);
+    }
+
     [Theory]
     [InlineData(407, "REQUEST_LIMIT_EXCEEDED", WgErrorKind.Transient)]
     [InlineData(504, "SOURCE_NOT_AVAILABLE", WgErrorKind.Transient)]

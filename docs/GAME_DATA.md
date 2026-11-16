@@ -126,6 +126,11 @@ Verified on a build 13533378 Random battle (Tears of the Desert, 822 s, 24 playe
   420/421 = killer's account and vehicle id. Foretop uses 416 and 438 only when 0, 7 and the damage check hold.
   Kills, survival and time survived come from `receiveVehicleDeath` and the battle timer instead (battle start = the
   timer jumping from the countdown to the battle length; duration 791 s = 1,200 − 409 left at the end).
+- Map size: `spaces/<map>/space.settings` → `bounds` minX…maxX, minY…maxY (chunks of `chunkSize`, 100 when not
+  given; Y is world Z). Written as child elements on 5 maps and as attributes (`<bounds minX="-10" … />`) on 53. The
+  minimap images (760 px) cover the chunk bounds minus two chunks on each side: ±100…±800 units on build 13533378.
+  Checked on 28_naval_mission against 33,397 ship positions (0.30 % on island pixels; any other size or orientation
+  is worse). `foretop-probe spaces` lists every map, `foretop-probe mapfit <replay>` repeats the check.
 - Chat: `Avatar.onChatMessage` (index 152) with `PLAYER_ID` sender, then three unnamed strings: channel
   (`battle_team`, `battle_common`), the text, and one more (empty so far). The sender is neither the account id nor the
   vehicle id: it is a third id in the `onArenaStateReceived` player records, found by matching the senders' values

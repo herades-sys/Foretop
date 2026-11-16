@@ -147,12 +147,16 @@ public sealed class GameFileSystem
         }
     }
 
-    private static uint U32(ReadOnlySpan<byte> s, int at) => BitConverter.ToUInt32(s.Slice(at, 4));
+    // Bounds-checked reads: an index cut short (the game updater still writing it) is InvalidDataException.
+    private static uint U32(ReadOnlySpan<byte> s, int at) =>
+        at >= 0 && at + 4 <= s.Length ? BitConverter.ToUInt32(s.Slice(at, 4)) : throw new InvalidDataException("Game index file is cut short.");
 
-    private static ulong U64(ReadOnlySpan<byte> s, int at) => BitConverter.ToUInt64(s.Slice(at, 8));
+    private static ulong U64(ReadOnlySpan<byte> s, int at) =>
+        at >= 0 && at + 8 <= s.Length ? BitConverter.ToUInt64(s.Slice(at, 8)) : throw new InvalidDataException("Game index file is cut short.");
 
     private static string CString(ReadOnlySpan<byte> s, int at)
     {
+        if (at < 0 || at >= s.Length) throw new InvalidDataException("Game index file is cut short.");
         var end = s[at..].IndexOf((byte)0);
         return Encoding.ASCII.GetString(s.Slice(at, end < 0 ? s.Length - at : end));
     }

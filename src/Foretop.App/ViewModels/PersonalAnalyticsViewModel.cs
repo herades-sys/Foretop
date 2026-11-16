@@ -39,13 +39,8 @@ public sealed record PersonalRow(PersonalBattle Battle, string WhenText, string 
 
 public sealed record PeriodCompareRow(string Metric, string A, string B, string Delta, string Level);
 
-public sealed record TierRow(string Band, string Battles, string WinRate, string Damage, string Xp, string Kills, string Survival, string Pr,
-    Brush? WrBrush, Brush? PrBrush);
-
-public sealed record ShipRowP(string Ship, string TierText, int Tier, int Battles, string WinRate, string Damage, string Kills, string Survival, string Pr, Brush? PrBrush);
-
 /// <summary>Analytics → My performance: your own battles as recorded by Foretop (API results + replay facts).</summary>
-public sealed partial class PersonalAnalyticsViewModel : ObservableObject
+public sealed partial class PersonalAnalyticsViewModel : ObservableObject, IAnalyticsData
 {
     private static readonly CultureInfo Inv = CultureInfo.CurrentCulture;
     private readonly AppHost _host;
@@ -58,15 +53,29 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
     public PersonalAnalyticsViewModel(AppHost host)
     {
         _host = host;
-        _period = Periods[3];
-        _mode = Modes[0];
-        _class = Classes[0];
-        _tier = Tiers[0];
+        Filters = new AnalyticsFilterViewModel();
+        Filters.Changed += ScheduleRebuild;
+        Best = new ShipRankingPanel(this, best: true);
+        Worst = new ShipRankingPanel(this, best: false);
+        DamagePerShip = new ShipMetricPanel(this, ShipMetric.AvgDamage);
+        WinRatePerShip = new ShipMetricPanel(this, ShipMetric.WinRate);
+        ShipCompare = new ShipComparePanel(this);
+        TierOverview = new TierOverviewPanel(this, t => Filters.SetTiers([t]));
+        TierCompare = new TierComparePanel(this);
+        PrTrend = new PrProgressionPanel(this) { AccountReference = AccountPr };
+        // Tier, class and nation come from the ship list and the game files, which may load after the records.
+        host.ShipData.Changed += ScheduleMetaRefresh;
+        host.Ships.Updated += ScheduleMetaRefresh;
         _compareA = CompareOptions[1];
         _compareB = CompareOptions[3];
         _metric = Metrics[1];
         _reload = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-        _reload.Tick += async (_, _) => { _reload.Stop(); await ReloadAsync(); };
+        _reload.Tick += async (_, _) =>
+        {
+            _reload.Stop();
+            try { await ReloadAsync(); }
+            catch (Exception ex) { _host.Log.LogError(ex, "My performance: reload failed"); } // a timer must not take the app down
+        };
         host.Results.Changed += ScheduleReload;
         host.Personal.Changed += ScheduleReload;
     }
@@ -84,24 +93,6 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
     });
 
     // ------------------------------------------------------------------ options
-
-    public IReadOnlyList<PeriodOption> Periods { get; } =
-    [
-        new("Last battle", 1), new("Last 5", 5), new("Last 10", 10), new("Last 20", 20), new("Last 50", 50), new("Last 100", 100),
-        new("All", null), new("Date range", null, Custom: true),
-    ];
-
-    public IReadOnlyList<FilterOption<string?>> Modes { get; } =
-        [new("All battle types", null), new("Random", ResultModes.Random), new("Ranked", ResultModes.Ranked), new("Co-op", ResultModes.Coop)];
-
-    public IReadOnlyList<FilterOption<string?>> Classes { get; } =
-    [
-        new("All classes", null), new("Destroyers", "Destroyer"), new("Cruisers", "Cruiser"), new("Battleships", "Battleship"),
-        new("Aircraft carriers", "AirCarrier"), new("Submarines", "Submarine"),
-    ];
-
-    public IReadOnlyList<FilterOption<int>> Tiers { get; } =
-        [new("All tiers", 0), .. TierFilter.Levels.Select(t => new FilterOption<int>(TierFilter.Label(t), t))];
 
     public IReadOnlyList<FilterOption<SeriesMode>> SeriesModes { get; } =
         [new("Per battle", SeriesMode.PerBattle), new("Rolling (10)", SeriesMode.Rolling), new("Overall average", SeriesMode.Cumulative)];
@@ -125,12 +116,6 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
         new("Ranked only", l => l.Where(b => b.Mode == ResultModes.Ranked).ToList()),
     ];
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsCustomPeriod))] private PeriodOption _period;
-    [ObservableProperty] private DateTime? _customFrom = DateTime.Today.AddDays(-30);
-    [ObservableProperty] private DateTime? _customTo = DateTime.Today;
-    [ObservableProperty] private FilterOption<string?> _mode;
-    [ObservableProperty] private FilterOption<string?> _class;
-    [ObservableProperty] private FilterOption<int> _tier;
     [ObservableProperty] private string _metric;
     [ObservableProperty] private SeriesMode _seriesMode = SeriesMode.Rolling;
     [ObservableProperty] private FilterOption<Func<List<PersonalBattle>, List<PersonalBattle>>> _compareA;
@@ -143,33 +128,9 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
     public ObservableCollection<string> ShipNames { get; } = ["All ships"];
     public IReadOnlyList<string> ResultOptions { get; } = ["All results", "Victory", "Defeat", "Draw"];
 
-    public bool IsCustomPeriod => Period.Custom;
-
-    /// <summary>Date range as text (the current culture's short date), for the two boxes of "Date range".</summary>
-    public string CustomFromText
-    {
-        get => CustomFrom?.ToString("d", Inv) ?? "";
-        set { if (DateTime.TryParse(value, Inv, DateTimeStyles.None, out var d)) CustomFrom = d; }
-    }
-
-    public string CustomToText
-    {
-        get => CustomTo?.ToString("d", Inv) ?? "";
-        set { if (DateTime.TryParse(value, Inv, DateTimeStyles.None, out var d)) CustomTo = d; }
-    }
-
-    [RelayCommand]
-    private void SetPeriod(PeriodOption? p) { if (p is not null) Period = p; }
-
     [RelayCommand]
     private void SetMetric(string? m) { if (m is not null) Metric = m; }
 
-    partial void OnPeriodChanged(PeriodOption value) => Rebuild();
-    partial void OnCustomFromChanged(DateTime? value) { if (IsCustomPeriod) Rebuild(); }
-    partial void OnCustomToChanged(DateTime? value) { if (IsCustomPeriod) Rebuild(); }
-    partial void OnModeChanged(FilterOption<string?> value) => Rebuild();
-    partial void OnClassChanged(FilterOption<string?> value) => Rebuild();
-    partial void OnTierChanged(FilterOption<int> value) => Rebuild();
     partial void OnMetricChanged(string value) => BuildTrend();
     partial void OnSeriesModeChanged(SeriesMode value) => BuildTrend();
     partial void OnCompareAChanged(FilterOption<Func<List<PersonalBattle>, List<PersonalBattle>>> value) => BuildCompare();
@@ -201,10 +162,6 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
     public ObservableCollection<PersonalFact> LastRows { get; } = [];
     public ObservableCollection<PersonalRow> Rows { get; } = [];
     public ObservableCollection<PeriodCompareRow> CompareRows { get; } = [];
-    public ObservableCollection<TierRow> RecordedTiers { get; } = [];
-    public ObservableCollection<TierRow> AccountTiers { get; } = [];
-    public ObservableCollection<PeriodCompareRow> AccountTierCompare { get; } = [];
-    public ObservableCollection<ShipRowP> ShipRows { get; } = [];
 
     public async Task EnsureLoadedAsync()
     {
@@ -239,6 +196,7 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
             ShipNames.Clear();
             ShipNames.Add("All ships");
             foreach (var s in _all.Select(b => b.ShipName ?? "").Where(s => s.Length > 0).Distinct().OrderBy(s => s)) ShipNames.Add(s);
+            BuildRecorded();
             Rebuild();
             _ = LoadAccountAsync(name, region);
         }
@@ -299,28 +257,28 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
         return result;
     }
 
-    private PersonalQuery Query() => new()
-    {
-        Last = Period.Custom ? null : Period.Last,
-        From = Period.Custom && CustomFrom is DateTime f ? new DateTimeOffset(f.Date) : null,
-        To = Period.Custom && CustomTo is DateTime t ? new DateTimeOffset(t.Date.AddDays(1)) : null,
-        Mode = Mode.Value,
-        ShipClass = Class.Value,
-        MinTier = Tier.Value,
-    };
-
     private void Rebuild()
     {
         if (!_loaded) return;
-        _selected = Query().Apply(_all);
-        HasBattles = _selected.Count > 0;
+        _rebuildQueued = false;
+        Filters.SetNations(Records.Select(r => r.Ship.Nation).Where(n => n is not null).Select(n => n!));
+        Filters.SetShips(Records.GroupBy(r => r.Ship.Id).Select(g => (g.First().Ship, g.Sum(r => r.Totals.Battles))));
+        _global = Filters.Build();
+        _filtered = _global.Apply(Records);
+        _selected = IsRecordedSource ? _filtered.Select(r => r.Battle!).Where(b => b is not null).ToList() : [];
+        HasBattles = _filtered.Count > 0;
+        HasData = Records.Count > 0;
+        OnPropertyChanged(nameof(IsRecordedSource));
+        OnPropertyChanged(nameof(IsAccountSource));
+        OnPropertyChanged(nameof(RecordedEmptyText));
+        UpdateSelectionText();
         BuildLast();
+        ShowLast = HasLast && IsRecordedSource;
         BuildCards();
         BuildTrend();
         BuildTable();
         BuildCompare();
-        BuildRecordedTiers();
-        BuildShips();
+        foreach (var panel in Panels) panel.Refresh();
     }
 
     // ------------------------------------------------------------------ last battle
@@ -340,7 +298,7 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
         var period = PeriodStats.Of(_selected);
         void Add(string label, string value, string origin, Brush? accent = null, string? tip = null) => LastRows.Add(new PersonalFact(label, value, origin, accent, tip));
         Add("Result", b.ResultText, "API", b.Result == 'W' ? RatingBrushConverter.Res("StatusGreen") : b.Result == 'L' ? RatingBrushConverter.Res("StatusRed") : null);
-        Add("Win rate (selected period)", Pct(period.WinRate) + $" over {period.Battles:N0}", "calculated", null,
+        Add("Win rate (period)", Pct(period.WinRate) + $" over {period.Battles:N0}", "calculated", null,
             "A single battle has no win rate: this is the win rate over the battles selected above.");
         Add("Damage", b.Damage.ToString("N0", Inv), "API");
         Add("Kills", b.Kills.ToString(Inv), "API");
@@ -374,6 +332,11 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
     private void BuildCards()
     {
         Cards.Clear();
+        if (IsAccountSource)
+        {
+            BuildAccountCards();
+            return;
+        }
         if (_selected.Count == 0) return;
         var s = PeriodStats.Of(_selected);
         var n = s.Battles;
@@ -480,7 +443,15 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
             Filter = "CSV file (*.csv)|*.csv",
         };
         if (dlg.ShowDialog() != true) return;
-        File.WriteAllText(dlg.FileName, Csv(Rows.Select(r => r.Battle)), new UTF8Encoding(true));
+        try
+        {
+            File.WriteAllText(dlg.FileName, Csv(Rows.Select(r => r.Battle)), new UTF8Encoding(true));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            System.Windows.MessageBox.Show("The file could not be saved (is it open in another program?): " + ex.Message, "Foretop",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+        }
     }
 
     /// <summary>One line per battle, invariant number format; empty cells for values that are not available.</summary>
@@ -510,9 +481,11 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
     {
         CompareRows.Clear();
         if (!_loaded) return;
-        var a = CompareA.Value(_all);
-        var b = CompareB.Value(_all);
-        CompareNote = $"{CompareA.Label}: {a.Count} battles · {CompareB.Label}: {b.Count} battles. Difference = first − second; green is better.";
+        var basis = (_global with { From = null, To = null, LastBattles = null }).Apply(_recorded).Select(r => r.Battle!).ToList();
+        var a = CompareA.Value(basis);
+        var b = CompareB.Value(basis);
+        CompareNote = $"{CompareA.Label}: {a.Count} battles · {CompareB.Label}: {b.Count} battles. Difference = first − second; green is better. "
+                      + "Uses the toolbar filters except the period (the two choices are the periods).";
         if (a.Count == 0 || b.Count == 0) return;
         var sa = PeriodStats.Of(a);
         var sb = PeriodStats.Of(b);
@@ -536,77 +509,43 @@ public sealed partial class PersonalAnalyticsViewModel : ObservableObject
 
     // ------------------------------------------------------------------ tiers and ships
 
-    private void BuildRecordedTiers()
-    {
-        RecordedTiers.Clear();
-        foreach (var (label, min, max) in TierBands.All)
-        {
-            var list = _selected.Where(b => b.Tier >= min && b.Tier <= max).ToList();
-            if (list.Count == 0) { RecordedTiers.Add(new TierRow(label, "0", "—", "—", "—", "—", "—", "—", null, null)); continue; }
-            var s = PeriodStats.Of(list);
-            RecordedTiers.Add(new TierRow(label, s.Battles.ToString("N0", Inv), Pct(s.WinRate), Num(s.AvgDamage), Num(s.BaseXp.Value), Dec(s.AvgKills),
-                Pct(s.SurvivalRate), s.Pr?.ToString("0", Inv) ?? "—", RatingBrushConverter.For(s.Battles >= 10 ? s.WinRate : null, "wr"), RatingBrushConverter.For(s.Pr, "pr")));
-        }
-    }
+    private int _accountLoad;
 
     private async Task LoadAccountAsync(string? name, Region region)
     {
-        AccountTiers.Clear();
-        AccountTierCompare.Clear();
+        // Reloads can overlap (Reload, the timer): only the newest one fills the tables.
+        var mine = ++_accountLoad;
         if (string.IsNullOrWhiteSpace(name) || !_host.Api.HasApplicationId)
         {
             AccountTierNote = "Needs your account name (Settings → Your account) and a Wargaming application ID.";
             return;
         }
         AccountTierNote = "Loading your per-ship statistics…";
+        _accountRecords = [];
         try
         {
             var result = await _host.Stats.LoadAsync("personal:" + name, region, [new PlayerRequest(name, 1, 0, false)], RequestPriority.Normal, CancellationToken.None);
+            if (mine != _accountLoad) return;
             _account = result[0];
-            if (_account.Ships is not { } ships || _host.Stats.ShipTier is not { } tierOf)
+            if (_account.Ships is not { } ships)
             {
                 AccountTierNote = _account.Hidden ? "Your profile is hidden, so the API gives no per-ship statistics." : "Per-ship statistics are not available.";
                 return;
             }
             var expected = await _host.Expected.GetAsync(CancellationToken.None);
-            foreach (var (label, t, pr) in TierBands.Account(ships, tierOf, expected))
-                AccountTiers.Add(new TierRow(label, t.Battles.ToString("N0", Inv), Pct(t.WinRate), Num(t.AvgDamage), Num(t.AvgXp), Dec(t.AvgFrags),
-                    Pct(t.SurvivalRate), pr?.ToString("0", Inv) ?? "—", RatingBrushConverter.For(t.Battles >= 50 ? t.WinRate : null, "wr"), RatingBrushConverter.For(pr, "pr")));
-            var all = TierFilter.Sum(ships.Where(s => tierOf(s.ShipId) is not null).Select(s => s.Totals));
-            var allPr = PersonalRating.Compute(ships.Where(s => tierOf(s.ShipId) is not null).Select(s => (s.ShipId, s.Totals)), expected);
-            var levels = TierFilter.ComputeAll(ships, tierOf, expected).ToDictionary(t => t.MinTier);
-            void Pair(string label, StatTotals x, double? xPr, StatTotals y, double? yPr)
-            {
-                AccountTierCompare.Add(new PeriodCompareRow(label + " — battles", x.Battles.ToString("N0", Inv), y.Battles.ToString("N0", Inv), "", ""));
-                var dwr = x.WinRate is double a && y.WinRate is double b ? b - a : (double?)null;
-                AccountTierCompare.Add(new PeriodCompareRow(label + " — win rate", Pct(x.WinRate), Pct(y.WinRate), Signed(dwr, "0.0", " %"), Level(dwr)));
-                var ddm = x.AvgDamage is double c && y.AvgDamage is double d ? d - c : (double?)null;
-                AccountTierCompare.Add(new PeriodCompareRow(label + " — average damage", Num(x.AvgDamage), Num(y.AvgDamage), Signed(ddm, "N0"), Level(ddm)));
-                var dpr = xPr is double e && yPr is double f ? f - e : (double?)null;
-                AccountTierCompare.Add(new PeriodCompareRow(label + " — PR", xPr?.ToString("0", Inv) ?? "—", yPr?.ToString("0", Inv) ?? "—", Signed(dpr, "0"), Level(dpr)));
-            }
-            Pair("All tiers → VI+", all, allPr, levels[6].Totals, levels[6].Pr);
-            Pair("VI+ → VIII+", levels[6].Totals, levels[6].Pr, levels[8].Totals, levels[8].Pr);
-            Pair("VIII+ → X+", levels[8].Totals, levels[8].Pr, levels[10].Totals, levels[10].Pr);
-            AccountTierNote = $"All {all.Battles:N0} Random battles of your account, from the official per-ship totals (not only those Foretop recorded). "
-                              + "XP here is as the API counts it, with bonuses. Differences: second − first.";
+            if (mine != _accountLoad) return; // a newer load started meanwhile
+            _expected = expected;
+            _accountShips = ships.Where(sh => sh.Totals.Battles > 0).ToList();
+            BuildAccountRecords();
+            var all = TierFilter.Sum(ships.Select(sh => sh.Totals));
+            AccountTierNote = $"Whole account: {all.Battles:N0} Random battles on {_accountRecords.Count:N0} ships (official per-ship totals, "
+                              + $"fetched {_account.StatsFetchedAt?.LocalDateTime.ToString("g", Inv) ?? "now"}). XP there includes Premium Account and bonuses; base XP is not in these totals.";
+            if (IsAccountSource) Rebuild();
         }
         catch (Exception ex) when (ex is WgApiException or System.Net.Http.HttpRequestException or TaskCanceledException)
         {
             _host.Log.LogInformation("Personal tier analysis: {Error}", ex.Message);
             AccountTierNote = "Your per-ship statistics could not be loaded: " + ex.Message;
-        }
-    }
-
-    private void BuildShips()
-    {
-        ShipRows.Clear();
-        foreach (var g in _selected.GroupBy(b => b.ShipId).OrderByDescending(g => g.Count()))
-        {
-            var s = PeriodStats.Of(g.ToList());
-            var f = g.First();
-            ShipRows.Add(new ShipRowP(f.ShipName ?? "Ship " + f.ShipId, TierText(f.Tier), f.Tier ?? 0, s.Battles, Pct(s.WinRate), Num(s.AvgDamage), Dec(s.AvgKills),
-                Pct(s.SurvivalRate), s.Pr?.ToString("0", Inv) ?? "—", RatingBrushConverter.For(s.Pr, "pr")));
         }
     }
 

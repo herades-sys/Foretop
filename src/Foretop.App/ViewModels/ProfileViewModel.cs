@@ -457,9 +457,15 @@ public sealed partial class ProfileViewModel : ObservableObject
         }
     }
 
+    /// <summary>Same fallback as the tier filter elsewhere: the installed game knows ships the API list omits.</summary>
+    private ShipInfo? FromGameFiles(long shipId) =>
+        _host.ShipData.FindById(shipId) is { Tier: > 0 } d
+            ? new ShipInfo(shipId, d.DisplayName, d.Tier, ShipInfo.ParseClass(d.Species), d.Nation, false, false, null, null)
+            : null;
+
     private void BuildShips(PlayerSummary p)
     {
-        var rows = (p.Ships ?? []).Select(s => new ShipStatRow(s, _host.Ships.Get(s.ShipId))).ToList();
+        var rows = (p.Ships ?? []).Select(s => new ShipStatRow(s, _host.Ships.Get(s.ShipId) ?? FromGameFiles(s.ShipId))).ToList();
         _allShips = rows;
         UpdateChipCounts();
         ApplyShipFilter(); // the filter stays when switching players
@@ -502,19 +508,41 @@ public sealed partial class ProfileViewModel : ObservableObject
             : "Wargaming does not publish history, so this chart fills in as Foretop sees the player again over time.";
     }
 
-    private void BuildEncounters(PlayerSummary p)
+    private int _encounterLoad;
+
+    /// <summary>
+    /// Recorded battles with this player. The search reads every stored roster, so it runs off the UI thread; only the
+    /// newest request fills the list (profiles can be opened quickly one after another).
+    /// </summary>
+    private async void BuildEncounters(PlayerSummary p)
     {
+        var mine = ++_encounterLoad;
         Encounters.Clear();
-        foreach (var b in _host.History.FindWithPlayer(p.Name, 50))
+        OnPropertyChanged(nameof(HasEncounters));
+        try
         {
-            if (!ArenaInfoParser.TryParse(b.ArenaJson, out var info, out _)) continue;
-            var v = info!.Vehicles.FirstOrDefault(x => string.Equals(x.Name, p.Name, StringComparison.OrdinalIgnoreCase));
-            if (v is null) continue;
-            var side = v.IsSelf ? "You" : v.IsFriendly ? "With you" : "Against you";
-            var then = BattleSummaryCodec.Deserialize(b.SummaryJson).FirstOrDefault(x => string.Equals(x.Name, p.Name, StringComparison.OrdinalIgnoreCase));
-            var stats = then?.Overall is { } o ? $"{Pct(o.WinRate)} WR · PR {then.Pr?.ToString("0") ?? "—"}" : "—";
-            Encounters.Add(new EncounterRow(b.Id, b.When.LocalDateTime, $"{BattleTypes.Label(info.BattleType, info.MatchGroup)} · {info.MapName}", side,
-                _host.Ships.Get(v.ShipId)?.Name ?? "?", stats));
+            var name = p.Name;
+            var rows = await Task.Run(() =>
+            {
+                var list = new List<(long Id, DateTime When, string Battle, string Side, long ShipId, string Stats)>();
+                foreach (var b in _host.History.FindWithPlayer(name, 50))
+                {
+                    if (!ArenaInfoParser.TryParse(b.ArenaJson, out var info, out _)) continue;
+                    var v = info!.Vehicles.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+                    if (v is null) continue;
+                    var side = v.IsSelf ? "You" : v.IsFriendly ? "With you" : "Against you";
+                    var then = BattleSummaryCodec.Deserialize(b.SummaryJson).FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+                    var stats = then?.Overall is { } o ? $"{Pct(o.WinRate)} WR · PR {then.Pr?.ToString("0") ?? "—"}" : "—";
+                    list.Add((b.Id, b.When.LocalDateTime, $"{BattleTypes.Label(info.BattleType, info.MatchGroup)} · {info.MapName}", side, v.ShipId, stats));
+                }
+                return list;
+            });
+            if (mine != _encounterLoad) return;
+            foreach (var r in rows) Encounters.Add(new EncounterRow(r.Id, r.When, r.Battle, r.Side, _host.Ships.Get(r.ShipId)?.Name ?? "?", r.Stats));
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            _host.Log.LogWarning("Encounters for {Name} not read: {Error}", p.Name, ex.Message);
         }
         OnPropertyChanged(nameof(HasEncounters));
     }

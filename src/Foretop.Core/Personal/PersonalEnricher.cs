@@ -45,7 +45,24 @@ public sealed class PersonalEnricher(BattleResultStore store, ReplayLibrary repl
                     }
                     continue;
                 }
-                var data = await replays.ParseAsync(path, ct).ConfigureAwait(false);
+                // One bad replay must not stop the others (the list is newest first: it would block every older battle).
+                ReplayData? data;
+                try
+                {
+                    data = await replays.ParseAsync(path, ct).ConfigureAwait(false);
+                }
+                catch (InvalidDataException ex)
+                {
+                    store.Upsert(r with { Extras = x with { ReplayNote = "the replay could not be read: " + ex.Message } });
+                    log.LogWarning("Replay facts for {Key}: {File} unreadable: {Error}", r.BattleKey, Path.GetFileName(path), ex.Message);
+                    changed = true;
+                    continue;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    log.LogInformation("Replay facts for {Key}: {File} not readable now ({Error}), next run", r.BattleKey, Path.GetFileName(path), ex.Message);
+                    continue;
+                }
                 if (data is null) return; // no game installation right now: try again later
                 var self = data.Self;
                 if (self is null || data.SelfAccountId is not long account || account != r.AccountId)

@@ -54,17 +54,24 @@ public sealed partial class PlayerSearchViewModel : ObservableObject
         _debounce.Stop();
         var text = Query.Trim();
         if (text.Length < 3) return;
+        // Game names are 3–24 letters, digits and underscores: anything else would only return an API error.
+        if (!System.Text.RegularExpressions.Regex.IsMatch(text, "^[A-Za-z0-9_]{3,24}$"))
+        {
+            Results.Clear();
+            Message = "Player names have 3 to 24 letters (A–Z), digits and underscores.";
+            return;
+        }
         if (!_host.Api.HasApplicationId)
         {
             Message = "Add a Wargaming application ID in Settings to search players.";
             return;
         }
         _cts?.Cancel();
-        _cts = new CancellationTokenSource();
+        var mine = _cts = new CancellationTokenSource();
         IsSearching = true;
         try
         {
-            var found = await _host.Api.SearchNicknamesAsync(_host.Region, text, 50, _cts.Token);
+            var found = await _host.Api.SearchNicknamesAsync(_host.Region, text, 50, mine.Token);
             if (text != Query.Trim()) return;
             Results.Clear();
             foreach (var f in found) Results.Add(new PlayerSearchResult(f.Nickname, f.AccountId));
@@ -80,13 +87,22 @@ public sealed partial class PlayerSearchViewModel : ObservableObject
         }
         finally
         {
-            IsSearching = false;
+            if (_cts == mine) IsSearching = false; // an older, cancelled search must not hide the newer one's progress
         }
     }
 
     private async Task LoadRecentAsync()
     {
-        var rows = await Task.Run(() => HistoryViewModel.LoadRows(_host));
+        List<HistoryRow> rows;
+        try
+        {
+            rows = await Task.Run(() => HistoryViewModel.LoadRows(_host));
+        }
+        catch (Exception ex)
+        {
+            _host.Log.LogWarning(ex, "Recent players not loaded");
+            return;
+        }
         RecentPlayers.Clear();
         var recent = rows.Take(30)
             .SelectMany(r => r.Arena.Vehicles.Where(v => !v.IsBot && !v.IsSelf).Select(v => (r, v)))

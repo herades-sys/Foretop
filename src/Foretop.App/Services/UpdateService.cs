@@ -102,9 +102,14 @@ public sealed partial class UpdateService : ObservableObject
         else _timer.Stop();
     }
 
+    private bool _checkedThisRun;
+
     private async Task CheckIfDueAsync(bool force = false)
     {
-        if (!force && LastChecked is { } last && DateTimeOffset.Now - last < Interval && Available is null) return;
+        // The first check of each run always asks GitHub: a release found before a restart is not kept, so skipping
+        // it for the rest of the 24 h would hide the update notice.
+        if (!force && _checkedThisRun && LastChecked is { } last && DateTimeOffset.Now - last < Interval && Available is null) return;
+        _checkedThisRun = true;
         await CheckAsync();
     }
 
@@ -194,9 +199,16 @@ public sealed partial class UpdateService : ObservableObject
         var partial = target + ".part";
 
         var source = Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri) ? uri : null;
-        if (source is { IsFile: true })
+        if (asset.Sha256 is null)
+            throw new InvalidDataException("GitHub gives no checksum for this file, so it is not installed automatically. Download it from the release page instead.");
+        if (source is { IsFile: true } && _checker.FeedFile is not null)
         {
-            File.Copy(source.LocalPath, partial, overwrite: true); // development feed
+            File.Copy(source.LocalPath, partial, overwrite: true); // development feed (--update-feed)
+        }
+        else if (source is null || source.Scheme != Uri.UriSchemeHttps
+                 || !(source.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) || source.Host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidDataException("the download address is not on GitHub, so it was not used.");
         }
         else
         {
@@ -224,8 +236,8 @@ public sealed partial class UpdateService : ObservableObject
         }
 
         ProgressText = "Checking the download…";
-        if (asset.Sha256 is { } expected)
         {
+            var expected = asset.Sha256;
             await using var check = File.OpenRead(partial);
             var actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(check, ct));
             if (actual != expected)
@@ -249,7 +261,7 @@ public sealed partial class UpdateService : ObservableObject
         File.WriteAllText(script, $"""
             # Foretop update to {release.Version.ToString(3)}: wait for Foretop to close, install, start it again.
             Wait-Process -Id {Environment.ProcessId} -Timeout 60 -ErrorAction SilentlyContinue
-            $p = Start-Process msiexec.exe -ArgumentList '/i', '"{msi}"', '/passive', '/norestart', '/l*v', '"{log}"' -Wait -PassThru
+            $p = Start-Process msiexec.exe -ArgumentList '/i', {Q("\"" + msi + "\"")}, '/passive', '/norestart', '/l*v', {Q("\"" + log + "\"")} -Wait -PassThru
             Start-Process {Q(exe)}
             exit $p.ExitCode
             """, new UTF8Encoding(true));

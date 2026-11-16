@@ -183,6 +183,14 @@ public partial class App : Application
             foreach (var part in filter.Split(',', StringSplitOptions.TrimEntries))
                 foreach (var chip in shell.Profiles.TierChips.Where(c => c.Value.ToString() == part).Concat(shell.Profiles.ClassChips.Where(c => c.Label == part)))
                     chip.IsChecked = true;
+        // --analytics-source Recorded|Account, --analytics-tiers 8,10, --analytics-min 20, --analytics-class Battleship: Analytics filters
+        if (Enum.TryParse<Core.Personal.AnalyticsSource>(Arg("--analytics-source"), true, out var src)) shell.Personal.Filters.Source = src;
+        if (Arg("--analytics-tiers") is { } at)
+            shell.Personal.Filters.SetTiers(at.Split(',').Select(t => int.Parse(t, System.Globalization.CultureInfo.InvariantCulture)));
+        if (int.TryParse(Arg("--analytics-min"), out var amin) && shell.Personal.Filters.MinBattlesOptions.FirstOrDefault(o => o.Value == amin) is { } mo)
+            shell.Personal.Filters.MinBattles = mo;
+        if (Arg("--analytics-class") is { } acls)
+            foreach (var chip in shell.Personal.Filters.ClassChips.Where(c => c.Tip.StartsWith(acls, StringComparison.OrdinalIgnoreCase))) chip.IsChecked = true;
         // --best-tiers 8,9 / --best-min 50: Best performing ships filter on the profile (a number not in the list = custom)
         if (Arg("--best-tiers") is { } bestTiers)
             foreach (var part in bestTiers.Split(',', StringSplitOptions.TrimEntries))
@@ -229,7 +237,43 @@ public partial class App : Application
                 if (double.TryParse(Arg("--replay-time"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var at))
                     shell.Replays.Time = at;
                 if (args.Contains("--replay-play")) shell.Replays.PlayPauseCommand.Execute(null);
+                // --replay-debug, --replay-full, --replay-zoom <zoom>[,x,z]: minimap view for snapshots (zoom on world x,z)
+                if (args.Contains("--replay-debug")) shell.Replays.ShowDebug = true;
+                // --render-minimap <WxH,WxH,…> <folder>: the minimap alone, laid out off screen at each size (any size, not
+                // limited by the monitor), saved as minimap_<W>x<H>.png; checks the renderer at other resolutions.
+                if (Arg("--render-minimap") is { } sizes && args.SkipWhile(a => a != "--render-minimap").Skip(2).FirstOrDefault() is { } outDir
+                    && shell.Replays.Scene is { } scene)
+                    foreach (var sz in sizes.Split(','))
+                    {
+                        var parts = sz.Split('x');
+                        double cw = double.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), ch = double.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+                        var canvas = new Views.ReplayCanvas { Scene = scene, Time = shell.Replays.Time, ShowDebug = shell.Replays.ShowDebug };
+                        var host = new System.Windows.Controls.Border { Background = (System.Windows.Media.Brush)Current.FindResource("Panel"), Child = canvas };
+                        host.Measure(new Size(cw, ch));
+                        host.Arrange(new Rect(0, 0, cw, ch));
+                        host.UpdateLayout();
+                        var bmp = new System.Windows.Media.Imaging.RenderTargetBitmap((int)cw, (int)ch, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                        bmp.Render(host);
+                        var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                        enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
+                        using var f = System.IO.File.Create(System.IO.Path.Combine(outDir, $"minimap_{sz}.png"));
+                        enc.Save(f);
+                    }
+                if (args.Contains("--replay-full")) shell.Replays.IsFullView = true;
+                if (Arg("--replay-zoom") is { } rz)
+                    _ = window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+                    {
+                        var p = rz.Split(',').Select(v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                        FindAll<Views.ReplayCanvas>(window).FirstOrDefault()?.ZoomTo(p[0], p.Length > 2 ? p[1] : null, p.Length > 2 ? p[2] : null);
+                    });
             }
+        }
+        // --window <width>x<height>: window size in DIPs (not maximised), for snapshots at other sizes.
+        if (Arg("--window") is { } size && size.Split('x') is [var ws, var hs]
+            && double.TryParse(ws, out var ww) && double.TryParse(hs, out var wh))
+        {
+            window.WindowState = WindowState.Normal;
+            (window.Width, window.Height) = (ww, wh);
         }
         // --account <name>: use this account name for the session only (not saved), for testing Ship Statistics.
         if (Arg("--account") is { } account && ((App)Current)._host is { } host) host.Settings.Current.PlayerName = account;

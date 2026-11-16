@@ -2,6 +2,46 @@
 
 ## Unreleased
 
+- **Analytics → My performance: filter toolbar and tier analysis.** Source (whole account or recorded battles), tiers
+  (several, Shift+click ranges, VI+ / VIII+ / X+ shortcuts), minimum battles per ship, period, class, nation, ships
+  and battle type, shown as removable labels; every section follows. New: best and worst performing ships (PR, win
+  rate, damage, battles), average damage and win rate per ship / tier / class, ship comparison with totals, tier
+  performance table (click a tier to filter), tier comparison (two or three groups, absolute and relative
+  differences), PR over time for several tier lines with the account PR as reference. Each chart can add its own class
+  filter, which only narrows. All values are totals ÷ battles; missing values stay "—".
+- Replays: damaged, cut-off or unusual replay files show a message instead of the error dialog; one unreadable replay
+  no longer stops reading the others for battle details; very large unpacked sizes are refused. Playback pauses when
+  you leave the page.
+- API requests: the request queue can no longer stop (which would have left every lookup waiting).
+- Updates are installed only with GitHub's checksum and only from GitHub over https.
+- Refresh on a recorded battle never saves, also when pressed twice, and uses the battle's server.
+- Ship Database: most premium ships (game group "special") are now "Premium", not "Special"; ship data is read again
+  once for this.
+- Live Battle: "7 days" / "28 days" show "—" instead of months of activity when the last snapshot is old; class and tier
+  filters also apply to ships the API list omits. Profiles opened from a battle use the real name with --anonymize.
+- Player Search checks the name format before asking the API; offline players without a cache say "unavailable"
+  instead of "no data"; Ship Statistics no longer keeps the previous account's figures; a battle whose end was missed
+  no longer holds back later results; a damaged game index during a game update is a readable error.
+- Database: indexes for the history list and the result checks (schema 6).
+- **Replays: positions were off on most maps.** The map size was read from the game's map settings in only one of
+  the two forms the game uses; 53 of 58 maps fell back to one fixed size, so ships, capture points and smoke were
+  drawn up to 14 % too far out (maps of 32 km) or pulled towards the centre (smaller maps). Fixed; every element now
+  goes through one shared transformation.
+- Replays: zoom at the pointer (wheel, + / −, up to 8×), drag to move, double-click for the whole map, overview
+  while zoomed; **Full view** (F); **Debug** overlay (bounds, origin, coordinates, scale, zoom); the timeline gets its
+  own full-width row; side panels slimmer on small windows; trails meet their ship.
+- **Refresh** on a recorded battle no longer replaces the statistics recorded at the time, and opening the replay of
+  a battle recorded live keeps the live statistics.
+- Saving Settings no longer clears the account name learned from a battle.
+- Battles are recorded in History also without an application ID, and when their statistics load is interrupted.
+- Cancelled API requests (an abandoned battle, an old search) are dropped at once instead of using request slots.
+- Faster start (ship data read in the background) and no UI pauses for a profile's recorded battles; no reloads every
+  2 minutes after a battle unless a result changed; missing ship icons are not re-requested on every update.
+- The update notice comes back after a restart. Map names on Dashboard and History use the game's names. Fixes for
+  the 7-day column under a tier filter, stale-cache dates, date sorting on the Dashboard, CSV export to an open file,
+  chart hover after a data change, chart fonts, "% WR" without data, plural texts.
+- Best performing ships also ranks ships the API's ship list omits (tier from the game files).
+- Audit report: docs/AUDIT_2026-11-16.md.
 - README: screenshots of Live Battle, My performance, Replays and Ship Intelligence.
 - Player Profiles → **Best performing ships**: filter by tier (All tiers, or any of I–XI together) and minimum
   battles (1+, 5+, 10+, 20+, 50+, 100+ or custom; 20+ by default). The ranking, title and scale follow at once; the

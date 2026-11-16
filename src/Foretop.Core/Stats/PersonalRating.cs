@@ -165,10 +165,10 @@ public sealed class ExpectedValuesProvider(HttpClient http, KvStore kv, ILogger<
             foreach (var p in data.EnumerateObject())
             {
                 if (p.Value.ValueKind != JsonValueKind.Object || !long.TryParse(p.Name, out var id)) continue;
-                if (p.Value.TryGetProperty("average_damage_dealt", out var d) &&
-                    p.Value.TryGetProperty("average_frags", out var f) &&
-                    p.Value.TryGetProperty("win_rate", out var w))
-                    values[id] = new ExpectedValues(d.GetDouble(), f.GetDouble(), w.GetDouble());
+                if (p.Value.TryGetProperty("average_damage_dealt", out var d) && d.ValueKind == JsonValueKind.Number &&
+                    p.Value.TryGetProperty("average_frags", out var f) && f.ValueKind == JsonValueKind.Number &&
+                    p.Value.TryGetProperty("win_rate", out var w) && w.ValueKind == JsonValueKind.Number)
+                    values[id] = new ExpectedValues(d.GetDouble(), f.GetDouble(), w.GetDouble()); // ships with nulls are left out
             }
             return values.Count > 0;
         }

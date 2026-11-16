@@ -103,9 +103,17 @@ public sealed class BattleResultTracker
 
     private async Task BattleStartedCoreAsync(ArenaInfo info)
     {
+        // A new battle while the previous one is still open means its end was missed (the deletion of
+        // tempArenaInfo.json went unseen): it has ended now. Left open, it would hold back every later result.
+        if (_currentKey is { } previous && previous != info.BattleKey && _store.Get(previous) is { EndedAt: null, IsOpen: true } open)
+            _store.Upsert(open with { EndedAt = DateTimeOffset.UtcNow });
         _currentKey = info.BattleKey;
         var self = info.Self;
-        if (self is null || string.IsNullOrWhiteSpace(info.PlayerName)) return;
+        if (self is null || string.IsNullOrWhiteSpace(info.PlayerName))
+        {
+            _log.LogInformation("Battle result: {Key} not tracked (no own ship or player name in the roster)", info.BattleKey);
+            return;
+        }
 
         var existing = _store.Get(info.BattleKey);
         if (existing is not null)
@@ -194,7 +202,18 @@ public sealed class BattleResultTracker
             {
                 return;
             }
-            if (!await CheckOpenAsync(ct).ConfigureAwait(false)) return;
+            try
+            {
+                if (!await CheckOpenAsync(ct).ConfigureAwait(false)) return;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Battle result: checking open battles failed; trying again at the next interval");
+            }
         }
     }
 
@@ -202,6 +221,7 @@ public sealed class BattleResultTracker
     private async Task<bool> CheckOpenAsync(CancellationToken ct)
     {
         await _gate.WaitAsync(ct).ConfigureAwait(false);
+        var changed = false;
         try
         {
             var waiting = _store.AllOpen().Where(r => r.EndedAt is not null).GroupBy(r => (r.Region, r.AccountId)).ToList();
@@ -209,27 +229,32 @@ public sealed class BattleResultTracker
             foreach (var g in waiting)
             {
                 var stats = await FetchAsync(g.Key.Region, g.Key.AccountId, retries: 0).ConfigureAwait(false);
-                if (stats is not null) await ApplyTotalsAsync(g.Key.Region, g.Key.AccountId, stats).ConfigureAwait(false);
+                if (stats is not null) changed |= await ApplyTotalsAsync(g.Key.Region, g.Key.AccountId, stats).ConfigureAwait(false);
             }
             return _store.AllOpen().Any(r => r.EndedAt is not null);
         }
         finally
         {
             _gate.Release();
-            Changed?.Invoke();
+            // Only when a result changed: every listener reloads (Dashboard, My performance, replay enrichment).
+            if (changed) Changed?.Invoke();
         }
     }
 
     /// <summary>Runs <see cref="ResultMath.Apply"/> for each mode with open battles of this account.</summary>
-    private async Task ApplyTotalsAsync(Region region, long accountId, AccountStatisticsDto stats)
+    /// <returns>True when a battle's status changed (counted, combined, merged…).</returns>
+    private async Task<bool> ApplyTotalsAsync(Region region, long accountId, AccountStatisticsDto stats)
     {
         if (StatTotals.From(stats.Pvp) is { } pvp) _snapshots.AddIfChanged(region, accountId, pvp);
         var now = DateTimeOffset.UtcNow;
+        var changed = false;
         foreach (var mode in _store.Open(region, accountId).GroupBy(r => r.Mode))
         {
             if (ResultModes.Pick(stats, mode.Key) is not { } totals) continue;
+            var before = mode.GroupBy(x => x.BattleKey).ToDictionary(g => g.Key, g => g.First().Status);
             foreach (var applied in ResultMath.Apply(mode.ToList(), totals, now))
             {
+                if (!before.TryGetValue(applied.BattleKey, out var was) || was != applied.Status) changed = true;
                 var r = applied.Status is ResultStatus.Ok or ResultStatus.Combined && applied.ResolvedAt == now
                     ? await CompleteAsync(applied).ConfigureAwait(false)
                     : applied;
@@ -239,6 +264,7 @@ public sealed class BattleResultTracker
                         r.BattleKey, r.Status, r.Result!.Battles, r.Result.Damage, r.Result.Wins);
             }
         }
+        return changed;
     }
 
     /// <summary>

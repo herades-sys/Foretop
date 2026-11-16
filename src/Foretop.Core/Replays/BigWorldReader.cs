@@ -22,13 +22,14 @@ public ref struct BigWorldReader
 
     public readonly int Remaining => _data.Length - Position;
 
-    public byte U8() => _data[Position++];
-    public short I16() { var v = BitConverter.ToInt16(_data.Slice(Position, 2)); Position += 2; return v; }
-    public ushort U16() { var v = BitConverter.ToUInt16(_data.Slice(Position, 2)); Position += 2; return v; }
-    public int I32() { var v = BitConverter.ToInt32(_data.Slice(Position, 4)); Position += 4; return v; }
-    public uint U32() { var v = BitConverter.ToUInt32(_data.Slice(Position, 4)); Position += 4; return v; }
-    public long I64() { var v = BitConverter.ToInt64(_data.Slice(Position, 8)); Position += 8; return v; }
-    public float F32() { var v = BitConverter.ToSingle(_data.Slice(Position, 4)); Position += 4; return v; }
+    // Every read is bounds-checked: a short or damaged packet ends in InvalidDataException, which the parser skips.
+    public byte U8() => Bytes(1)[0];
+    public short I16() => BitConverter.ToInt16(Bytes(2));
+    public ushort U16() => BitConverter.ToUInt16(Bytes(2));
+    public int I32() => BitConverter.ToInt32(Bytes(4));
+    public uint U32() => BitConverter.ToUInt32(Bytes(4));
+    public long I64() => BitConverter.ToInt64(Bytes(8));
+    public float F32() => BitConverter.ToSingle(Bytes(4));
 
     public ReadOnlySpan<byte> Bytes(int n)
     {

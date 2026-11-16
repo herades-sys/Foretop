@@ -613,7 +613,8 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
             StatsMessage = "Add a Wargaming application ID in Settings to load your ship results.";
             return;
         }
-        if (!force && _statsFor == name && OwnShips.Count > 0) return;
+        var key = name + "|" + _host.Region; // another server is another account
+        if (!force && _statsFor == key && OwnShips.Count > 0) return;
         if (StatsLoading) return;
         StatsLoading = true;
         StatsMessage = null;
@@ -622,8 +623,10 @@ public sealed partial class ShipIntelligenceViewModel : ObservableObject
             var result = await _host.Stats.LoadAsync("ships:" + name, _host.Region, [new Core.Stats.PlayerRequest(name, 1, 0, false)],
                 Core.Api.RequestPriority.Normal, CancellationToken.None, force);
             var p = result[0];
-            _statsFor = name;
+            _statsFor = key;
             OwnShips.Clear();
+            StatsTitle = "";
+            StatsCards = []; // never the previous account's figures beside a new message
             if (p.Hidden) { StatsMessage = "The profile is hidden, so the Wargaming API returns no ship results."; return; }
             if (p.Ships is not { Count: > 0 } ships) { StatsMessage = p.StatusText ?? "No random-battle results on record for this account."; return; }
             foreach (var s in ships) OwnShips.Add(new OwnShipRow(s, _host.ShipData.Data?.Ships.FirstOrDefault(x => x.Id == s.ShipId)));

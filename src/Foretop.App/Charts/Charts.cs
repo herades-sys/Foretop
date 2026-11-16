@@ -16,7 +16,8 @@ public sealed record ChartSeries(string Name, Brush Stroke, IReadOnlyList<ChartP
 /// <summary>Base for the small charts: shared text and brush helpers, redraw on data change.</summary>
 public abstract class ChartBase : FrameworkElement
 {
-    protected static readonly Typeface Face = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+    /// <summary>The interface font chosen in Settings (resource UiFont).</summary>
+    protected Typeface Face => new(TryFindResource("UiFont") as FontFamily ?? new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
 
     protected Brush Res(string key) => (Brush)FindResource(key);
 
@@ -92,7 +93,14 @@ public sealed class BarChart : ChartBase
 public sealed class LineChart : ChartBase
 {
     public static readonly DependencyProperty SeriesProperty =
-        DependencyProperty.Register(nameof(Series), typeof(IEnumerable), typeof(LineChart), new PropertyMetadata(null, Redraw));
+        DependencyProperty.Register(nameof(Series), typeof(IEnumerable), typeof(LineChart), new PropertyMetadata(null, (d, e) =>
+        {
+            // The hovered index belongs to the old points: forget it and close the tooltip.
+            var chart = (LineChart)d;
+            chart._hover = -1;
+            chart._tip.IsOpen = false;
+            Redraw(d, e);
+        }));
 
     public static readonly DependencyProperty ReferenceProperty =
         DependencyProperty.Register(nameof(Reference), typeof(double?), typeof(LineChart),

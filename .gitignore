@@ -7,3 +7,4 @@ publish/
 dist/
 build/out/
 build/archive/
+/archive/

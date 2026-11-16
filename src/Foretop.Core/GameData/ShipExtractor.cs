@@ -9,7 +9,7 @@ namespace Foretop.Core.GameData;
 /// </summary>
 public static class ShipExtractor
 {
-    public const int FormatVersion = 5;
+    public const int FormatVersion = 6; // 6: "special" group counted as Premium
 
     public static ShipDataSet Extract(string build, Dictionary<object, object?> gp, GameTexts texts, IProgress<(int Done, int Total)>? progress = null,
         Action<string>? warn = null)
@@ -570,8 +570,10 @@ public static class ShipExtractor
     internal static string Availability(string group) => group switch
     {
         "start" or "upgradeable" => "Tech tree",
-        "premium" or "specialUnsellable" => "Premium",
-        "special" or "ultimate" => "Special",
+        // "special" is the game's group for most doubloon premiums (Belfast, Massachusetts…); "ultimate" are the ships
+        // for coal, steel and research points (Smolensk…).
+        "premium" or "special" or "specialUnsellable" => "Premium",
+        "ultimate" => "Special",
         "superShip" or "upgradeableUltimate" => "Supership",
         "upgradeableExclusive" => "Exclusive",
         "earlyAccess" => "Early access",
