@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Live Battle tables: full player and ship names.** Columns are sized to what they show (measured, not fixed
+  widths), with the same widths in both team tables so they line up; spare width goes to the player and ship names.
+  Ship names like Rhode Island, Petropavlovsk, Ignis Purgatio, Charles Martel and Oktyabrskaya Revolutsiya are no
+  longer cut. When the window is too narrow, less important columns step aside first (7 days, XP, ship win rate, PR,
+  damage; the team header says which) and come back when there is room; battles and win rate always stay. Only in a
+  very narrow window are names shortened, splitting the space so the fewest are cut; hovering a row shows the player
+  and ship in full. Number headers are right-aligned over their values.
+- Developer switch `--window` can now be larger than the monitor (tests of 2560×1440 and 3440×1440 on a smaller screen).
+
 ## 1.7.0 — 2026-11-16
 
 - **Replays from an older game version** are read with that version's definitions when the game still has its files

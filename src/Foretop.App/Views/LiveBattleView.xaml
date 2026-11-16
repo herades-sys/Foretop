@@ -4,6 +4,8 @@
              xmlns:views="clr-namespace:Foretop.App.Views"
              xmlns:charts="clr-namespace:Foretop.App.Charts">
     <UserControl.Resources>
+        <!-- Both team tables share column widths, so their columns line up -->
+        <views:ColumnFitGroup x:Key="TeamColumns" />
         <DataTemplate x:Key="CompareRow">
             <Grid Height="30">
                 <Grid.ColumnDefinitions>
@@ -157,11 +159,11 @@
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <views:TeamTable Grid.Column="0" Header="FRIENDLY TEAM" Accent="{StaticResource Friendly}"
+            <views:TeamTable Grid.Column="0" Header="FRIENDLY TEAM" FitGroup="{StaticResource TeamColumns}" Accent="{StaticResource Friendly}"
                              Rows="{Binding FriendlyView}" Summary="{Binding FriendlySummary}" Compact="{Binding CompactMode}"
                              ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
                              TwoLine="{Binding ShowBothLines}" />
-            <views:TeamTable Grid.Column="2" Header="ENEMY TEAM" Accent="{StaticResource Enemy}"
+            <views:TeamTable Grid.Column="2" Header="ENEMY TEAM" FitGroup="{StaticResource TeamColumns}" Accent="{StaticResource Enemy}"
                              Rows="{Binding EnemyView}" Summary="{Binding EnemySummary}" Compact="{Binding CompactMode}"
                              ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
                              TwoLine="{Binding ShowBothLines}" />

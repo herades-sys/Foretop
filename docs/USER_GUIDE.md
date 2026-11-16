@@ -63,6 +63,11 @@ because they say little.
 Use **Sort**, **Ship tier** and the **class chips** above the tables to reorder or
 filter both teams.
 
+The columns fit what they show, and both teams use the same widths. In a narrow window the less important columns
+make room for full player and ship names, in this order: 7 days, XP, ship win rate, PR, damage. The team header
+says which are hidden ("PR, SHIP WR hidden"); they return when the window is wider, and their values are always in
+the row's tooltip. If even then a name does not fit, it ends in "…" and the tooltip shows it in full.
+
 **Statistics filter** (above the tables): count only each player's battles in ships of a minimum tier, so accounts
 with thousands of low-tier battles are not flattered by them. Choose **All tiers**, **Tier V+** … **Tier X+** or
 **Tier XI only**:

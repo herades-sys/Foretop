@@ -143,7 +143,7 @@ Ship Intelligence (applied once the ship data is loaded): `--ship <name>`,
 Others: `--data-dir <folder>` (use another data folder, so test runs never touch your real settings and database),
 `--anonymize` (player names → "Player 1, 2…", no clan tags; for screenshots), `--stats-filter <min tier>`,
 `--stats-view <Overall|Filtered|Both>`, `--replay <path|latest>` (any folder), `--replay-time <s>`, `--replay-debug`, `--replay-full`, `--replay-zoom <z>[,x,z]`,
-`--render-minimap <WxH,…> <folder>`, `--window <WxH>`, `--analytics-source <Account|Recorded>`, `--analytics-tiers 8,10`,
+`--render-minimap <WxH,…> <folder>`, `--window <WxH>` (may exceed the monitor), `--analytics-source <Account|Recorded>`, `--analytics-tiers 8,10`,
 `--analytics-min 20`, `--analytics-class Battleship`, `--player-search <text>`, `--soak <minutes>` (long-session test, needs
 `--data-dir`), `--update-feed <json>`,
 `--update-panel`, `--enrich-now`, `--sidebar-collapsed`, `--ship-filter 8,10,BB`, `--best-tiers 8,9`, `--best-min 50`, `--font <family>`, `--text-scale <1.25>`.

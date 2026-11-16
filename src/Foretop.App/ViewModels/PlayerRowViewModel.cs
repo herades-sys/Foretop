@@ -190,6 +190,7 @@ public sealed class PlayerRowViewModel : ObservableObject
             var s = Summary;
             var sb = new StringBuilder();
             sb.Append(ClanTag is null ? "" : ClanTag + " ").AppendLine(Name);
+            sb.AppendLine($"{ShipName} · {ClassShort} {TierText}");   // in full, also when the table has to shorten it
             if (s.StatusText is not null) sb.AppendLine(s.StatusText);
             if (s.CreatedAt is { } c) sb.AppendLine($"Account created {c.LocalDateTime:d}");
             if (s.LastBattleAt is { } l) sb.AppendLine($"Last battle {l.LocalDateTime:g}");

@@ -1,12 +1,17 @@
 <UserControl x:Class="Foretop.App.Views.TeamTable"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foretop.App.Views"
              x:Name="Root">
     <UserControl.Resources>
         <Style x:Key="Num" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
             <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+        <!-- Number columns: header text over the right-aligned values -->
+        <Style x:Key="NumHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
         </Style>
         <Storyboard x:Key="Pulse" RepeatBehavior="Forever" AutoReverse="True">
             <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.25" Duration="0:0:0.7" />
@@ -34,12 +39,17 @@
                         <TextBlock Text="{Binding Badge, ElementName=Root}" FontSize="10.5" FontWeight="SemiBold"
                                    Foreground="{Binding Accent, ElementName=Root}" />
                     </Border>
+                    <TextBlock x:Name="HiddenText" DockPanel.Dock="Right" Style="{StaticResource Dim}" FontSize="11" FontStyle="Italic"
+                               Margin="10,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"
+                               ToolTip="Not enough width for every column. Widen the window to show them; the values are also in each row's tooltip and the player's profile." />
                     <TextBlock x:Name="SummaryText" Style="{StaticResource Dim}" FontSize="11.5" Margin="14,0,0,0"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
             </Border>
 
+            <!-- 12 rows: no row virtualisation, so the column fitter sees every name -->
             <DataGrid x:Name="Grid" ItemsSource="{Binding Rows, ElementName=Root}" MouseDoubleClick="OnRowDoubleClick"
+                      EnableRowVirtualization="False" LoadingRow="OnLoadingRow" UnloadingRow="OnUnloadingRow"
                       ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
@@ -50,7 +60,7 @@
 
                 <DataGrid.Columns>
                     <!-- Player -->
-                    <DataGridTemplateColumn Header="PLAYER" Width="*" MinWidth="120" SortMemberPath="Name">
+                    <DataGridTemplateColumn Header="PLAYER" Width="*" MinWidth="110" SortMemberPath="Name" views:ColumnFit.Flex="1">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <DockPanel LastChildFill="True">
@@ -78,7 +88,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Ship -->
-                    <DataGridTemplateColumn Header="SHIP" Width="184" SortMemberPath="Tier">
+                    <DataGridTemplateColumn Header="SHIP" Width="Auto" MinWidth="130" SortMemberPath="Tier" views:ColumnFit.Flex="1">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <DockPanel LastChildFill="True">
@@ -100,7 +110,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="BATTLES" Width="58" SortMemberPath="Battles">
+                    <DataGridTemplateColumn Header="BATTLES" Width="Auto" HeaderStyle="{StaticResource NumHeader}" SortMemberPath="Battles">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -112,7 +122,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="WR" Width="52" SortMemberPath="WinRate">
+                    <DataGridTemplateColumn Header="WR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" SortMemberPath="WinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -125,7 +135,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="DMG" Width="58" SortMemberPath="AvgDamage">
+                    <DataGridTemplateColumn Header="DMG" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="3" SortMemberPath="AvgDamage">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -138,7 +148,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="48" SortMemberPath="AvgXp">
+                    <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="6" SortMemberPath="AvgXp">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -150,7 +160,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="PR" Width="46" SortMemberPath="Pr">
+                    <DataGridTemplateColumn Header="PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="4" SortMemberPath="Pr">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -163,7 +173,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="SHIP WR" Width="86" SortMemberPath="ShipWinRate">
+                    <DataGridTemplateColumn Header="SHIP WR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="5" SortMemberPath="ShipWinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -176,7 +186,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn x:Name="RecentColumn" Header="7 DAYS" Width="80" SortMemberPath="RecentWinRate">
+                    <DataGridTemplateColumn x:Name="RecentColumn" Header="7 DAYS" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="7" SortMemberPath="RecentWinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding RecentText}" Style="{StaticResource Num}"

@@ -26,9 +26,18 @@ public static class FontManager
     /// <summary>Interface sizes offered in Settings (the whole interface scales, so nothing gets cut off or crowded).</summary>
     public static IReadOnlyList<ScaleOption> TextScales { get; } = [new(0.9), new(1.0), new(1.1), new(1.25), new(1.5)];
 
+    /// <summary>Raised after the interface font changed (text widths change: tables fit their columns again).</summary>
+    public static event Action? Changed;
+
     public static void Apply(string? family)
     {
         if (Application.Current is null) return;
+        try { ApplyCore(family); }
+        finally { Changed?.Invoke(); }
+    }
+
+    private static void ApplyCore(string? family)
+    {
         // "Default" = the theme's fonts (a theme may set a heading font of its own); a font chosen in Settings is used everywhere.
         var res = Application.Current.Resources;
         if (string.IsNullOrWhiteSpace(family))

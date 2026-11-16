@@ -284,6 +284,24 @@ public partial class App : Application
             && double.TryParse(ws, out var ww) && double.TryParse(hs, out var wh))
         {
             window.WindowState = WindowState.Normal;
+            // Windows keeps a window within about the monitor's size. A test of a larger screen (2560x1440, 3440x1440
+            // on a 1920x1080 monitor) raises that limit for this window, so the layout and the snapshot are real.
+            var handle = new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+            var scale = System.Windows.Media.VisualTreeHelper.GetDpi(window);
+            int maxW = (int)Math.Ceiling(ww * scale.DpiScaleX) + 32, maxH = (int)Math.Ceiling(wh * scale.DpiScaleY) + 32;
+            System.Windows.Interop.HwndSource.FromHwnd(handle)?.AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
+            {
+                const int WmGetMinMaxInfo = 0x0024;
+                if (msg == WmGetMinMaxInfo)
+                {
+                    // MINMAXINFO: ptReserved, ptMaxSize, ptMaxPosition, ptMinTrackSize, ptMaxTrackSize (POINTs of two ints).
+                    var curW = System.Runtime.InteropServices.Marshal.ReadInt32(lParam, 32);
+                    var curH = System.Runtime.InteropServices.Marshal.ReadInt32(lParam, 36);
+                    System.Runtime.InteropServices.Marshal.WriteInt32(lParam, 32, Math.Max(curW, maxW));
+                    System.Runtime.InteropServices.Marshal.WriteInt32(lParam, 36, Math.Max(curH, maxH));
+                }
+                return IntPtr.Zero;
+            });
             (window.Width, window.Height) = (ww, wh);
         }
         // --account <name>: use this account name for the session only (not saved), for testing Ship Statistics.
