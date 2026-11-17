@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Startup screen.** While Foretop opens it checks, and shows: its data, the game installation, the Wargaming API
+  (one light request with your application ID: connected, offline, ID missing or rejected) and GitHub for a newer
+  Foretop. It hands over to the main window by itself (a few seconds longer when something needs attention; a click
+  or Enter opens Foretop at once). Each check gives up after 6 s and carries on in the background. Not shown when
+  Foretop starts minimised; Settings → Interface can turn it off.
+- The theme generator is now in the repository (`tools/themes/make_theme_xaml.py`).
+
 ## 1.7.1 — 2026-11-16
 
 - **Live Battle tables: full player and ship names.** Columns are sized to what they show (measured, not fixed

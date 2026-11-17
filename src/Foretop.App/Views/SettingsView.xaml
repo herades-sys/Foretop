@@ -136,6 +136,8 @@
                     <CheckBox Content="Compact mode (fewer columns, tighter rows)" IsChecked="{Binding CompactMode}" />
                     <CheckBox Content="Start with Windows" IsChecked="{Binding StartWithWindows}" />
                     <CheckBox Content="Start minimised" IsChecked="{Binding StartMinimized}" />
+                    <CheckBox Content="Show the startup screen (checks the Wargaming API and looks for updates while Foretop opens)"
+                              IsChecked="{Binding ShowStartupScreen}" />
                 </StackPanel>
             </Border>
 

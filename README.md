@@ -99,6 +99,8 @@ dotnet test
 dotnet run --project src/Foretop.App
 ```
 
+Theme colours come from `docs/themes/themes.json` (`python tools/themes/make_theme_xaml.py` writes the XAML).
+
 Release build (tests, self-contained publish, MSI via WiX 5 from NuGet, portable zip,
 SHA-256 list) into `dist\`; the previous `dist\` is moved to `build\archive\`:
 
@@ -134,7 +136,8 @@ Foretop.exe --open path\to\file.wowsreplay --page Live --snapshot out.png --wait
 
 `--snapshot` renders the window to a PNG and exits (UI checks without the game; also
 skips the single-instance guard). Also: `--profile <name>`, `--compare`,
-`--open-latest-history`, `--scroll <px>`, `--light`, `--switch-theme <Dark|Light>`,
+`--open-latest-history`, `--scroll <px>`, `--light`, `--switch-theme <Dark|Light>`, `--startup-screen` (show it in a development run), `--startup-snapshot <png>`
+(save the startup screen once its checks are done),
 `--diag` (logs memory every 30 s), `--software` (software rendering).
 Ship Intelligence (applied once the ship data is loaded): `--ship <name>`,
 `--compare-ships "A;B;C"`, `--ships-section <Database|Armour|Statistics|Comparison|Equipment>`,

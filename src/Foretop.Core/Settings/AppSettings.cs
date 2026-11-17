@@ -33,6 +33,8 @@ public sealed class AppSettings
     /// <summary>Keep the statistics filter for the next start; otherwise Foretop starts with all tiers.</summary>
     public bool RememberStatsFilter { get; set; } = true;
     public bool StartMinimized { get; set; }
+    /// <summary>Show the startup screen (API and update checks) while Foretop opens.</summary>
+    public bool ShowStartupScreen { get; set; } = true;
     public bool StartWithWindows { get; set; }
     public bool ShowBots { get; set; } = true;
 

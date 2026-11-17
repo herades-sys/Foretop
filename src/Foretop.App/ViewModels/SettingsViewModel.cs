@@ -61,6 +61,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private Services.FontOption? _font;
     [ObservableProperty] private Services.ScaleOption? _textScale;
     [ObservableProperty] private bool _startWithWindows;
+    [ObservableProperty] private bool _showStartupScreen;
     [ObservableProperty] private bool _startMinimized;
     [ObservableProperty] private bool _showBots;
     [ObservableProperty] private bool _checkForUpdates;
@@ -144,6 +145,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         TextScale = TextScaleOptions.FirstOrDefault(o => Math.Abs(o.Value - _draft.TextScale) < 0.001) ?? TextScaleOptions[1];
         StartWithWindows = _draft.StartWithWindows;
         StartMinimized = _draft.StartMinimized;
+        ShowStartupScreen = _draft.ShowStartupScreen;
         ShowBots = _draft.ShowBots;
         CheckForUpdates = _draft.CheckForUpdates;
         ApiRatePerSecond = _draft.ApiRatePerSecond;
@@ -169,6 +171,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.TextScale = TextScale?.Value ?? 1.0;
         s.StartWithWindows = StartWithWindows;
         s.StartMinimized = StartMinimized;
+        s.ShowStartupScreen = ShowStartupScreen;
         s.ShowBots = ShowBots;
         s.CheckForUpdates = CheckForUpdates;
         s.ApiRatePerSecond = Math.Clamp(ApiRatePerSecond, 1, 10);

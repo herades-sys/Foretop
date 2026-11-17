@@ -72,20 +72,47 @@ public partial class App : Application
 
         Services.FontManager.Apply(_host.Settings.Current.FontFamily);
         Services.Anonymizer.Self = _host.Settings.Current.PlayerName;
+        // Startup screen: shown first, while the main window is built behind it and the API and GitHub are checked.
+        // Not for a minimised start (Windows sign-in) or development runs, unless asked for (--startup-screen,
+        // --startup-snapshot <png> also saves it as an image once the checks are done).
+        var shotAt = Array.IndexOf(e.Args, "--startup-snapshot");
+        var startupShot = shotAt >= 0 && shotAt + 1 < e.Args.Length ? e.Args[shotAt + 1] : null;
+        var minimized = e.Args.Contains("--minimized") || _host.Settings.Current.StartMinimized;
+        var devRun = e.Args.Contains("--snapshot") || e.Args.Contains("--soak");
+        if (e.Args.Contains("--startup-screen") || startupShot is not null || (!devRun && !minimized && _host.Settings.Current.ShowStartupScreen))
+        {
+            var splash = new Views.StartupWindow(new StartupViewModel(_host));
+            var started = false;
+            splash.ContentRendered += (_, _) =>
+            {
+                if (started) return;
+                started = true;
+                ContinueStartup(e.Args, splash, startupShot);
+            };
+            splash.Show();
+        }
+        else ContinueStartup(e.Args, null, null);
+    }
+
+    /// <summary>Builds the main window and starts the background work; with a startup screen, the window is shown once
+    /// that screen's checks are done.</summary>
+    private void ContinueStartup(string[] args, Views.StartupWindow? splash, string? startupShot)
+    {
+        if (_host is null) return;
         var shell = new ShellViewModel(_host);
         var window = new MainWindow(_host) { DataContext = shell };
         MainWindow = window;
-        if (e.Args.Contains("--minimized") || _host.Settings.Current.StartMinimized)
+        if (args.Contains("--minimized") || _host.Settings.Current.StartMinimized)
             window.WindowState = WindowState.Minimized;
         window.ContentRendered += (_, _) =>
         {
             var started = System.Diagnostics.Process.GetCurrentProcess().StartTime;
             _host.Log.LogInformation("Window rendered {Ms} ms after process start", (int)(DateTime.Now - started).TotalMilliseconds);
         };
-        window.Show();
+        if (splash is null) window.Show();
 
         // Own battle results; not in development snapshot runs, which may run beside the real instance.
-        if (!e.Args.Contains("--snapshot"))
+        if (!args.Contains("--snapshot"))
         {
             _host.Results.Attach(_host.Watcher);
             _ = _host.Results.ResumeAsync();
@@ -96,10 +123,10 @@ public partial class App : Application
             _host.Results.Changed += () => Dispatcher.BeginInvoke(() => { enrich.Stop(); enrich.Start(); });
         }
         // Update check: not in development snapshot runs, unless they bring their own release file (--update-feed).
-        var feedAt = Array.IndexOf(e.Args, "--update-feed");
-        var feed = feedAt >= 0 && feedAt + 1 < e.Args.Length ? e.Args[feedAt + 1] : null;
-        if (!e.Args.Contains("--snapshot") || feed is not null) _host.Updates.Start(_host.Settings.Current.CheckForUpdates, feed);
-        if (e.Args.Contains("--update-panel")) _host.Updates.IsPanelOpen = true;
+        var feedAt = Array.IndexOf(args, "--update-feed");
+        var feed = feedAt >= 0 && feedAt + 1 < args.Length ? args[feedAt + 1] : null;
+        if (!args.Contains("--snapshot") || feed is not null) _host.Updates.Start(_host.Settings.Current.CheckForUpdates, feed);
+        if (args.Contains("--update-panel")) _host.Updates.IsPanelOpen = true;
         var checkUpdates = _host.Settings.Current.CheckForUpdates;
         _host.Settings.Changed += s =>
         {
@@ -137,8 +164,16 @@ public partial class App : Application
             catch (Exception ex) { host.Log.LogWarning(ex, "Cache maintenance failed"); }
         });
 
-        HandleDevArgs(e.Args, shell, window);
-        if (e.Args.Contains("--diag"))
+        // After Updates.Start, so the screen's update check uses the same release source. Development arguments
+        // (--page, --snapshot, ...) act on the main window, so behind the startup screen they wait until it is shown.
+        if (splash is null) HandleDevArgs(args, shell, window);
+        else splash.Run(() =>
+        {
+            window.Show();
+            window.Activate();
+            HandleDevArgs(args, shell, window);
+        }, startupShot);
+        if (args.Contains("--diag"))
         {
             var diag = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
             diag.Tick += (_, _) =>
@@ -152,7 +187,7 @@ public partial class App : Application
             };
             diag.Start();
         }
-        if (e.Args.Contains("--open-latest-history") && _host.History.List(1).FirstOrDefault() is { } latest)
+        if (args.Contains("--open-latest-history") && _host.History.List(1).FirstOrDefault() is { } latest)
             shell.Live.ShowStored(latest);
     }
 

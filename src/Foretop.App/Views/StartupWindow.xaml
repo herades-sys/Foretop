@@ -1,0 +1,110 @@
+<Window x:Class="Foretop.App.Views.StartupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Foretop.App.ViewModels"
+        Title="Foretop" Icon="/Assets/foretop.ico" Width="560" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" ShowInTaskbar="True"
+        Background="{DynamicResource Panel}" Foreground="{DynamicResource Text}" FontFamily="{DynamicResource UiFont}"
+        BorderBrush="{DynamicResource Border}" BorderThickness="1" KeyDown="OnKeyDown" MouseLeftButtonDown="OnMouseDown">
+    <DockPanel>
+        <!-- Accent line, as on the team tables -->
+        <Border DockPanel.Dock="Top" Height="3" Background="{DynamicResource Accent}" />
+
+        <StackPanel Margin="28,24,28,22" Width="504">
+            <!-- Brand -->
+            <StackPanel Orientation="Horizontal">
+                <Grid Width="40" Height="40" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource Accent}" CornerRadius="{DynamicResource RadiusCard}" />
+                    <Path Data="{StaticResource LogoMark}" Stroke="#0B1522" StrokeThickness="2.4" StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="26" Height="26" Stretch="Uniform" />
+                </Grid>
+                <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Foretop" FontSize="22" FontWeight="SemiBold" FontFamily="{DynamicResource HeadingFont}" />
+                    <TextBlock Text="{Binding VersionText}" Style="{StaticResource Dim}" FontSize="11.5" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Checks -->
+            <ItemsControl ItemsSource="{Binding Checks}" Margin="0,22,0,0" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:StartupCheck}">
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- State mark: spinner while running, then ✓ / i / ! / × / – -->
+                            <Grid Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,0,0" HorizontalAlignment="Left">
+                                <Ellipse x:Name="ring" Stroke="{DynamicResource Accent}" StrokeThickness="2" StrokeDashArray="9 4"
+                                         RenderTransformOrigin="0.5,0.5" Visibility="Collapsed">
+                                    <Ellipse.RenderTransform><RotateTransform /></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Border x:Name="dot" CornerRadius="9" Visibility="Collapsed">
+                                    <TextBlock x:Name="mark" FontSize="11" FontWeight="Bold" Foreground="#0B1522"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
+                                <TextBlock x:Name="detail" Text="{Binding Detail}" Style="{StaticResource Dim}" FontSize="12"
+                                           TextWrapping="Wrap" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding State}" Value="Running">
+                                <Setter TargetName="ring" Property="Visibility" Value="Visible" />
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard x:Name="spin">
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetName="ring"
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                             From="0" To="360" Duration="0:0:0.9" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="spin" />
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Ok">
+                                <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="dot" Property="Background" Value="{DynamicResource StatusGreen}" />
+                                <Setter TargetName="mark" Property="Text" Value="✓" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Notice">
+                                <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="dot" Property="Background" Value="{DynamicResource Accent}" />
+                                <Setter TargetName="mark" Property="Text" Value="↑" />
+                                <Setter TargetName="detail" Property="Foreground" Value="{DynamicResource Text}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Warning">
+                                <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="dot" Property="Background" Value="{DynamicResource StatusAmber}" />
+                                <Setter TargetName="mark" Property="Text" Value="!" />
+                                <Setter TargetName="detail" Property="Foreground" Value="{DynamicResource Text}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Problem">
+                                <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="dot" Property="Background" Value="{DynamicResource StatusRed}" />
+                                <Setter TargetName="mark" Property="Text" Value="×" />
+                                <Setter TargetName="detail" Property="Foreground" Value="{DynamicResource Text}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Off">
+                                <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="dot" Property="Background" Value="{DynamicResource TextDim}" />
+                                <Setter TargetName="mark" Property="Text" Value="–" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Status and continue -->
+            <DockPanel Margin="0,8,0,0">
+                <Button x:Name="ContinueButton" DockPanel.Dock="Right" Content="Open Foretop" Click="OnContinue" Padding="14,5"
+                        Style="{StaticResource AccentButton}" />
+                <TextBlock Text="{Binding Status}" Style="{StaticResource Dim}" FontSize="12" VerticalAlignment="Center" />
+            </DockPanel>
+        </StackPanel>
+    </DockPanel>
+</Window>

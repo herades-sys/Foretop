@@ -311,6 +311,7 @@ and sends nothing about you; it needs the GitHub repository to be public.
 | Check for updates | Look for a new version on GitHub after start and once a day (About → Updates). |
 | Compact mode | Fewer columns, tighter rows. |
 | Start with Windows / minimised | Launch on sign-in. |
+| Show the startup screen | While Foretop opens: checks its data, the game folder, the Wargaming API and GitHub for updates, then opens the main window by itself (click or Enter to skip the wait). Never shown when starting minimised. |
 | Cache times | How long statistics are reused before fetching again. |
 
 ## 10. Troubleshooting

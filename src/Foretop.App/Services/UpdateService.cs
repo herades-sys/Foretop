@@ -46,6 +46,9 @@ public sealed partial class UpdateService : ObservableObject
     private ReleaseInfo? _available;
 
     [ObservableProperty] private string _statusText = "";
+
+    /// <summary>Outcome of this run's latest check; null before the first (the startup screen shows it).</summary>
+    public UpdateCheckOutcome? LastOutcome { get; private set; }
     [ObservableProperty] private DateTimeOffset? _lastChecked;
     [ObservableProperty] private bool _isChecking;
     [ObservableProperty] private bool _isPanelOpen;
@@ -122,6 +125,8 @@ public sealed partial class UpdateService : ObservableObject
         try
         {
             var result = await _checker.CheckAsync(AppInfo.Version);
+            _checkedThisRun = true; // the startup screen's check counts as this run's first
+            LastOutcome = result.Outcome;
             Available = result.Outcome == UpdateCheckOutcome.Available ? result.Release : null;
             StatusText = result.Message;
             LastChecked = DateTimeOffset.Now;
