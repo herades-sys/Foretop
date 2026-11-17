@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.0 — 2026-11-17
 
 - **Startup screen.** While Foretop opens it checks, and shows: its data, the game installation, the Wargaming API
   (one light request with your application ID: connected, offline, ID missing or rejected) and GitHub for a newer
