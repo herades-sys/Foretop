@@ -58,7 +58,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         host.Watcher.BattleEnded += () => _ui.BeginInvoke(() => { if (_isLive) IsInBattle = false; });
         host.Ships.Updated += () => _ui.BeginInvoke(RefreshShipInfo);
         host.ShipData.Changed += () => _ui.BeginInvoke(RefreshShipInfo); // test ships and ships the API omits
-        host.Settings.Changed += _ => _ui.BeginInvoke(() => { UpdateNotice(); OnPropertyChanged(nameof(CompactMode)); FriendlyView.Refresh(); EnemyView.Refresh(); });
+        host.Settings.Changed += _ => _ui.BeginInvoke(() => { UpdateNotice(); OnPropertyChanged(nameof(CompactMode)); OnPropertyChanged(nameof(ShowKarma)); FriendlyView.Refresh(); EnemyView.Refresh(); });
         UpdateNotice();
     }
 
@@ -117,6 +117,9 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     [ObservableProperty] private string _comparisonText = "";
 
     public bool CompactMode => _host.Settings.Current.CompactMode;
+
+    /// <summary>KARMA column shown (WoWS Karma lookup on in Settings).</summary>
+    public bool ShowKarma => _host.Settings.Current.ShowWowsKarma;
 
     // ------------------------------------------------------------------ statistics filter
 
@@ -580,6 +583,12 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     private void OpenWowsNumbers(PlayerRowViewModel? row)
     {
         if (row?.AccountId is long id) OpenUrl(Regions.WowsNumbersUrl(row.Region, id, row.Summary.Name));
+    }
+
+    [RelayCommand]
+    private void OpenWowsKarma(PlayerRowViewModel? row)
+    {
+        if (row?.AccountId is long id) OpenUrl(Core.Karma.WowsKarmaClient.ProfileUrl(row.Region, id, row.Summary.Name));
     }
 
     private static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });

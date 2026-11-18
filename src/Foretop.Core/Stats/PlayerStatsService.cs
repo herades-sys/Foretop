@@ -51,6 +51,12 @@ public sealed class PlayerStatsService
     /// <summary>Tier of a ship (null when unknown); needed for the tier-filtered totals.</summary>
     public Func<long, int?>? ShipTier { get; set; }
 
+    /// <summary>
+    /// Karma for account IDs (WoWS Karma); null or <see cref="AppSettings.ShowWowsKarma"/> off: not asked. Looked up for
+    /// every known player, hidden profiles too, in parallel with the statistics.
+    /// </summary>
+    public Func<Region, IReadOnlyCollection<long>, CancellationToken, Task<IReadOnlyDictionary<long, Karma.KarmaInfo>>>? KarmaLookup { get; set; }
+
     /// <summary>(session key, new state). Raised from background threads.</summary>
     public event Action<string, PlayerSummary>? PlayerUpdated;
 
@@ -102,6 +108,24 @@ public sealed class PlayerStatsService
 
             var known = humans.Where(h => ids.ContainsKey(h.Name)).ToList();
             if (known.Count == 0) return Snapshot();
+
+            // Karma (third party, optional) runs beside everything below; it never fails the load.
+            var karmaTask = Task.CompletedTask;
+            if (KarmaLookup is { } karmaLookup && _settings().ShowWowsKarma)
+            {
+                karmaTask = karmaLookup(region, known.Select(h => ids[h.Name]).ToList(), ct).ContinueWith(t =>
+                {
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        foreach (var h in known)
+                            if (t.Result.TryGetValue(ids[h.Name], out var k)) Set(h.Name, s => s with { Karma = k });
+                    }
+                    else if (t.IsFaulted)
+                    {
+                        _log.LogWarning(t.Exception?.GetBaseException(), "Karma lookup failed");
+                    }
+                }, TaskScheduler.Default);
+            }
 
             // 2. Account totals, one batched call for everything not cached.
             var infos = await GetAccountInfosAsync(region, known.Select(h => ids[h.Name]).ToList(), priority, forceRefresh, ct)
@@ -206,6 +230,7 @@ public sealed class PlayerStatsService
 
             await Task.WhenAll(shipTasks).ConfigureAwait(false);
             await clanTask.ConfigureAwait(false);
+            await karmaTask.ConfigureAwait(false);
         }
         catch (WgApiException ex) when (ex.Kind == WgErrorKind.Configuration)
         {

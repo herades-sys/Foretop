@@ -36,6 +36,13 @@ public partial class TeamTable : UserControl
 
     public bool ShowRecent { get => (bool)GetValue(ShowRecentProperty); set => SetValue(ShowRecentProperty, value); }
 
+    /// <summary>The KARMA column (WoWS Karma); off when the lookup is turned off in Settings.</summary>
+    public static readonly DependencyProperty ShowKarmaProperty =
+        DependencyProperty.Register(nameof(ShowKarma), typeof(bool), typeof(TeamTable),
+            new PropertyMetadata(true, (d, _) => ((TeamTable)d).ApplyCompact(((TeamTable)d).Compact)));
+
+    public bool ShowKarma { get => (bool)GetValue(ShowKarmaProperty); set => SetValue(ShowKarmaProperty, value); }
+
     /// <summary>Which statistics the columns show ("ALL TIERS", "TIER VI+"); shown next to the team name.</summary>
     public static readonly DependencyProperty BadgeProperty =
         DependencyProperty.Register(nameof(Badge), typeof(string), typeof(TeamTable), new PropertyMetadata(null));
@@ -122,6 +129,7 @@ public partial class TeamTable : UserControl
         // The view decides which columns exist; the column fitter decides which of them fit.
         Enable(XpColumn, !compact);
         Enable(RecentColumn, !compact && ShowRecent);
+        Enable(KarmaColumn, ShowKarma);
         Grid.RowHeight = TwoLine ? (compact ? 34 : 38) : compact ? 24 : 28;
         RequestFit();
     }
@@ -164,6 +172,8 @@ public partial class TeamTable : UserControl
     private void OnOpenOfficial(object sender, RoutedEventArgs e) => Vm?.OpenOfficialProfileCommand.Execute(RowFrom(sender));
 
     private void OnOpenNumbers(object sender, RoutedEventArgs e) => Vm?.OpenWowsNumbersCommand.Execute(RowFrom(sender));
+
+    private void OnOpenKarma(object sender, RoutedEventArgs e) => Vm?.OpenWowsKarmaCommand.Execute(RowFrom(sender));
 
     private void OnCopyName(object sender, RoutedEventArgs e)
     {

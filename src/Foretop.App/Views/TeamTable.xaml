@@ -20,6 +20,7 @@
             <MenuItem Header="Open profile" Click="OnOpenProfile" FontWeight="SemiBold" />
             <MenuItem Header="Open official profile" Click="OnOpenOfficial" />
             <MenuItem Header="Open on wows-numbers.com" Click="OnOpenNumbers" />
+            <MenuItem Header="Open on WoWS Karma" Click="OnOpenKarma" />
             <Separator />
             <MenuItem Header="Copy player name" Click="OnCopyName" />
         </ContextMenu>
@@ -148,7 +149,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="7" SortMemberPath="AvgXp">
+                    <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="8" SortMemberPath="AvgXp">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -173,6 +174,20 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
+                    <!-- In-game karma from WoWS Karma (third party); off in Settings: column disabled -->
+                    <DataGridTemplateColumn x:Name="KarmaColumn" Header="KARMA" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="6" SortMemberPath="Karma">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="k" Text="{Binding KarmaText}" Style="{StaticResource Num}" VerticalAlignment="Center" />
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding KarmaNegative}" Value="True">
+                                        <Setter TargetName="k" Property="Foreground" Value="{DynamicResource StatusRed}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <!-- Statistics in the ship of this battle (not affected by the tier filter) -->
                     <DataGridTemplateColumn Header="SHIP BTL" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="4" SortMemberPath="ShipBattles">
                         <DataGridTemplateColumn.CellTemplate>
@@ -182,7 +197,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="SHIP WR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="6" SortMemberPath="ShipWinRate">
+                    <DataGridTemplateColumn Header="SHIP WR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="7" SortMemberPath="ShipWinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding ShipWinRateText}" Style="{StaticResource Num}" VerticalAlignment="Center"
@@ -200,7 +215,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn x:Name="RecentColumn" Header="7 DAYS" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="8" SortMemberPath="RecentWinRate">
+                    <DataGridTemplateColumn x:Name="RecentColumn" Header="7 DAYS" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="9" SortMemberPath="RecentWinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding RecentText}" Style="{StaticResource Num}"

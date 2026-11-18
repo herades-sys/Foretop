@@ -64,6 +64,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _showStartupScreen;
     [ObservableProperty] private bool _startMinimized;
     [ObservableProperty] private bool _showBots;
+    [ObservableProperty] private bool _showWowsKarma;
     [ObservableProperty] private bool _checkForUpdates;
     public Services.UpdateService Updates => _host.Updates;
     [ObservableProperty] private double _apiRatePerSecond;
@@ -147,6 +148,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         StartMinimized = _draft.StartMinimized;
         ShowStartupScreen = _draft.ShowStartupScreen;
         ShowBots = _draft.ShowBots;
+        ShowWowsKarma = _draft.ShowWowsKarma;
         CheckForUpdates = _draft.CheckForUpdates;
         ApiRatePerSecond = _draft.ApiRatePerSecond;
         PlayerCacheMinutes = _draft.PlayerCacheMinutes;
@@ -173,6 +175,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.StartMinimized = StartMinimized;
         s.ShowStartupScreen = ShowStartupScreen;
         s.ShowBots = ShowBots;
+        s.ShowWowsKarma = ShowWowsKarma;
         s.CheckForUpdates = CheckForUpdates;
         s.ApiRatePerSecond = Math.Clamp(ApiRatePerSecond, 1, 10);
         s.PlayerCacheMinutes = Math.Clamp(PlayerCacheMinutes, 0, 7 * 24 * 60);

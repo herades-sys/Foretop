@@ -107,6 +107,9 @@ public sealed record PlayerSummary
 
     public long? AccountId { get; init; }
     public string? ClanTag { get; init; }
+
+    /// <summary>Third-party: WoWS Karma (in-game karma and the site's own karma); null when not known there.</summary>
+    public Karma.KarmaInfo? Karma { get; init; }
     public DateTimeOffset? CreatedAt { get; init; }
     public DateTimeOffset? LastBattleAt { get; init; }
     public int? ServiceLevel { get; init; }

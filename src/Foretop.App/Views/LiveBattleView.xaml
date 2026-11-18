@@ -160,11 +160,11 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <views:TeamTable Grid.Column="0" Header="FRIENDLY TEAM" FitGroup="{StaticResource TeamColumns}" Accent="{StaticResource Friendly}"
-                             Rows="{Binding FriendlyView}" Summary="{Binding FriendlySummary}" Compact="{Binding CompactMode}"
+                             Rows="{Binding FriendlyView}" Summary="{Binding FriendlySummary}" Compact="{Binding CompactMode}" ShowKarma="{Binding ShowKarma}"
                              ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
                              TwoLine="{Binding ShowBothLines}" />
             <views:TeamTable Grid.Column="2" Header="ENEMY TEAM" FitGroup="{StaticResource TeamColumns}" Accent="{StaticResource Enemy}"
-                             Rows="{Binding EnemyView}" Summary="{Binding EnemySummary}" Compact="{Binding CompactMode}"
+                             Rows="{Binding EnemyView}" Summary="{Binding EnemySummary}" Compact="{Binding CompactMode}" ShowKarma="{Binding ShowKarma}"
                              ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
                              TwoLine="{Binding ShowBothLines}" />
         </Grid>

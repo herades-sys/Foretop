@@ -37,6 +37,8 @@ public sealed class AppSettings
     public bool ShowStartupScreen { get; set; } = true;
     public bool StartWithWindows { get; set; }
     public bool ShowBots { get; set; } = true;
+    /// <summary>Look up players' karma on WoWS Karma (wows-karma.com; sends the battle's account IDs there).</summary>
+    public bool ShowWowsKarma { get; set; } = true;
 
     /// <summary>The player's own nickname, learnt from the last live battle (shown in the sidebar).</summary>
     public string? PlayerName { get; set; }

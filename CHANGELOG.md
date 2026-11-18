@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Karma from WoWS Karma.** Live Battle has a KARMA column: each player's in-game karma as WoWS Karma
+  (wows-karma.com, a community site) reports it, negative in red. The row tooltip adds the site's own karma and its
+  performance, teamplay and courtesy ratings; right-click → *Open on WoWS Karma*. One request per battle for all
+  players (Europe, North America and Asia each have their own WoWS Karma), reused for 6 hours; players the site does
+  not know show "—". Settings → Game can turn it off. In a narrow window the column steps aside after 7 days, XP and
+  ship win rate.
+
 ## 1.8.2 — 2026-11-18
 
 - **Right-click menus follow the theme.** The Live Battle row menu (open profile, official profile, wows-numbers,

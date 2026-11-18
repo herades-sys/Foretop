@@ -152,4 +152,4 @@ Others: `--data-dir <folder>` (use another data folder, so test runs never touch
 `--update-panel`, `--enrich-now`, `--sidebar-collapsed`, `--ship-filter 8,10,BB`, `--best-tiers 8,9`, `--best-min 50`, `--font <family>`, `--text-scale <1.25>`.
 
 Foretop is not affiliated with or endorsed by Wargaming. World of Warships is a
-trademark of Wargaming. Personal Rating expected values: wows-numbers.com.
+trademark of Wargaming. Personal Rating expected values: wows-numbers.com. Karma: WoWS Karma (wows-karma.com).

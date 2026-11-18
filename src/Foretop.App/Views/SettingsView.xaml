@@ -100,6 +100,7 @@
                     <CheckBox Content="Detect battles automatically" IsChecked="{Binding AutoDetectBattles}" />
                     <CheckBox Content="Switch to Live Battle when a battle starts" IsChecked="{Binding SwitchToLiveOnBattle}" />
                     <CheckBox Content="Show bots in co-op and operations" IsChecked="{Binding ShowBots}" />
+                    <CheckBox Content="Show karma from WoWS Karma (sends the battle's account IDs to wows-karma.com)" IsChecked="{Binding ShowWowsKarma}" />
                 </StackPanel>
             </Border>
 

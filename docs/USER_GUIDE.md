@@ -43,12 +43,18 @@ Start the game and enter a battle. Within a second or two Foretop switches to
 **Live Battle** and fills both teams:
 
 - name and clan, ship (icon, class, tier), battles, win rate, average damage,
-  average XP, Personal Rating, then for the ship in this battle its battles (SHIP BTL), win rate and Personal
-  Rating (SHIP PR), and the last 7 days;
+  average XP, Personal Rating, karma (KARMA, from WoWS Karma), then for the ship in this battle its battles
+  (SHIP BTL), win rate and Personal Rating (SHIP PR), and the last 7 days;
 - win rate and battles appear first, then PR and ship stats, then the rest;
 - **hover** a row for the full breakdown and where each number comes from;
 - **double-click** a player for their profile in Foretop; right-click for the
-  official profile or wows-numbers.
+  official profile, wows-numbers or WoWS Karma.
+
+**Karma** is the player's in-game karma as WoWS Karma (wows-karma.com, a community site) reports it; negative karma
+is red. The tooltip adds the site's own karma and its performance, teamplay and courtesy ratings, which come from
+players' posts there. "—" means WoWS Karma does not know the player (or they opted out there) or could not be reached;
+it never stands for 0. Values are reused for 6 hours. Settings → Game → *Show karma from WoWS Karma* turns the column
+and the lookup off.
 
 **Colours**
 
@@ -65,8 +71,8 @@ Use **Sort**, **Ship tier** and the **class chips** above the tables to reorder 
 filter both teams.
 
 The columns fit what they show, and both teams use the same widths. In a narrow window the less important columns
-make room for full player and ship names, in this order: 7 days, XP, ship win rate, ship PR, ship battles, PR,
-damage. The team header says which are hidden ("XP, SHIP WR hidden"); they return when the window is wider, and their values are always in
+make room for full player and ship names, in this order: 7 days, XP, ship win rate, karma, ship PR, ship
+battles, PR, damage. The team header says which are hidden ("XP, SHIP WR hidden"); they return when the window is wider, and their values are always in
 the row's tooltip. If even then a name does not fit, it ends in "…" and the tooltip shows it in full.
 
 **Statistics filter** (above the tables): count only each player's battles in ships of a minimum tier, so accounts
@@ -289,7 +295,7 @@ and sends nothing about you; it needs the GitHub repository to be public.
   the Wargaming API.
 - **Derived** — averages and rates: simple arithmetic on official numbers.
 - **Third-party** — Personal Rating and damage vs. expected: based on the expected
-  values published by wows-numbers.com.
+  values published by wows-numbers.com. Karma: WoWS Karma (wows-karma.com).
 - **Recent (7 / 28 days)** — Wargaming offers no recent statistics any more, so
   Foretop compares its own snapshots of a player. A player's recent numbers appear
   once Foretop has seen them at least 7 days earlier.
@@ -306,6 +312,7 @@ and sends nothing about you; it needs the GitHub repository to be public.
 | Detect battles automatically | Turn the watcher off without closing the app. |
 | Switch to Live Battle | Jump to the battle when one starts. |
 | Show bots | Show AI ships in co-op and operations. |
+| Show karma from WoWS Karma | The KARMA column and its lookup; sends the battle's account IDs to wows-karma.com. On by default. |
 | Theme | System (follows Windows), Dark, Light, Steel (refined dark, higher contrast), Chart Room (light, paper and navy ink) or Combat Information Center (near-black, dense, blue vs orange teams). A theme sets colours, corners, fonts and row height; a font chosen below overrides its fonts. |
 | Font | Any font installed on Windows (the list shows each in its own style); Default is Segoe UI. |
 | Text size | 90–150 %. Scales the whole interface, so tables and charts keep their proportions. |
@@ -335,8 +342,9 @@ Run **Settings → Run check** first; it names the problem in most cases.
 
 Foretop reads one file the game itself writes for replays. It does not read game
 memory, inject code, capture network traffic or automate anything. It talks only to
-the Wargaming API (player statistics), wows-numbers.com (PR expected values) and GitHub (the update check, which
-only reads the public release page).
+the Wargaming API (player statistics), wows-numbers.com (PR expected values), wows-karma.com (karma: the account IDs
+of the players in a battle, unless turned off in Settings) and GitHub (the update check, which only reads the public
+release page).
 
 Foretop is not affiliated with or endorsed by Wargaming. World of Warships is a
 trademark of Wargaming.

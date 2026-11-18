@@ -48,6 +48,8 @@ public sealed class AppHost : IDisposable
         ShipData = new ShipDataStore(AppPaths.DataDir,
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot,
             Loggers.CreateLogger<ShipDataStore>());
+        Karma = new Core.Karma.WowsKarmaClient(Http, Cache, Loggers.CreateLogger<Core.Karma.WowsKarmaClient>());
+        Stats.KarmaLookup = Karma.GetAsync;
         Stats.IsTestShip = id => ShipData.FindById(id)?.IsTestShip == true;
         Stats.ShipTier = id => Ships.Get(id)?.Tier is int t and > 0 ? t : ShipData.FindById(id)?.Tier is int g and > 0 ? g : null;
         Replays = new Core.Replays.ReplayLibrary(
@@ -85,6 +87,9 @@ public sealed class AppHost : IDisposable
     public RequestScheduler Scheduler { get; }
     public WgApiClient Api { get; }
     public ExpectedValuesProvider Expected { get; }
+
+    /// <summary>Players' karma from WoWS Karma (wows-karma.com).</summary>
+    public Core.Karma.WowsKarmaClient Karma { get; }
     public ShipCatalog Ships { get; }
     public PlayerStatsService Stats { get; }
     public BattleWatcher Watcher { get; }

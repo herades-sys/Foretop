@@ -179,6 +179,13 @@ public sealed class PlayerRowViewModel : ObservableObject
     public string ShipBattlesText => ShipBattles is int b ? FormatCount(b) : (Summary.State == LoadState.Ready && !IsTestShip ? "0" : "—");
     public string ShipAvgDamageText => Num(ShipAvgDamage);
 
+    // ---- karma (third party: WoWS Karma)
+    public int? Karma => Summary.Karma?.GameKarma;
+    public string KarmaText => Karma is int k ? k.ToString("N0", System.Globalization.CultureInfo.CurrentCulture) : "—";
+
+    /// <summary>Negative karma is shown in red; otherwise the plain text colour.</summary>
+    public bool KarmaNegative => Karma < 0;
+
     // ---- recent
     public double? RecentWinRate => Primary.Recent7 is { Totals.Battles: > 0 } r ? r.Totals.WinRate : null;
     public double? RecentWinRateRated => Primary.Recent7 is { Totals.Battles: >= 5 } r ? r.Totals.WinRate : null;
@@ -253,6 +260,12 @@ public sealed class PlayerRowViewModel : ObservableObject
                 sb.AppendLine();
                 sb.AppendLine($"{ShipName}: {cs.Battles:N0} battles, {Pct(cs.WinRate)}, {Num(cs.AvgDamage)} dmg"
                               + (s.ShipPr is double sp ? $", PR {sp:0}" : ""));
+            }
+            if (s.Karma is { } k)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Karma {k.GameKarma:N0} in game — third-party, WoWS Karma (wows-karma.com)");
+                sb.AppendLine($"  Site karma {k.SiteKarma:N0}; site ratings: performance {k.Performance}, teamplay {k.Teamplay}, courtesy {k.Courtesy}");
             }
             if (FilterActive && s.Recent7 is not null)
                 sb.AppendLine("Recent activity below is for all tiers (Foretop's snapshots have no per-tier split).");
