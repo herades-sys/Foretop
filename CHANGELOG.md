@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.1 — 2026-11-18
 
 - **Live Battle: ship battles and ship PR in their own columns.** SHIP BTL (battles in the ship of this battle) and
   SHIP PR (Personal Rating in that ship) sit next to SHIP WR; before, ship battles were a small grey number after the
