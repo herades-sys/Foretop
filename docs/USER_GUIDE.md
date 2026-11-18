@@ -43,7 +43,8 @@ Start the game and enter a battle. Within a second or two Foretop switches to
 **Live Battle** and fills both teams:
 
 - name and clan, ship (icon, class, tier), battles, win rate, average damage,
-  average XP, Personal Rating, win rate and battles in this ship, last 7 days;
+  average XP, Personal Rating, then for the ship in this battle its battles (SHIP BTL), win rate and Personal
+  Rating (SHIP PR), and the last 7 days;
 - win rate and battles appear first, then PR and ship stats, then the rest;
 - **hover** a row for the full breakdown and where each number comes from;
 - **double-click** a player for their profile in Foretop; right-click for the
@@ -58,14 +59,14 @@ Start the game and enter a battle. Within a second or two Foretop switches to
 | Damage vs. expected for the ships played | < 85 % | 85–115 % | 115–150 % | ≥ 150 % |
 
 Win rates from fewer than 50 battles (10 in a ship, 5 in the last week) stay grey,
-because they say little.
+because they say little; so does a ship PR from fewer than 10 battles in the ship.
 
 Use **Sort**, **Ship tier** and the **class chips** above the tables to reorder or
 filter both teams.
 
 The columns fit what they show, and both teams use the same widths. In a narrow window the less important columns
-make room for full player and ship names, in this order: 7 days, XP, ship win rate, PR, damage. The team header
-says which are hidden ("PR, SHIP WR hidden"); they return when the window is wider, and their values are always in
+make room for full player and ship names, in this order: 7 days, XP, ship win rate, ship PR, ship battles, PR,
+damage. The team header says which are hidden ("XP, SHIP WR hidden"); they return when the window is wider, and their values are always in
 the row's tooltip. If even then a name does not fit, it ends in "…" and the tooltip shows it in full.
 
 **Statistics filter** (above the tables): count only each player's battles in ships of a minimum tier, so accounts

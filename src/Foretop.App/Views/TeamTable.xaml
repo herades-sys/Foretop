@@ -135,7 +135,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="DMG" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="3" SortMemberPath="AvgDamage">
+                    <DataGridTemplateColumn Header="DMG" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="2" SortMemberPath="AvgDamage">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -148,7 +148,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="6" SortMemberPath="AvgXp">
+                    <DataGridTemplateColumn x:Name="XpColumn" Header="XP" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="7" SortMemberPath="AvgXp">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -160,7 +160,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="4" SortMemberPath="Pr">
+                    <DataGridTemplateColumn Header="PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="3" SortMemberPath="Pr">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -173,20 +173,34 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="SHIP WR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="5" SortMemberPath="ShipWinRate">
+                    <!-- Statistics in the ship of this battle (not affected by the tier filter) -->
+                    <DataGridTemplateColumn Header="SHIP BTL" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="4" SortMemberPath="ShipBattles">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <TextBlock Text="{Binding ShipWinRateText}" Style="{StaticResource Num}"
-                                               Foreground="{Binding ShipWinRateRated, Converter={StaticResource Rating}, ConverterParameter=wr}" />
-                                    <TextBlock Text="{Binding ShipBattlesText, StringFormat=' ({0})'}" Style="{StaticResource Num}"
-                                               Foreground="{StaticResource TextDim}" FontSize="11" />
-                                </StackPanel>
+                                <TextBlock Text="{Binding ShipBattlesText}" Style="{StaticResource Num}" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn x:Name="RecentColumn" Header="7 DAYS" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="7" SortMemberPath="RecentWinRate">
+                    <DataGridTemplateColumn Header="SHIP WR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="6" SortMemberPath="ShipWinRate">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ShipWinRateText}" Style="{StaticResource Num}" VerticalAlignment="Center"
+                                           Foreground="{Binding ShipWinRateRated, Converter={StaticResource Rating}, ConverterParameter=wr}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="SHIP PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="5" SortMemberPath="ShipPr">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ShipPrText}" Style="{StaticResource Num}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                           Foreground="{Binding ShipPrRated, Converter={StaticResource Rating}, ConverterParameter=pr}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn x:Name="RecentColumn" Header="7 DAYS" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="8" SortMemberPath="RecentWinRate">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding RecentText}" Style="{StaticResource Num}"

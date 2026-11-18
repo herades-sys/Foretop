@@ -165,10 +165,14 @@ public sealed class PlayerRowViewModel : ObservableObject
     public double? ShipAvgDamage => CurrentShip?.AvgDamage;
     public double? ShipDamageRatio => IsTestShip ? null : Summary.ShipDamageRatio;
     public double? ShipPr => IsTestShip ? null : Summary.ShipPr;
+    public string ShipPrText => ShipPr is double p ? p.ToString("0", Inv) : "—";
     public string ShipWinRateText => Pct(ShipWinRate);
 
     /// <summary>Win rate used for colouring: none below 10 battles in the ship, where it means little.</summary>
     public double? ShipWinRateRated => ShipBattles >= 10 ? ShipWinRate : null;
+
+    /// <summary>Ship PR colour, likewise only from 10 battles in the ship.</summary>
+    public double? ShipPrRated => ShipBattles >= 10 ? ShipPr : null;
 
     /// <summary>Overall win rate colour needs at least 50 battles.</summary>
     public double? WinRateRated => Battles >= 50 ? WinRate : null;

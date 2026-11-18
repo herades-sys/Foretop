@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Live Battle: ship battles and ship PR in their own columns.** SHIP BTL (battles in the ship of this battle) and
+  SHIP PR (Personal Rating in that ship) sit next to SHIP WR; before, ship battles were a small grey number after the
+  ship win rate and ship PR was only in the tooltip. Ship PR is coloured from 10 battles in the ship. In a narrow
+  window they step aside after 7 days, XP and ship win rate, before PR and damage.
+
 ## 1.8.0 — 2026-11-17
 
 - **Startup screen.** While Foretop opens it checks, and shows: its data, the game installation, the Wargaming API
