@@ -100,6 +100,8 @@ public partial class App : Application
     {
         if (_host is null) return;
         var shell = new ShellViewModel(_host);
+        // Tracked clans are checked in the background; not in development snapshot runs (they may run beside the real one).
+        if (!args.Contains("--snapshot")) shell.Clans.StartTracking();
         var window = new MainWindow(_host) { DataContext = shell };
         MainWindow = window;
         if (args.Contains("--minimized") || _host.Settings.Current.StartMinimized)
@@ -232,6 +234,13 @@ public partial class App : Application
             foreach (var chip in shell.Personal.Filters.ClassChips.Where(c => c.Tip.StartsWith(acls, StringComparison.OrdinalIgnoreCase))) chip.IsChecked = true;
         // --player-search <text>: types the text into Player Search (name prefix or account id)
         if (Arg("--player-search") is { } q) { shell.SelectedPage = Page.PlayerSearch; shell.PlayerSearch.Query = q; }
+        // --clan <tag>: opens the clan with this tag on the Clans page; --clan-search <text> only types the search
+        if (Arg("--clan") is { } clanTag && ((App)Current)._host is { } clanHost)
+        {
+            shell.SelectedPage = Page.Clans;
+            _ = shell.Clans.OpenTagAsync(clanTag, clanHost.Region);
+        }
+        if (Arg("--clan-search") is { } cq) { shell.SelectedPage = Page.Clans; shell.Clans.Query = cq; }
         // --soak <minutes>: long-session test. Cycles through the real workload (recorded battle roster shown as live and
         // refreshed against the API, page switches, Analytics filters, replay playback) and logs memory, handles and
         // threads every minute; quits at the end. Only for a separate --data-dir.
@@ -263,6 +272,13 @@ public partial class App : Application
         {
             shell.Live.PersistStatsFilter = false;
             shell.Live.StatsViewMode = sv;
+        }
+        // --stats-mode <Random|Ranked|Coop|Operations|Battle>: Live Battle game mode, for snapshots
+        if (Arg("--stats-mode") is { } modeArg
+            && shell.Live.GameModeOptions.FirstOrDefault(o => string.Equals(o.Key, modeArg, StringComparison.OrdinalIgnoreCase)) is { } modeOpt)
+        {
+            shell.Live.PersistStatsFilter = false;
+            shell.Live.SelectedGameMode = modeOpt;
         }
         // --enrich-now: read replay facts for own results at once (normally 15 s after start)
         if (args.Contains("--enrich-now")) _ = Task.Run(() => ((App)Current)._host!.Personal.RunAsync());

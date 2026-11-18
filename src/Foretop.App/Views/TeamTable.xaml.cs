@@ -43,6 +43,13 @@ public partial class TeamTable : UserControl
 
     public bool ShowKarma { get => (bool)GetValue(ShowKarmaProperty); set => SetValue(ShowKarmaProperty, value); }
 
+    /// <summary>Random-battle statistics shown: PR and SHIP PR exist only there, so other game modes leave them out.</summary>
+    public static readonly DependencyProperty RandomStatsProperty =
+        DependencyProperty.Register(nameof(RandomStats), typeof(bool), typeof(TeamTable),
+            new PropertyMetadata(true, (d, _) => ((TeamTable)d).ApplyCompact(((TeamTable)d).Compact)));
+
+    public bool RandomStats { get => (bool)GetValue(RandomStatsProperty); set => SetValue(RandomStatsProperty, value); }
+
     /// <summary>Which statistics the columns show ("ALL TIERS", "TIER VI+"); shown next to the team name.</summary>
     public static readonly DependencyProperty BadgeProperty =
         DependencyProperty.Register(nameof(Badge), typeof(string), typeof(TeamTable), new PropertyMetadata(null));
@@ -130,6 +137,8 @@ public partial class TeamTable : UserControl
         Enable(XpColumn, !compact);
         Enable(RecentColumn, !compact && ShowRecent);
         Enable(KarmaColumn, ShowKarma);
+        Enable(PrColumn, RandomStats);
+        Enable(ShipPrColumn, RandomStats);
         Grid.RowHeight = TwoLine ? (compact ? 34 : 38) : compact ? 24 : 28;
         RequestFit();
     }
@@ -174,6 +183,8 @@ public partial class TeamTable : UserControl
     private void OnOpenNumbers(object sender, RoutedEventArgs e) => Vm?.OpenWowsNumbersCommand.Execute(RowFrom(sender));
 
     private void OnOpenKarma(object sender, RoutedEventArgs e) => Vm?.OpenWowsKarmaCommand.Execute(RowFrom(sender));
+
+    private void OnOpenClan(object sender, RoutedEventArgs e) => Vm?.OpenClanCommand.Execute(RowFrom(sender));
 
     private void OnCopyName(object sender, RoutedEventArgs e)
     {

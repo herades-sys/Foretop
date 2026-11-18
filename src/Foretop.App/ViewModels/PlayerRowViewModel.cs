@@ -12,6 +12,14 @@ public sealed record StatsFilterOption(int MinTier, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>An entry of the Live Battle game-mode list; Mode null = the mode of the battle on screen.</summary>
+public sealed record GameModeOption(GameMode? Mode, string Label)
+{
+    /// <summary>Saved in the settings: "Battle" or the mode's name.</summary>
+    public string Key => Mode?.ToString() ?? "Battle";
+    public override string ToString() => Label;
+}
+
 /// <summary>Which statistics the Live Battle columns show while a tier filter is set.</summary>
 public enum StatsView { Overall, Filtered, Both }
 
@@ -61,26 +69,34 @@ public sealed class PlayerRowViewModel : ObservableObject
     // ---- statistics filter (Live Battle toolbar)
     private int _minTier;
     private StatsView _view = StatsView.Filtered;
+    private GameMode _mode = GameMode.Random;
 
-    public void SetStatsFilter(int minTier, StatsView view)
+    public void SetStatsFilter(int minTier, StatsView view, GameMode mode)
     {
-        if (_minTier == minTier && _view == view) return;
+        if (_minTier == minTier && _view == view && _mode == mode) return;
         _minTier = minTier;
         _view = view;
+        _mode = mode;
         OnPropertyChanged(string.Empty);
     }
 
     private bool FilterActive => _minTier > 0;
 
+    /// <summary>The player in the game mode picked in the toolbar (Random: the summary itself).</summary>
+    private PlayerSummary Moded => GameModes.Project(Summary, _mode);
+
+    /// <summary>Statistics of the picked mode are loaded (always for Random; not for battles saved before modes were loaded).</summary>
+    private bool ModeLoaded => _mode == GameMode.Random || Summary.Modes is not null;
+
     /// <summary>The summary the main columns show: filtered when a filter is set and the view is "Filtered".</summary>
-    private PlayerSummary Primary => FilterActive && _view == StatsView.Filtered ? TierFilter.Project(Summary, _minTier) : Summary;
+    private PlayerSummary Primary => FilterActive && _view == StatsView.Filtered ? TierFilter.Project(Moded, _minTier) : Moded;
 
     /// <summary>"Both": the filtered values as a second line under the overall ones.</summary>
     public bool ShowSecond => FilterActive && _view == StatsView.Both;
-    private PlayerSummary Second => TierFilter.Project(Summary, _minTier);
+    private PlayerSummary Second => TierFilter.Project(Moded, _minTier);
     public string BattlesText2 => Second.Overall?.Battles is int b ? FormatCount(b) : "—";
     public string WinRateText2 => Pct(Second.Overall?.WinRate);
-    public double? WinRateRated2 => Second.Overall is { Battles: >= 50 } o ? o.WinRate : null;
+    public double? WinRateRated2 => WinRateColoured && Second.Overall is { Battles: >= 50 } o ? o.WinRate : null;
     public string AvgDamageText2 => Num(Second.Overall?.AvgDamage);
     public double? DamageRatio2 => Second.DamageRatio;
     public string AvgXpText2 => Num(Second.Overall?.AvgXp);
@@ -159,24 +175,30 @@ public sealed class PlayerRowViewModel : ObservableObject
 
     // ---- current ship
     // Also blank for battles recorded before a ship was known to be in testing.
-    private StatTotals? CurrentShip => IsTestShip ? null : Summary.CurrentShip;
+    private StatTotals? CurrentShip => IsTestShip ? null : Moded.CurrentShip;
     public int? ShipBattles => CurrentShip?.Battles;
     public double? ShipWinRate => CurrentShip?.WinRate;
     public double? ShipAvgDamage => CurrentShip?.AvgDamage;
-    public double? ShipDamageRatio => IsTestShip ? null : Summary.ShipDamageRatio;
-    public double? ShipPr => IsTestShip ? null : Summary.ShipPr;
+    public double? ShipDamageRatio => IsTestShip ? null : Moded.ShipDamageRatio;
+    public double? ShipPr => IsTestShip ? null : Moded.ShipPr;
     public string ShipPrText => ShipPr is double p ? p.ToString("0", Inv) : "—";
     public string ShipWinRateText => Pct(ShipWinRate);
 
     /// <summary>Win rate used for colouring: none below 10 battles in the ship, where it means little.</summary>
-    public double? ShipWinRateRated => ShipBattles >= 10 ? ShipWinRate : null;
+    public double? ShipWinRateRated => WinRateColoured && ShipBattles >= 10 ? ShipWinRate : null;
 
     /// <summary>Ship PR colour, likewise only from 10 battles in the ship.</summary>
     public double? ShipPrRated => ShipBattles >= 10 ? ShipPr : null;
 
     /// <summary>Overall win rate colour needs at least 50 battles.</summary>
-    public double? WinRateRated => Battles >= 50 ? WinRate : null;
-    public string ShipBattlesText => ShipBattles is int b ? FormatCount(b) : (Summary.State == LoadState.Ready && !IsTestShip ? "0" : "—");
+    public double? WinRateRated => WinRateColoured && Battles >= 50 ? WinRate : null;
+
+    /// <summary>
+    /// The win-rate colours (47 / 53 / 60 %) describe player battles; in Co-op and Operations nearly everyone wins, so
+    /// win rates there stay uncoloured.
+    /// </summary>
+    private bool WinRateColoured => _mode is GameMode.Random or GameMode.Ranked;
+    public string ShipBattlesText => ShipBattles is int b ? FormatCount(b) : (Summary.State == LoadState.Ready && !IsTestShip && ModeLoaded ? "0" : "—");
     public string ShipAvgDamageText => Num(ShipAvgDamage);
 
     // ---- karma (third party: WoWS Karma)
@@ -198,19 +220,26 @@ public sealed class PlayerRowViewModel : ObservableObject
     {
         get
         {
-            var s = Summary;
+            var s = Moded; // the picked game mode; identity, dates and karma are the same in every mode
             var sb = new StringBuilder();
             sb.Append(ClanTag is null ? "" : ClanTag + " ").AppendLine(Name);
             sb.AppendLine($"{ShipName} · {ClassShort} {TierText}");   // in full, also when the table has to shorten it
             if (s.StatusText is not null) sb.AppendLine(s.StatusText);
             if (s.CreatedAt is { } c) sb.AppendLine($"Account created {c.LocalDateTime:d}");
             if (s.LastBattleAt is { } l) sb.AppendLine($"Last battle {l.LocalDateTime:g}");
+            if (_mode != GameMode.Random && s.Overall is null && s.State is LoadState.Ready)
+            {
+                sb.AppendLine();
+                sb.AppendLine(ModeLoaded ? $"No {GameModes.Label(_mode)} battles" : $"{GameModes.Label(_mode)} statistics were not loaded for this battle (Refresh loads them)");
+            }
             if (s.Overall is { } o)
             {
                 sb.AppendLine();
-                sb.AppendLine("Random battles (official API; averages derived):");
+                sb.AppendLine($"{GameModes.Label(_mode)} battles (official API; averages derived):");
                 sb.AppendLine($"  {o.Battles:N0} battles, {Pct(o.WinRate)} wins, survival {Pct(o.SurvivalRate)}");
-                sb.AppendLine($"  {Num(o.AvgDamage)} dmg, {Num(o.AvgXp)} XP, {o.AvgFrags:0.00} frags, {o.AvgPlanes:0.0} planes per battle");
+                sb.AppendLine(o.CombatKnown
+                    ? $"  {Num(o.AvgDamage)} dmg, {Num(o.AvgXp)} XP, {o.AvgFrags:0.00} frags, {o.AvgPlanes:0.0} planes per battle"
+                    : $"  {Num(o.AvgXp)} XP per battle (the API reports no damage or kills for {GameModes.Label(_mode)})");
             }
             if (s.Pr is not null)
             {

@@ -48,7 +48,7 @@ Start the game and enter a battle. Within a second or two Foretop switches to
 - win rate and battles appear first, then PR and ship stats, then the rest;
 - **hover** a row for the full breakdown and where each number comes from;
 - **double-click** a player for their profile in Foretop; right-click for the
-  official profile, wows-numbers or WoWS Karma.
+  official profile, wows-numbers, WoWS Karma or the player's clan.
 
 **Karma** is the player's in-game karma as WoWS Karma (wows-karma.com, a community site) reports it; negative karma
 is red. The tooltip adds the site's own karma and its performance, teamplay and courtesy ratings, which come from
@@ -74,6 +74,19 @@ The columns fit what they show, and both teams use the same widths. In a narrow 
 make room for full player and ship names, in this order: 7 days, XP, ship win rate, karma, ship PR, ship
 battles, PR, damage. The team header says which are hidden ("XP, SHIP WR hidden"); they return when the window is wider, and their values are always in
 the row's tooltip. If even then a name does not fit, it ends in "…" and the tooltip shows it in full.
+
+**Mode** (above the tables): which battles the columns count. **Random** (the default), **Ranked**, **Co-op** or
+**Operations**; **Battle's mode** follows the battle on screen (Ranked statistics in a ranked battle, and so on;
+Random for battle types the API has no statistics for, such as clan battles). The badge next to each team name says
+which mode is shown ("RANKED · ALL TIERS"), and Foretop remembers the choice.
+
+- Every column follows the mode: battles, win rate, damage, XP, ship battles, ship win rate, the tier filter and the
+  team averages. Ranked counts solo ranked battles; Operations adds up solo, division and hard division.
+- PR, ship PR and the last 7 days exist for Random battles only, so the tables leave those columns out in other modes.
+  The strength estimate stays on Random-battle PR.
+- Operations: the API reports battles, wins, XP and survival, but no damage or kills, so DMG shows "—".
+- Win-rate colours apply to Random and Ranked; in Co-op and Operations nearly everyone wins, so win rates stay grey.
+- Battles saved by older Foretop versions have Random statistics only; Refresh loads the other modes.
 
 **Statistics filter** (above the tables): count only each player's battles in ships of a minimum tier, so accounts
 with thousands of low-tier battles are not flattered by them. Choose **All tiers**, **Tier V+** … **Tier X+** or
@@ -122,6 +135,22 @@ ships take part; both apply together. The tier is the ship's real tier from the 
 filters names the active filters and how many ships match; ships without a PR (no expected values) or with an
 unknown tier are never ranked and are counted there. **Reset filters** goes back to all tiers and 20+ battles.
 The choice stays while Foretop runs, also when you open another player.
+
+**Clans** (sidebar) finds a clan by tag or name on the server chosen in Settings (two letters are enough; an exact
+tag comes first). In Live Battle, right-click a player → *Open clan* opens their clan. A clan shows:
+
+- its name and tag, members, creation date, commander and founder, an earlier name or tag after a rename, and the
+  clan description;
+- **Joined in the last 30 days**: current members by their official join date;
+- **Left (seen by Foretop)**: members who were in the clan at one of Foretop's checks and are gone at a later one,
+  with the dates between which they left. The Wargaming API lists only current members and keeps no history, so
+  Foretop can only notice departures from its first look at a clan on; the note above the list says since when.
+  Each time you open or refresh a clan counts as a check. **Track** has Foretop check the clan every 6 hours while it
+  runs (tracked clans are listed under the search box), so departures are noticed without opening the page;
+- **Members**: rank, join date, days in the clan, Random battles, win rate and last battle (official account
+  totals; "hidden" for hidden profiles). Click a column to sort; double-click a member for their profile.
+
+*Open on wows-numbers* opens the clan's page there.
 
 ## 5. Battle History and Statistics
 

@@ -15,6 +15,7 @@
         <DataTemplate DataType="{x:Type vm:AnalyticsViewModel}"><views:AnalyticsView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}"><views:DashboardView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:PlayerSearchViewModel}"><views:PlayerSearchView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ClansViewModel}"><views:ClansView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ShipIntelligenceViewModel}"><views:ShipIntelligenceView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ReplaysViewModel}"><views:ReplaysView /></DataTemplate>
     </Window.Resources>
@@ -117,6 +118,8 @@
                                  IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Live}" />
                     <RadioButton Style="{StaticResource NavButton}" Content="Player Search" Tag="{StaticResource IconSearch}" GroupName="nav"
                                  IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=PlayerSearch}" />
+                    <RadioButton Style="{StaticResource NavButton}" Content="Clans" Tag="{StaticResource IconClan}" GroupName="nav"
+                                 IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Clans}" />
                     <RadioButton Style="{StaticResource NavButton}" Content="Player Profiles" Tag="{StaticResource IconPlayers}" GroupName="nav"
                                  IsChecked="{Binding SelectedPage, Converter={x:Static views:EnumMatch.Instance}, ConverterParameter=Profiles}" />
                     <RadioButton Style="{StaticResource NavButton}" Content="Ship Intelligence" Tag="{StaticResource IconShip}" GroupName="nav"

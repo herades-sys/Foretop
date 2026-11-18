@@ -1,0 +1,166 @@
+<UserControl x:Class="Foretop.App.Views.ClansView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foretop.App.Views">
+    <UserControl.Resources>
+        <!-- A change in the member list: name, date, detail -->
+        <DataTemplate x:Key="ChangeRow">
+            <DockPanel Margin="0,0,0,6">
+                <TextBlock DockPanel.Dock="Right" Text="{Binding When}" Style="{StaticResource Dim}" FontSize="12" Margin="12,0,0,0" />
+                <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Dim}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </DockPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="22,18,22,22" MaxWidth="1300" HorizontalAlignment="Left">
+            <TextBlock Text="Clans" Style="{StaticResource H1}" />
+            <TextBlock Text="Find a clan on the selected server: its members, who joined recently and who left since Foretop started watching it."
+                       Style="{StaticResource Dim}" Margin="0,2,0,16" />
+
+            <!-- Search -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" FontSize="14" MinHeight="34"
+                             ToolTip="Clan tag or name (at least two letters)" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,10">
+                        <TextBlock Text="{Binding Message}" Style="{StaticResource Dim}" />
+                        <TextBlock Text="  · searching…" Style="{StaticResource Dim}" Visibility="{Binding IsSearching, Converter={StaticResource BoolVis}}" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Results}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                        Margin="0,0,8,8" HorizontalContentAlignment="Left" Padding="12,0" MinWidth="190">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Tag, StringFormat=[{0}]}" FontWeight="SemiBold" Margin="0,0,6,0" />
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+                                        <TextBlock Text="{Binding Members, StringFormat=' · {0}'}" Style="{StaticResource Dim}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- Tracked clans -->
+                    <StackPanel Margin="0,6,0,0">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding TrackedClans.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock Text="TRACKED CLANS" Style="{StaticResource SectionLabel}" Margin="0,0,0,8" />
+                        <ItemsControl ItemsSource="{Binding TrackedClans}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.OpenTrackedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                            Margin="0,0,8,8" Padding="12,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Tag, StringFormat=[{0}]}" FontWeight="SemiBold" Margin="0,0,6,0" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding Error}" Foreground="{DynamicResource StatusRed}" Margin="0,0,0,12" TextWrapping="Wrap"
+                       Visibility="{Binding Error, Converter={StaticResource NullVis}}" />
+            <TextBlock Text="Loading clan…" Style="{StaticResource Dim}" Margin="0,0,0,12" Visibility="{Binding IsLoading, Converter={StaticResource BoolVis}}" />
+
+            <!-- The clan -->
+            <StackPanel Visibility="{Binding HasClan, Converter={StaticResource BoolVis}}">
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                            <CheckBox Content="Track" IsChecked="{Binding IsTracked}" VerticalAlignment="Center" Margin="0,0,12,0"
+                                      ToolTip="Check this clan every 6 hours while Foretop runs, so departures are noticed even when you do not open it" />
+                            <Button Content="Refresh" Command="{Binding RefreshCommand}" Margin="0,0,8,0" />
+                            <Button Content="Open on wows-numbers" Command="{Binding OpenWowsNumbersCommand}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource H2}" FontSize="20" />
+                            <TextBlock Text="{Binding Facts}" Style="{StaticResource Dim}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding RenameText}" Style="{StaticResource Dim}" Margin="0,2,0,0"
+                                       Visibility="{Binding RenameText, Converter={StaticResource NullVis}}" />
+                            <TextBlock Text="{Binding Clan.Info.Description}" Margin="0,8,0,0" TextWrapping="Wrap" MaxWidth="900" HorizontalAlignment="Left"
+                                       Visibility="{Binding Clan.Info.Description, Converter={StaticResource NullVis}}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Joined / left -->
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="JOINED IN THE LAST 30 DAYS" Style="{StaticResource SectionLabel}" Margin="0,0,0,4" />
+                            <TextBlock Text="Official join dates of the current members." Style="{StaticResource Dim}" FontSize="11.5" Margin="0,0,0,10" />
+                            <TextBlock Text="Nobody joined in the last 30 days." Style="{StaticResource Dim}">
+                                <TextBlock.Visibility>
+                                    <Binding Path="Joined.Count" Converter="{x:Static views:ZeroToVisible.Instance}" />
+                                </TextBlock.Visibility>
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding Joined}" ItemTemplate="{StaticResource ChangeRow}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="LEFT (SEEN BY FORETOP)" Style="{StaticResource SectionLabel}" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding HistoryNote}" Style="{StaticResource Dim}" FontSize="11.5" TextWrapping="Wrap" Margin="0,0,0,10" />
+                            <TextBlock Text="Nobody has left since Foretop's first check." Style="{StaticResource Dim}">
+                                <TextBlock.Visibility>
+                                    <Binding Path="Left.Count" Converter="{x:Static views:ZeroToVisible.Instance}" />
+                                </TextBlock.Visibility>
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding Left}" ItemTemplate="{StaticResource ChangeRow}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Members -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="MEMBERS" Style="{StaticResource SectionLabel}" Margin="0,0,0,4" />
+                        <TextBlock Text="Random battles and win rate: official account totals. Double-click a member for their profile."
+                                   Style="{StaticResource Dim}" FontSize="11.5" Margin="0,0,0,10" />
+                        <DataGrid x:Name="MembersGrid" ItemsSource="{Binding Members}" IsReadOnly="True" MouseDoubleClick="OnMemberDoubleClick"
+                                  MaxHeight="700" CanUserSortColumns="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="PLAYER" Binding="{Binding Name}" Width="*" MinWidth="160" />
+                                <DataGridTextColumn Header="ROLE" Binding="{Binding Role}" Width="Auto" SortMemberPath="RoleOrder" />
+                                <DataGridTextColumn Header="JOINED" Binding="{Binding JoinedText}" Width="Auto" SortMemberPath="JoinedAt" />
+                                <DataGridTextColumn Header="DAYS IN CLAN" Binding="{Binding DaysText}" Width="Auto" SortMemberPath="DaysInClan" />
+                                <DataGridTextColumn Header="BATTLES" Binding="{Binding BattlesText}" Width="Auto" SortMemberPath="Battles" />
+                                <DataGridTemplateColumn Header="WR" Width="Auto" SortMemberPath="WinRate">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding WinRateText}" VerticalAlignment="Center"
+                                                       Foreground="{Binding WinRateRated, Converter={StaticResource Rating}, ConverterParameter=wr}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="LAST BATTLE" Binding="{Binding LastBattleText}" Width="Auto" SortMemberPath="LastBattle" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

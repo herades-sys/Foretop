@@ -3,19 +3,23 @@ using Foretop.Core.Api;
 namespace Foretop.Core.Stats;
 
 /// <summary>Official totals from the API. Every average on it is derived (simple arithmetic).</summary>
+/// <param name="CombatKnown">
+/// False when the API does not report damage, kills and planes for this kind of battle (Operations): their averages are
+/// then null ("—"), never 0.
+/// </param>
 public sealed record StatTotals(
     int Battles, int Wins, int Losses, int Draws,
-    long Damage, long Xp, int Frags, int Survived, int PlanesKilled)
+    long Damage, long Xp, int Frags, int Survived, int PlanesKilled, bool CombatKnown = true)
 {
     public double? WinRate => Battles > 0 ? 100.0 * Wins / Battles : null;
-    public double? AvgDamage => Battles > 0 ? (double)Damage / Battles : null;
+    public double? AvgDamage => Battles > 0 && CombatKnown ? (double)Damage / Battles : null;
     public double? AvgXp => Battles > 0 ? (double)Xp / Battles : null;
-    public double? AvgFrags => Battles > 0 ? (double)Frags / Battles : null;
+    public double? AvgFrags => Battles > 0 && CombatKnown ? (double)Frags / Battles : null;
     public double? SurvivalRate => Battles > 0 ? 100.0 * Survived / Battles : null;
-    public double? AvgPlanes => Battles > 0 ? (double)PlanesKilled / Battles : null;
+    public double? AvgPlanes => Battles > 0 && CombatKnown ? (double)PlanesKilled / Battles : null;
     public int Deaths => Battles - Survived;
     /// <summary>Kills ÷ deaths; null when there are no deaths (or no battles), shown as "—", never as a division by zero.</summary>
-    public double? KillDeath => Deaths > 0 ? (double)Frags / Deaths : null;
+    public double? KillDeath => Deaths > 0 && CombatKnown ? (double)Frags / Deaths : null;
 
     public static StatTotals? From(StatsBlockDto? b) => b is null
         ? null
@@ -25,7 +29,7 @@ public sealed record StatTotals(
     public StatTotals Minus(StatTotals older) => new(
         Battles - older.Battles, Wins - older.Wins, Losses - older.Losses, Draws - older.Draws,
         Damage - older.Damage, Xp - older.Xp, Frags - older.Frags, Survived - older.Survived,
-        PlanesKilled - older.PlanesKilled);
+        PlanesKilled - older.PlanesKilled, CombatKnown && older.CombatKnown);
 }
 
 public enum ShipClass
@@ -142,6 +146,12 @@ public sealed record PlayerSummary
     /// <see cref="Ships"/>, so recorded battles can be filtered too. Null until the per-ship statistics are loaded.
     /// </summary>
     public IReadOnlyList<TierStats>? ByTier { get; init; }
+
+    /// <summary>
+    /// Ranked, Co-op and Operations statistics (Random is in the fields above); see <see cref="GameModes.Project"/>.
+    /// Null until loaded, and for battles saved before Foretop loaded other modes.
+    /// </summary>
+    public IReadOnlyDictionary<GameMode, ModeStats>? Modes { get; init; }
     public DateTimeOffset? StatsFetchedAt { get; init; }
 
     /// <summary>The API was unreachable, so these are older cached statistics.</summary>

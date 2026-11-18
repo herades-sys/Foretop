@@ -35,6 +35,10 @@ public sealed class AccountStatisticsDto
     public StatsBlockDto? PvpDiv3 { get; set; }
     public StatsBlockDto? RankSolo { get; set; }
     public StatsBlockDto? Pve { get; set; }
+    // Operations: battles, wins, losses, xp and survival only (no damage or kills in the API).
+    public StatsBlockDto? OperSolo { get; set; }
+    public StatsBlockDto? OperDiv { get; set; }
+    public StatsBlockDto? OperDivHard { get; set; }
 }
 
 public sealed class AccountInfoDto
@@ -56,6 +60,10 @@ public sealed class ShipStatsDto
     public long LastBattleTime { get; set; }
     public StatsBlockDto? Pvp { get; set; }
     public StatsBlockDto? RankSolo { get; set; }
+    public StatsBlockDto? Pve { get; set; }
+    public StatsBlockDto? OperSolo { get; set; }
+    public StatsBlockDto? OperDiv { get; set; }
+    public StatsBlockDto? OperDivHard { get; set; }
 }
 
 public sealed class AccountListEntryDto

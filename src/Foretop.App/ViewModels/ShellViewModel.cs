@@ -12,6 +12,7 @@ public enum Page
     Dashboard,
     Live,
     PlayerSearch,
+    Clans,
     Profiles,
     Ships,
     History,
@@ -40,6 +41,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Analytics = new AnalyticsViewModel(Personal, Statistics);
         Dashboard = new DashboardViewModel(host);
         PlayerSearch = new PlayerSearchViewModel(host);
+        Clans = new ClansViewModel(host);
         Ships = new ShipIntelligenceViewModel(host);
         Replays = new ReplaysViewModel(host);
 
@@ -53,6 +55,12 @@ public sealed partial class ShellViewModel : ObservableObject
         Live.ProfileRequested += (name, region) => OpenProfile(name, region);
         Statistics.ProfileRequested += OpenProfile;
         PlayerSearch.ProfileRequested += OpenProfile;
+        Clans.ProfileRequested += (name, region) => OpenProfile(name, region);
+        Live.ClanRequested += (tag, region) =>
+        {
+            SelectedPage = Page.Clans;
+            _ = Clans.OpenTagAsync(tag, region);
+        };
         Dashboard.ProfileRequested += OpenProfile;
         Live.HistoryChanged += () => { History.MarkDirty(); Statistics.MarkDirty(); Dashboard.MarkDirty(); };
         host.Ships.Updated += () =>
@@ -100,6 +108,10 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             if (e.PropertyName == nameof(ProfileViewModel.Title)) UpdateBreadcrumb();
         };
+        Clans.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ClansViewModel.Title)) UpdateBreadcrumb();
+        };
         Ships.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ShipIntelligenceViewModel.SectionTitle)) UpdateBreadcrumb();
@@ -121,6 +133,7 @@ public sealed partial class ShellViewModel : ObservableObject
     public AnalyticsViewModel Analytics { get; }
     public DashboardViewModel Dashboard { get; }
     public PlayerSearchViewModel PlayerSearch { get; }
+    public ClansViewModel Clans { get; }
     public ShipIntelligenceViewModel Ships { get; }
     public ReplaysViewModel Replays { get; }
 
@@ -200,6 +213,7 @@ public sealed partial class ShellViewModel : ObservableObject
         if (newValue == Page.Analytics) _ = Analytics.EnsureLoadedAsync();
         if (newValue == Page.Dashboard) _ = Dashboard.EnsureLoadedAsync();
         if (newValue == Page.PlayerSearch) PlayerSearch.OnShown();
+        if (newValue == Page.Clans) Clans.OnShown();
         if (newValue == Page.Ships) Ships.OnShown();
         UpdateBreadcrumb();
     }
@@ -245,6 +259,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Page.Dashboard => Dashboard,
         Page.Live => Live,
         Page.PlayerSearch => PlayerSearch,
+        Page.Clans => Clans,
         Page.Profiles => Profiles,
         Page.Ships => Ships,
         Page.History => History,
@@ -261,6 +276,7 @@ public sealed partial class ShellViewModel : ObservableObject
             Page.Dashboard => (null, "Dashboard"),
             Page.Live => (null, "Live Battle"),
             Page.PlayerSearch => (null, "Player Search"),
+            Page.Clans => Clans.HasClan ? ("Clans", Clans.Title) : (null, "Clans"),
             Page.Profiles => (string.IsNullOrEmpty(Profiles.Title) ? (null, "Player Profiles") : ("Player Profiles", Profiles.Title)),
             Page.Ships => ("Ship Intelligence", Ships.SectionTitle),
             Page.History => (null, "Battle History"),

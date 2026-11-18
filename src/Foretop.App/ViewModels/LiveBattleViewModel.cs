@@ -49,6 +49,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         _rememberStatsFilter = st.RememberStatsFilter;
         _selectedStatsFilter = StatsFilterOptions.FirstOrDefault(o => st.RememberStatsFilter && o.MinTier == st.StatsMinTier) ?? StatsFilterOptions[0];
         _statsViewMode = Enum.TryParse<StatsView>(st.StatsView, out var sv) ? sv : StatsView.Filtered;
+        _selectedGameMode = GameModeOptions.FirstOrDefault(o => o.Key == st.StatsMode) ?? GameModeOptions[1];
         ApplySort();
 
         _refreshTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(350), DispatcherPriority.Background, (_, _) => FlushUpdates(), _ui);
@@ -121,6 +122,24 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     /// <summary>KARMA column shown (WoWS Karma lookup on in Settings).</summary>
     public bool ShowKarma => _host.Settings.Current.ShowWowsKarma;
 
+    // ------------------------------------------------------------------ game mode
+
+    /// <summary>"Battle's mode" (follows the battle type), Random, Ranked, Co-op, Operations.</summary>
+    public IReadOnlyList<GameModeOption> GameModeOptions { get; } =
+        [new(null, "Battle's mode"), .. GameModes.All.Select(m => new GameModeOption(m, GameModes.Label(m)))];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EffectiveGameMode), nameof(IsRandomMode), nameof(TableBadge), nameof(TableBadgeTip))]
+    private GameModeOption _selectedGameMode;
+
+    /// <summary>The mode the columns show: the picked one, or for "Battle's mode" the one of the battle on screen.</summary>
+    public GameMode EffectiveGameMode => SelectedGameMode.Mode ?? (_arena is { } a ? GameModes.ForBattle(a.BattleType) : GameMode.Random);
+
+    /// <summary>PR, ship PR and 7 days exist for Random only; the tables leave those columns out in other modes.</summary>
+    public bool IsRandomMode => EffectiveGameMode == GameMode.Random;
+
+    partial void OnSelectedGameModeChanged(GameModeOption value) => ApplyStatsFilter();
+
     // ------------------------------------------------------------------ statistics filter
 
     /// <summary>All tiers, Tier V+ … X+, Tier XI only.</summary>
@@ -143,18 +162,25 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     public bool IsStatsFilterActive => StatsMinTier > 0;
 
     /// <summary>What the stat columns show, on each team table: "ALL TIERS", "TIER VI+", "ALL TIERS / TIER VI+".</summary>
-    public string TableBadge => !IsStatsFilterActive || StatsViewMode == StatsView.Overall ? TierFilter.Badge(0)
+    public string TableBadge => (IsRandomMode ? "" : GameModes.Badge(EffectiveGameMode) + " · ")
+        + (!IsStatsFilterActive || StatsViewMode == StatsView.Overall ? TierFilter.Badge(0)
         : StatsViewMode == StatsView.Filtered ? TierFilter.Badge(StatsMinTier)
-        : TierFilter.Badge(0) + " / " + TierFilter.Badge(StatsMinTier);
+        : TierFilter.Badge(0) + " / " + TierFilter.Badge(StatsMinTier));
 
-    public string TableBadgeTip => !IsStatsFilterActive
-        ? "Battles, win rate, damage, XP and PR over all of the player's Random battles (official account totals)."
+    public string TableBadgeTip => (IsRandomMode ? "" : ModeTip + " ") + (!IsStatsFilterActive
+        ? IsRandomMode ? "Battles, win rate, damage, XP and PR over all of the player's Random battles (official account totals)." : ""
         : StatsViewMode switch
         {
             StatsView.Overall => $"Overall statistics shown; the {TierFilter.Label(StatsMinTier)} filter is set but switched to Overall. Hover a player for both.",
             StatsView.Filtered => $"Battles, win rate, damage, XP and PR over the player's {TierFilter.Label(StatsMinTier)} ships only: the official per-ship totals added up and recalculated by Foretop. Team averages and the strength estimate use them too. 7-day values are not available per tier.",
             _ => $"First line: overall. Second line: {TierFilter.Label(StatsMinTier)} only (calculated by Foretop from the official per-ship totals).",
-        };
+        });
+
+    private string ModeTip => EffectiveGameMode switch
+    {
+        GameMode.Operations => "Operations statistics (official totals of solo, division and hard division): battles, win rate and XP; the API reports no damage or kills there. No PR outside Random battles.",
+        _ => $"{GameModes.Label(EffectiveGameMode)} statistics (official account and per-ship totals). PR and the last 7 days exist for Random battles only.",
+    };
 
     partial void OnSelectedStatsFilterChanged(StatsFilterOption value) => ApplyStatsFilter();
     partial void OnStatsViewModeChanged(StatsView value) => ApplyStatsFilter();
@@ -162,7 +188,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
 
     private void ApplyStatsFilter()
     {
-        foreach (var r in FriendlyRows.Concat(EnemyRows)) r.SetStatsFilter(StatsMinTier, StatsViewMode);
+        foreach (var r in FriendlyRows.Concat(EnemyRows)) r.SetStatsFilter(StatsMinTier, StatsViewMode, EffectiveGameMode);
         UpdateTeamSummaries();
         ApplySort();
         SaveStatsFilter();
@@ -177,11 +203,13 @@ public sealed partial class LiveBattleViewModel : ObservableObject
         var cur = _host.Settings.Current;
         var tier = RememberStatsFilter ? StatsMinTier : 0;
         var view = StatsViewMode.ToString();
-        if (cur.RememberStatsFilter == RememberStatsFilter && cur.StatsMinTier == tier && cur.StatsView == view) return;
+        var mode = SelectedGameMode.Key;
+        if (cur.RememberStatsFilter == RememberStatsFilter && cur.StatsMinTier == tier && cur.StatsView == view && cur.StatsMode == mode) return;
         var s = _host.Settings.Clone();
         s.RememberStatsFilter = RememberStatsFilter;
         s.StatsMinTier = tier;
         s.StatsView = view;
+        s.StatsMode = mode;
         try { _host.Settings.Save(s); } catch (System.IO.IOException) { } // the choice still applies for this run
     }
 
@@ -243,7 +271,7 @@ public sealed partial class LiveBattleViewModel : ObservableObject
                 ? old
                 : new PlayerSummary { Name = v.Name, Relation = v.Relation, ShipId = v.ShipId, IsBot = v.IsBot };
             var row = new PlayerRowViewModel(summary, _host.Ships.Get(v.ShipId), battleRegion, _host.ShipData.FindById(v.ShipId));
-            row.SetStatsFilter(StatsMinTier, StatsViewMode);
+            row.SetStatsFilter(StatsMinTier, StatsViewMode, EffectiveGameMode);
             _rowsByName[v.Name] = row;
             (v.IsFriendly ? FriendlyRows : EnemyRows).Add(row);
         }
@@ -261,6 +289,10 @@ public sealed partial class LiveBattleViewModel : ObservableObject
             info.ClientVersion is null ? null : "client " + info.ClientVersion.Replace(", ", "."),
         }.Where(s => !string.IsNullOrEmpty(s)));
 
+        OnPropertyChanged(nameof(EffectiveGameMode));
+        OnPropertyChanged(nameof(IsRandomMode));
+        OnPropertyChanged(nameof(TableBadge));
+        OnPropertyChanged(nameof(TableBadgeTip));
         UpdateTeamSummaries();
         UpdateNotice();
         BattleShown?.Invoke(live);
@@ -361,12 +393,17 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     private void UpdateTeamSummaries()
     {
         // Team averages and the strength estimate follow the statistics the columns show.
+        // In another game mode the averages are that mode's; the strength estimate stays on Random-battle PR (it needs PR).
         var project = StatsMinTier > 0 && StatsViewMode != StatsView.Overall;
-        FriendlySummary = TeamSummary.From(FriendlyRows.Select(r => project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).ToList());
-        EnemySummary = TeamSummary.From(EnemyRows.Select(r => project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).ToList());
-        HasRecentData = FriendlyRows.Concat(EnemyRows)
-            .Any(r => (project ? TierFilter.Project(r.Summary, StatsMinTier) : r.Summary).Recent7 is { Totals.Battles: > 0 });
-        FriendlyShare = TeamComparison.FriendlyShare(FriendlySummary, EnemySummary);
+        var mode = EffectiveGameMode;
+        PlayerSummary Shown(PlayerSummary p, GameMode m) => project ? TierFilter.Project(GameModes.Project(p, m), StatsMinTier) : GameModes.Project(p, m);
+        FriendlySummary = TeamSummary.From(FriendlyRows.Select(r => Shown(r.Summary, mode)).ToList());
+        EnemySummary = TeamSummary.From(EnemyRows.Select(r => Shown(r.Summary, mode)).ToList());
+        HasRecentData = FriendlyRows.Concat(EnemyRows).Any(r => Shown(r.Summary, mode).Recent7 is { Totals.Battles: > 0 });
+        FriendlyShare = mode == GameMode.Random
+            ? TeamComparison.FriendlyShare(FriendlySummary, EnemySummary)
+            : TeamComparison.FriendlyShare(TeamSummary.From(FriendlyRows.Select(r => Shown(r.Summary, GameMode.Random)).ToList()),
+                                           TeamSummary.From(EnemyRows.Select(r => Shown(r.Summary, GameMode.Random)).ToList()));
         ComparisonText = FriendlyShare is double s
             ? $"Estimated strength (average PR): {s:P0} vs {1 - s:P0} — an indication from past stats, not a prediction"
             : "Strength estimate needs PR for at least 3 players per team";
@@ -583,6 +620,15 @@ public sealed partial class LiveBattleViewModel : ObservableObject
     private void OpenWowsNumbers(PlayerRowViewModel? row)
     {
         if (row?.AccountId is long id) OpenUrl(Regions.WowsNumbersUrl(row.Region, id, row.Summary.Name));
+    }
+
+    /// <summary>(clan tag, server): the Clans page should open this clan.</summary>
+    public event Action<string, Region>? ClanRequested;
+
+    [RelayCommand]
+    private void OpenClan(PlayerRowViewModel? row)
+    {
+        if (row?.Summary.ClanTag is { Length: > 0 } tag) ClanRequested?.Invoke(tag, row.Region);
     }
 
     [RelayCommand]

@@ -49,6 +49,7 @@ public sealed class AppHost : IDisposable
             () => string.IsNullOrWhiteSpace(Settings.Current.GameRoot) ? GameLocator.FindGameRoot() : Settings.Current.GameRoot,
             Loggers.CreateLogger<ShipDataStore>());
         Karma = new Core.Karma.WowsKarmaClient(Http, Cache, Loggers.CreateLogger<Core.Karma.WowsKarmaClient>());
+        Clans = new Core.Clans.ClanService(Api, new Core.Clans.ClanStore(Database), Loggers.CreateLogger<Core.Clans.ClanService>());
         Stats.KarmaLookup = Karma.GetAsync;
         Stats.IsTestShip = id => ShipData.FindById(id)?.IsTestShip == true;
         Stats.ShipTier = id => Ships.Get(id)?.Tier is int t and > 0 ? t : ShipData.FindById(id)?.Tier is int g and > 0 ? g : null;
@@ -90,6 +91,9 @@ public sealed class AppHost : IDisposable
 
     /// <summary>Players' karma from WoWS Karma (wows-karma.com).</summary>
     public Core.Karma.WowsKarmaClient Karma { get; }
+
+    /// <summary>Clan search, clan members and the member history Foretop records.</summary>
+    public Core.Clans.ClanService Clans { get; }
     public ShipCatalog Ships { get; }
     public PlayerStatsService Stats { get; }
     public BattleWatcher Watcher { get; }

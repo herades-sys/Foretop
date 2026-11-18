@@ -88,6 +88,10 @@
                 </Style>
             </Border.Style>
             <StackPanel Orientation="Horizontal">
+                <TextBlock Text="MODE" Style="{StaticResource Dim}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <ComboBox ItemsSource="{Binding GameModeOptions}" SelectedItem="{Binding SelectedGameMode}" Width="130" Margin="0,0,16,0"
+                          ToolTip="Statistics of which battles the columns show: Random, Ranked, Co-op or Operations; Battle's mode follows the battle on screen" />
                 <TextBlock Text="STATISTICS FILTER" Style="{StaticResource Dim}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
                            Margin="0,0,10,0" />
                 <ComboBox ItemsSource="{Binding StatsFilterOptions}" SelectedItem="{Binding SelectedStatsFilter}" Width="130"
@@ -160,11 +164,11 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <views:TeamTable Grid.Column="0" Header="FRIENDLY TEAM" FitGroup="{StaticResource TeamColumns}" Accent="{StaticResource Friendly}"
-                             Rows="{Binding FriendlyView}" Summary="{Binding FriendlySummary}" Compact="{Binding CompactMode}" ShowKarma="{Binding ShowKarma}"
+                             Rows="{Binding FriendlyView}" Summary="{Binding FriendlySummary}" Compact="{Binding CompactMode}" ShowKarma="{Binding ShowKarma}" RandomStats="{Binding IsRandomMode}"
                              ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
                              TwoLine="{Binding ShowBothLines}" />
             <views:TeamTable Grid.Column="2" Header="ENEMY TEAM" FitGroup="{StaticResource TeamColumns}" Accent="{StaticResource Enemy}"
-                             Rows="{Binding EnemyView}" Summary="{Binding EnemySummary}" Compact="{Binding CompactMode}" ShowKarma="{Binding ShowKarma}"
+                             Rows="{Binding EnemyView}" Summary="{Binding EnemySummary}" Compact="{Binding CompactMode}" ShowKarma="{Binding ShowKarma}" RandomStats="{Binding IsRandomMode}"
                              ShowRecent="{Binding HasRecentData}" Badge="{Binding TableBadge}" BadgeTip="{Binding TableBadgeTip}"
                              TwoLine="{Binding ShowBothLines}" />
         </Grid>

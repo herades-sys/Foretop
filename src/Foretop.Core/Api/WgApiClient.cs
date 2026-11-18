@@ -116,6 +116,17 @@ public sealed class WgApiClient
         return result;
     }
 
+    /// <summary>Per-ship fields of the other game modes (Ranked, Co-op, Operations), kept small: totals only.</summary>
+    private static readonly string ModeShipFields = string.Join(",",
+        new[] { "rank_solo", "pve" }
+            .SelectMany(b => new[] { "battles", "wins", "losses", "draws", "damage_dealt", "xp", "frags", "survived_battles", "planes_killed" }
+                .Select(f => b + "." + f))
+            .Concat(new[] { "oper_solo", "oper_div", "oper_div_hard" }
+                .SelectMany(b => new[] { "battles", "wins", "losses", "xp", "survived_battles" }.Select(f => b + "." + f))));
+
+    /// <summary>Account statistics blocks besides Random (statistics.pvp), for the game-mode switch.</summary>
+    public const string ModeAccountExtra = "statistics.rank_solo,statistics.pve,statistics.oper_solo,statistics.oper_div,statistics.oper_div_hard";
+
     /// <summary>Raw ships/stats array for one account (null = hidden profile or no data).</summary>
     public async Task<JsonElement?> GetShipStatsRawAsync(Region region, long accountId, RequestPriority priority, CancellationToken ct)
     {
@@ -123,7 +134,9 @@ public sealed class WgApiClient
         {
             ["account_id"] = accountId.ToString(CultureInfo.InvariantCulture),
             ["fields"] = "ship_id,battles,last_battle_time,pvp.battles,pvp.wins,pvp.losses,pvp.draws,pvp.damage_dealt,pvp.xp," +
-                         "pvp.frags,pvp.survived_battles,pvp.planes_killed,pvp.max_damage_dealt,pvp.max_frags_battle",
+                         "pvp.frags,pvp.survived_battles,pvp.planes_killed,pvp.max_damage_dealt,pvp.max_frags_battle," +
+                         ModeShipFields,
+            ["extra"] = "rank_solo,pve,oper_solo,oper_div,oper_div_hard",
         }, priority, ct).ConfigureAwait(false);
         return TryGetKeyed(r.Data, accountId);
     }

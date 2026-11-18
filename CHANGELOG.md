@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **Clans.** A new page finds a clan by tag or name and shows its details (members, creation, commander and founder,
+  renames, description), who joined in the last 30 days (official join dates) and every member with rank, join date,
+  days in the clan, Random battles, win rate and last battle; double-click opens a profile. **Who left** is recorded by
+  Foretop, because the Wargaming API lists only current members: each time Foretop checks a clan it compares the list
+  with its previous check and shows departures with the dates between which they happened. *Track* checks a clan every
+  6 hours while Foretop runs. Live Battle: right-click a player → *Open clan*.
+- **Live Battle: statistics of other game modes.** A Mode list above the tables switches every column between
+  Random, Ranked, Co-op and Operations, or follows the battle on screen (*Battle's mode*). Battles, win rate, damage,
+  XP, ship battles and ship win rate, the tier filter and the team averages all follow it; the badge next to the team
+  name says which mode is shown. PR, ship PR and 7 days exist for Random only and are left out in other modes;
+  Operations have no damage or kills in the API ("—", never 0); win-rate colours apply to Random and Ranked only. The
+  other modes come with the same API calls (no extra requests); statistics cached by older versions are fetched again
+  once, or used as they are when the API cannot be reached.
+
 ## 1.9.0 — 2026-11-18
 
 - **Karma from WoWS Karma.** Live Battle has a KARMA column: each player's in-game karma as WoWS Karma

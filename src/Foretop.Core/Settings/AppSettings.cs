@@ -30,6 +30,8 @@ public sealed class AppSettings
     public int StatsMinTier { get; set; }
     /// <summary>Overall, Filtered or Both.</summary>
     public string StatsView { get; set; } = "Filtered";
+    /// <summary>Live Battle game mode: Random, Ranked, Coop, Operations or Battle (the battle's own mode).</summary>
+    public string StatsMode { get; set; } = "Random";
     /// <summary>Keep the statistics filter for the next start; otherwise Foretop starts with all tiers.</summary>
     public bool RememberStatsFilter { get; set; } = true;
     public bool StartMinimized { get; set; }

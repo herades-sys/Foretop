@@ -5,7 +5,7 @@ namespace Foretop.Core.Data;
 /// <summary>Owns the SQLite file and its schema. Connections are pooled by Microsoft.Data.Sqlite.</summary>
 public sealed class Database
 {
-    private const int SchemaVersion = 6;
+    private const int SchemaVersion = 7;
     private readonly string _connectionString;
 
     public Database(string path)
@@ -150,6 +150,35 @@ public sealed class Database
                 CREATE INDEX IF NOT EXISTS ix_battles_when ON battles(COALESCE(started_at, detected_at) DESC);
                 CREATE INDEX IF NOT EXISTS ix_results_status ON battle_results(status, started_at);
                 CREATE INDEX IF NOT EXISTS ix_results_account ON battle_results(region, account_id, started_at);
+                """);
+        }
+        if (version < 7)
+        {
+            // Clan search: the member lists Foretop has seen, to tell who left (the API only lists current members).
+            // left_seen: the first check at which the member was gone; they left between last_seen and left_seen.
+            Exec(c, """
+                CREATE TABLE IF NOT EXISTS clans (
+                    region TEXT NOT NULL,
+                    clan_id INTEGER NOT NULL,
+                    tag TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    tracked INTEGER NOT NULL DEFAULT 0,
+                    first_checked INTEGER NOT NULL,
+                    last_checked INTEGER NOT NULL,
+                    PRIMARY KEY (region, clan_id)
+                );
+                CREATE TABLE IF NOT EXISTS clan_members (
+                    region TEXT NOT NULL,
+                    clan_id INTEGER NOT NULL,
+                    account_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    joined_at INTEGER,
+                    first_seen INTEGER NOT NULL,
+                    last_seen INTEGER NOT NULL,
+                    left_seen INTEGER,
+                    PRIMARY KEY (region, clan_id, account_id)
+                );
                 """);
         }
         Exec(c, $"PRAGMA user_version = {SchemaVersion};");

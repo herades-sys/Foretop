@@ -207,8 +207,10 @@ public sealed class PlayerStatsService
                     var pairs = perf.Select(x => (x.ShipId, x.Totals)).ToList();
                     var pr = PersonalRating.Compute(pairs, expected);
                     var current = perf.FirstOrDefault(x => x.ShipId == h.ShipId);
+                    var modes = OtherModes(ships, infos[id]?.Dto.Statistics, h.ShipId);
                     Set(h.Name, s => s with
                     {
+                        Modes = modes,
                         Ships = perf,
                         ByTier = ShipTier is { } tierOf ? TierFilter.ComputeAll(perf, tierOf, expected) : null,
                         Pr = pr,
@@ -259,6 +261,27 @@ public sealed class PlayerStatsService
     }
 
     // ------------------------------------------------------------------ steps
+
+    private static readonly IReadOnlyDictionary<long, ExpectedValues> NoExpected = new Dictionary<long, ExpectedValues>();
+
+    /// <summary>Ranked, Co-op and Operations: account totals, the battle's ship and per-tier totals (no PR outside Random).</summary>
+    private Dictionary<GameMode, ModeStats> OtherModes(List<ShipStatsDto> ships, AccountStatisticsDto? account, long currentShipId)
+    {
+        var result = new Dictionary<GameMode, ModeStats>();
+        foreach (var mode in GameModes.All.Where(m => m != GameMode.Random))
+        {
+            var perf = ships
+                .Select(x => (x.ShipId, Totals: GameModes.ShipTotals(x, mode)))
+                .Where(x => x.Totals is { Battles: > 0 } && IsTestShip?.Invoke(x.ShipId) != true)
+                .Select(x => new ShipPerformance(x.ShipId, x.Totals!, null, null))
+                .ToList();
+            result[mode] = new ModeStats(
+                GameModes.AccountTotals(account, mode),
+                perf.FirstOrDefault(x => x.ShipId == currentShipId)?.Totals,
+                ShipTier is { } tierOf ? TierFilter.ComputeAll(perf, tierOf, NoExpected) : null);
+        }
+        return result;
+    }
 
     private const string OfflineText = "Wargaming API unreachable and nothing cached for this player";
     private const string OfflineDataText = "Wargaming API unreachable — showing the last cached statistics";
@@ -323,7 +346,7 @@ public sealed class PlayerStatsService
         foreach (var id in ids)
         {
             var c = _cache.Get(region, KindAccount, Key(id));
-            if (!force && c is not null && c.Age < maxAge)
+            if (!force && c is not null && c.Age < maxAge && HasModeData(c.Json))
                 result[id] = c.Json is null ? null : new AccountEntry(Deserialize<AccountInfoDto>(c.Json), c.FetchedAt);
             else
             {
@@ -337,7 +360,7 @@ public sealed class PlayerStatsService
             Dictionary<long, JsonElement?> raw;
             try
             {
-                raw = await _api.GetAccountInfoRawAsync(region, missing, priority, ct, extra: "statistics.rank_solo").ConfigureAwait(false);
+                raw = await _api.GetAccountInfoRawAsync(region, missing, priority, ct, extra: WgApiClient.ModeAccountExtra).ConfigureAwait(false);
             }
             catch (WgApiException ex) when (ex.Kind == WgErrorKind.Transient && stale.Count > 0)
             {
@@ -405,7 +428,7 @@ public sealed class PlayerStatsService
         var c = _cache.Get(region, KindShips, Key(id));
         string? json;
         var stale = false;
-        if (!force && c is not null && c.Age < maxAge)
+        if (!force && c is not null && c.Age < maxAge && HasModeData(c.Json))
         {
             json = c.Json;
         }
@@ -426,6 +449,14 @@ public sealed class PlayerStatsService
         }
         return (json is null ? [] : Deserialize<List<ShipStatsDto>>(json), stale);
     }
+
+    /// <summary>
+    /// False for a cached response from before Foretop loaded the other game modes (it has no co-op block): it is then
+    /// fetched again like an expired one, but still used when the API cannot be reached. Null (no data) needs nothing.
+    /// </summary>
+    internal static bool HasModeData(string? json) => json is null || json == "[]"
+        || json.Contains("\"pve\"", StringComparison.Ordinal)
+        || json.Contains("\"hidden_profile\":true", StringComparison.Ordinal); // hidden: no statistics in any mode
 
     /// <summary>Activity since the newest snapshot at least 7 (and 28) days old.</summary>
     internal static (RecentStats? R7, RecentStats? R28) RecentFromSnapshots(List<PlayerSnapshot> snaps, StatTotals overall)

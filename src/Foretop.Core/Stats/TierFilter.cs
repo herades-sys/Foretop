@@ -39,12 +39,14 @@ public static class TierFilter
     {
         int battles = 0, wins = 0, losses = 0, draws = 0, frags = 0, survived = 0, planes = 0;
         long damage = 0, xp = 0;
+        var combatKnown = true;
         foreach (var t in items)
         {
             battles += t.Battles; wins += t.Wins; losses += t.Losses; draws += t.Draws;
             damage += t.Damage; xp += t.Xp; frags += t.Frags; survived += t.Survived; planes += t.PlanesKilled;
+            combatKnown &= t.CombatKnown;
         }
-        return new StatTotals(battles, wins, losses, draws, damage, xp, frags, survived, planes);
+        return new StatTotals(battles, wins, losses, draws, damage, xp, frags, survived, planes, combatKnown);
     }
 
     /// <summary>One <see cref="TierStats"/> per level in <see cref="Levels"/>.</summary>

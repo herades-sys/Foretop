@@ -21,6 +21,7 @@
             <MenuItem Header="Open official profile" Click="OnOpenOfficial" />
             <MenuItem Header="Open on wows-numbers.com" Click="OnOpenNumbers" />
             <MenuItem Header="Open on WoWS Karma" Click="OnOpenKarma" />
+            <MenuItem Header="Open clan" Click="OnOpenClan" />
             <Separator />
             <MenuItem Header="Copy player name" Click="OnCopyName" />
         </ContextMenu>
@@ -161,7 +162,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="3" SortMemberPath="Pr">
+                    <DataGridTemplateColumn x:Name="PrColumn" Header="PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="3" SortMemberPath="Pr">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
 <StackPanel VerticalAlignment="Center">
@@ -206,7 +207,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="SHIP PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="5" SortMemberPath="ShipPr">
+                    <DataGridTemplateColumn x:Name="ShipPrColumn" Header="SHIP PR" Width="Auto" HeaderStyle="{StaticResource NumHeader}" views:ColumnFit.HidePriority="5" SortMemberPath="ShipPr">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding ShipPrText}" Style="{StaticResource Num}" FontWeight="SemiBold" VerticalAlignment="Center"
