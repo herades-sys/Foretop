@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.10.0 — 2026-11-18
 
 - **Clans.** A new page finds a clan by tag or name and shows its details (members, creation, commander and founder,
   renames, description), who joined in the last 30 days (official join dates) and every member with rank, join date,
