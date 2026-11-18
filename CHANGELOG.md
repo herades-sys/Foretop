@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.9.0 — 2026-11-18
 
 - **Karma from WoWS Karma.** Live Battle has a KARMA column: each player's in-game karma as WoWS Karma
   (wows-karma.com, a community site) reports it, negative in red. The row tooltip adds the site's own karma and its
