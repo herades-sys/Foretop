@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Right-click menus follow the theme.** The Live Battle row menu (open profile, official profile, wows-numbers,
+  copy name) used the Windows light menu, where the dark themes' light text was almost unreadable. Menus now use the
+  theme's panel, text and highlight colours.
+
 ## 1.8.1 — 2026-11-18
 
 - **Live Battle: ship battles and ship PR in their own columns.** SHIP BTL (battles in the ship of this battle) and

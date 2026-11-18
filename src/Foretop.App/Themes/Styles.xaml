@@ -736,6 +736,59 @@
         </Setter>
     </Style>
 
+    <!-- Right-click menus (rows of the Live Battle tables; text boxes' Cut/Copy/Paste): theme colours, not the Windows
+         light menu, whose white background left the theme's light text unreadable on dark themes. -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource Panel}" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Border2}" />
+        <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HasDropShadow" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                            CornerRadius="{DynamicResource RadiusControl}" Padding="4" MinWidth="200">
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="b" Background="Transparent" Padding="{TemplateBinding Padding}" CornerRadius="{DynamicResource RadiusSmall}">
+                        <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="{DynamicResource RowSelected}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource TextDim}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1" Margin="6,4" Background="{DynamicResource Border}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Panel}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
