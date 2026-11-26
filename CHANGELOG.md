@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.10.1 — 2026-11-26
 
 - **Battle History: YOUR PR.** A new column shows your Personal Rating in each battle (the wows-numbers formula on
   that one battle, with the expected values of that day; the same battle rating as in Analytics). It fills in about

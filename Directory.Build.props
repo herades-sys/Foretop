@@ -1,7 +1,7 @@
 <Project>
   <!-- Shared metadata for every project. Bump Version here for a release. -->
   <PropertyGroup>
-    <Version>1.10.0</Version>
+    <Version>1.10.1</Version>
     <Product>Foretop</Product>
     <Company>Foretop</Company>
     <Description>World of Warships battle monitor</Description>
