@@ -158,7 +158,11 @@ Every detected battle (and every replay you open) is saved with everyone's
 statistics at that moment.
 
 - **Battle History** lists them with team averages. Double-click to see the full
-  rosters again. Select two (Ctrl+click) to compare them.
+  rosters again. Select two (Ctrl+click) to compare them. **YOUR PR** is your Personal Rating in that one battle:
+  the wows-numbers formula on the battle's damage, kills and result, with the expected values of that day
+  (calculated by Foretop, the same battle rating as in Analytics; a single battle varies a lot). It appears about
+  30 s after the battle, once Wargaming counts it ("…" until then). "—" when there is no own result (replays) or when
+  Wargaming counted several battles at once (a battle left early); hover the value for the reason.
 - **Statistics** summarises your recorded battles: ships, maps, battle types, enemy
   classes, team strength per battle and the players you meet most often.
 

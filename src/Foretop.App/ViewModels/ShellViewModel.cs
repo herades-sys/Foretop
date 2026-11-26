@@ -63,6 +63,12 @@ public sealed partial class ShellViewModel : ObservableObject
         };
         Dashboard.ProfileRequested += OpenProfile;
         Live.HistoryChanged += () => { History.MarkDirty(); Statistics.MarkDirty(); Dashboard.MarkDirty(); };
+        // Your result (and PR) for a battle arrives about 30 s after it ends: Battle History shows it then.
+        host.Results.Changed += () => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            History.MarkDirty();
+            if (SelectedPage == Page.History) _ = History.EnsureLoadedAsync();
+        });
         host.Ships.Updated += () =>
         {
             HistoryViewModel.ClearRowCache();

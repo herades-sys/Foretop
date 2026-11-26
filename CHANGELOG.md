@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Battle History: YOUR PR.** A new column shows your Personal Rating in each battle (the wows-numbers formula on
+  that one battle, with the expected values of that day; the same battle rating as in Analytics). It fills in about
+  30 s after the battle, also while the page is open ("…" until Wargaming counts the battle); "—" for replays and for
+  battles counted together with another one; the tooltip says why. The compare panel shows it too.
+
 ## 1.10.0 — 2026-11-18
 
 - **Clans.** A new page finds a clan by tag or name and shows its details (members, creation, commander and founder,

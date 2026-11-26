@@ -148,4 +148,25 @@ public class BattleResultTests
         Assert.Empty(store.Open(Region.Eu, 42));
         Assert.Single(store.Since(T0.AddHours(-1)));
     }
+
+    [Fact]
+    public void All_results_by_battle_key_carry_the_battle_rating()
+    {
+        // Battle History joins these to the recorded battles for the YOUR PR column.
+        var db = new Database(Path.Combine(Path.GetTempPath(), "foretop-tests", Guid.NewGuid() + ".db"));
+        var store = new BattleResultStore(db);
+        store.Upsert(Open("a", Totals(100, wins: 50), 0) with
+        {
+            Status = ResultStatus.Ok, Result = Totals(1, wins: 1, damage: 77_000), ResolvedAt = T0.AddMinutes(16),
+            Extras = new Foretop.Core.Personal.PersonalExtras { Rating = 1523.4 },
+        });
+        store.Upsert(Open("b", Totals(101, wins: 51), 20));
+
+        var all = store.AllByKey();
+        Assert.Equal(2, all.Count);
+        Assert.Equal(1523.4, all["a"].Extras!.Rating);
+        Assert.Equal(ResultStatus.Pending, all["b"].Status);
+        Assert.Null(all["b"].Extras?.Rating);
+        Assert.False(all.ContainsKey("c")); // a battle without a result (a replay): no entry, shown as "—"
+    }
 }

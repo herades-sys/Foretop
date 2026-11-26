@@ -231,6 +231,15 @@ public sealed class BattleResultStore(Database db)
         return Read(cmd);
     }
 
+    /// <summary>Every result by battle key (Battle History joins them to the recorded battles).</summary>
+    public Dictionary<string, BattleResult> AllByKey()
+    {
+        using var c = db.Open();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = Select;
+        return Read(cmd).GroupBy(r => r.BattleKey).ToDictionary(g => g.Key, g => g.First());
+    }
+
     /// <summary>All open results, any account, oldest first.</summary>
     public List<BattleResult> AllOpen()
     {

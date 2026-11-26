@@ -38,6 +38,12 @@
                     <DataGridTextColumn Header="TYPE" Binding="{Binding Type}" Width="120" />
                     <DataGridTextColumn Header="MAP" Binding="{Binding Map}" Width="*" MinWidth="110" />
                     <DataGridTextColumn Header="YOUR SHIP" Binding="{Binding OwnShip}" Width="130" />
+                    <DataGridTemplateColumn Header="YOUR PR" SortMemberPath="YourPr" Width="64">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding YourPrText}" Style="{StaticResource Num}" FontWeight="SemiBold" ToolTip="{Binding YourPrTip}"
+                                                     Foreground="{Binding YourPr, Converter={StaticResource Rating}, ConverterParameter=pr}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTemplateColumn Header="FRIENDLY WR" SortMemberPath="FriendlyWr" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate><TextBlock Text="{Binding FriendlyWrText}" Style="{StaticResource Num}"

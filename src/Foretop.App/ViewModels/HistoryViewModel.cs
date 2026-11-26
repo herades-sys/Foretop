@@ -36,6 +36,32 @@ public sealed class HistoryRow
     public string EnemyPrText => Fmt(Enemy.AvgPr, "0", "");
     public string ShareText => Share is double s ? s.ToString("P0", CultureInfo.CurrentCulture) : "—";
 
+    /// <summary>
+    /// Your own result for this battle (counted from the API after the battle), joined fresh on every load because it
+    /// arrives about 30 s after the battle while the row itself is cached.
+    /// </summary>
+    public BattleResult? Own { get; set; }
+
+    /// <summary>Your PR in this battle: the wows-numbers formula on this one battle (Foretop's battle rating).</summary>
+    public double? YourPr => Own?.Status == ResultStatus.Ok ? Own.Extras?.Rating : null;
+
+    public string YourPrText => YourPr is double p ? p.ToString("0", CultureInfo.CurrentCulture)
+        : Own?.Status == ResultStatus.Pending ? "…" : "—";
+
+    public string YourPrTip => Own switch
+    {
+        null => "No own result for this battle: Foretop records it only for battles it detects live (not for replays).",
+        { Status: ResultStatus.Pending } => "Waiting for Wargaming to count the battle (usually about 30 s after it ends).",
+        { Status: ResultStatus.Ok } when YourPr is double p =>
+            $"Your PR in this battle: {p:0} ({PersonalRating.BandLabel(PersonalRating.Band(p))}). The wows-numbers formula on this one "
+            + "battle's damage, kills and result, with the expected values of that day (calculated by Foretop; one battle varies a lot).",
+        { Status: ResultStatus.Ok } => "No PR: no expected values for this ship.",
+        { Status: ResultStatus.Combined or ResultStatus.Merged } =>
+            "No PR for this battle alone: Wargaming counted several battles at once (a battle left early), so they cannot be told apart.",
+        { Status: ResultStatus.Unavailable } => "No PR: the API keeps no totals for this battle type.",
+        _ => "No PR: Wargaming never counted this battle.",
+    };
+
     private static string Fmt(double? v, string f, string suffix) => v is double d ? d.ToString(f, CultureInfo.CurrentCulture) + suffix : "—";
 }
 
@@ -111,7 +137,10 @@ public sealed partial class HistoryViewModel : ObservableObject
             foreach (var chunk in stale.Chunk(200))
                 foreach (var rec in host.History.Get(chunk))
                     RowCache[rec.Id] = (index[rec.Id], BuildRow(host, rec));
-            return RowCache.Values.Select(v => v.Row).OfType<HistoryRow>().OrderByDescending(r => r.Record.When).ToList();
+            var rows = RowCache.Values.Select(v => v.Row).OfType<HistoryRow>().OrderByDescending(r => r.Record.When).ToList();
+            var own = host.Results.Store.AllByKey();
+            foreach (var r in rows) r.Own = own.GetValueOrDefault(r.Record.BattleKey);
+            return rows;
         }
     }
 
@@ -159,6 +188,7 @@ public sealed partial class HistoryViewModel : ObservableObject
         L("Friendly avg damage", a.Friendly.AvgDamage?.ToString("N0") ?? "—", b.Friendly.AvgDamage?.ToString("N0") ?? "—");
         L("Enemy avg damage", a.Enemy.AvgDamage?.ToString("N0") ?? "—", b.Enemy.AvgDamage?.ToString("N0") ?? "—");
         L("Strength estimate (friendly share)", a.ShareText, b.ShareText);
+        L("Your PR in the battle", a.YourPrText, b.YourPrText);
         L("Hidden profiles", $"{a.Friendly.Hidden} / {a.Enemy.Hidden}", $"{b.Friendly.Hidden} / {b.Enemy.Hidden}");
         var common = a.Players.Where(p => !p.IsBot && p.Relation != 0)
             .Select(p => p.Name).Intersect(b.Players.Where(p => !p.IsBot).Select(p => p.Name), StringComparer.OrdinalIgnoreCase).ToList();
